@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>登录 - MetaGallery Cloud</title>
+    <meta charset="UTF-8">
+    <!-- 引入 Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <style>
+        /* 设置页面背景颜色为浅蓝色 */
+        body {
+            background-color: #f3fbfe; /* 浅蓝色 */
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh; /* 让 body 占满整个视窗高度 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 设置中央的空白框 */
+        .center-box {
+            background-color: white;
+            width: 800px;
+            height: 500px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative; /* 设置相对定位 */
+            box-sizing: border-box; /* 确保 padding 不影响宽度 */
+        }
+
+         /* 图片样式 */
+         .image-container {
+            margin-right: 10px; /* 图片与输入框之间的间距 */
+            margin-top: 70px; 
+        }
+
+        img {
+            width: 300px; /* 图片宽度 */
+            height: 300px; /* 图片高度 */
+        }
+
+        /* 输入框样式 */
+        input[type="text"],
+        input[type="password"] {
+            width: 250px; /* 输入框宽度 */
+            height: 40px; /* 输入框高度 */
+            padding: 10px; /* 输入框内边距 */
+            margin: 25px 0; /* 输入框上下间距 */
+            border: 2px solid #ccc; /* 边框样式 */
+            border-radius: 5px; /* 圆角边框 */
+            box-sizing: border-box; /* 确保 padding 不影响宽度 */
+            position: absolute; /* 绝对定位 */
+            right: 130px; /* 从右边距离 */
+        }
+
+        input[type="text"] {
+            top: 100px; /* 距离顶部50像素 */
+        }
+
+        input[type="password"] {
+            top: 170px; /* 距离顶部100像素 */
+        }
+
+        button {
+            padding: 10px 110px; /* 按钮的内边距 */
+            font-size: 16px; /* 按钮的字体大小 */
+            background-color: #5fbdd7; /* 按钮的填充颜色 */
+            color: white; /* 字体颜色 */
+            border: 2px solid #f8f8f8; /* 边框样式 */
+            border-radius: 5px; /* 圆角边框 */
+            cursor: pointer; /* 鼠标悬停时显示为指针 */
+            transition: background-color 0.3s; /* 添加过渡效果 */
+            position: absolute; /* 设置绝对定位 */
+            right: 130px; /* 从右边距离 */
+            bottom: 150px; /* 从底部距离 */
+        }
+
+        button:hover {
+            background-color: #459eb4; /* 鼠标悬停时的填充颜色 */
+        }
+
+        /* 忘记密码的文字样式 */
+        .forgot-password {
+            position: absolute; /* 设置绝对定位 */
+            right: 130px; /* 从右边距离 */
+            bottom: 90px; /* 距离按钮下方的距离 */
+            color: rgb(90, 128, 223); /* 字体颜色 */
+            cursor: pointer; /* 鼠标悬停时显示为指针 */
+            text-align: center; /* 文本居中对齐 */
+            transform: translateX(-100%); /* 向左移动50%以实现中心对齐 */
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="center-box">
+        <div class="image-container">
+            <img src="/load.png" alt="示例图片" /> <!-- 替换为你的图片链接 -->
+        </div>
+        <!-- 输入框 -->
+        <input type="text" placeholder="账号" />
+        <input type="password" placeholder="密码" />
+        <button @click="load">登录</button>
+        <p class="forgot-password">忘记密码？</p> <!-- 添加的忘记密码文字 -->
+    </div>
+
+    <script>
+        // 创建 Vue 实例
+        new Vue({
+            el: '#app',
+            data: {
+                account: '', // 用户名
+                password: '', // 密码
+            },
+            methods: {
+                load: function() {
+                    // 创建请求头
+                    var myHeaders = new Headers();
+                    myHeaders.append("User-Agent", "Apifox/1.0.0 (https://apifox.com)");
+
+                    // 创建表单数据
+                    var formdata = new FormData();
+                    formdata.append("account", this.account);
+                    formdata.append("password", this.password);
+
+                    // 请求选项
+                    var requestOptions = {
+                        method: 'POST',
+                        headers: myHeaders,
+                        body: formdata,
+                        redirect: 'follow'
+                    };
+
+                    // 发送请求
+                    fetch("http://127.0.0.1:4523/api/load", requestOptions)
+                        .then(response => {
+                            console.log('HTTP 响应状态:', response.status); 
+                            if (!response.ok) {
+                                throw new Error('网络响应不正常');
+                            }
+                            return response.text();
+                        })
+                        .then(result => {
+                            console.log(result);
+                            alert('登录成功: ' + result);
+                        })
+                        .catch(error => {
+                            console.error('错误:', error);
+                            alert('登录失败: ' + error.message);
+                        });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
