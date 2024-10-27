@@ -5,6 +5,7 @@
 <template>
   <div class="Contact">
     <p class="induct">我是联系</p>
+    <a href="../../homepage.html" target="_self">111</a>
   </div>
 </template>
 
