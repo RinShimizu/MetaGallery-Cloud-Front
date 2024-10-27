@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>注册 - MetaGallery Cloud</title>
-    <meta charset="UTF-8">
+    <title>Vue 示例</title>
     <!-- 引入 Vue.js -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <style>
@@ -88,7 +87,7 @@
 <body>
     <div id="app" class="center-box">
         <div class="image-container">
-            <img src="/register.png" alt="示例图片" /> <!-- 替换为你的图片链接 -->
+            <img src="register.png" alt="示例图片" /> <!-- 替换为你的图片链接 -->
         </div>
         <!-- 输入框 -->
         <input type="text" v-model="account" placeholder="账号" />
@@ -133,7 +132,7 @@
                     };
 
                     // 发送请求
-                    fetch("http://127.0.0.1:4523/api/register", requestOptions)
+                    fetch("http://127.0.0.1:8080/api/register", requestOptions)
                         .then(response => {
                             console.log('HTTP 响应状态:', response.status); 
                             if (!response.ok) {
