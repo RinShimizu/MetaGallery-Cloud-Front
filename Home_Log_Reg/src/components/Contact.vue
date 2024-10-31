@@ -4,15 +4,21 @@
 
 <template>
   <div class="Contact">
-    <p>111</p>
+    <p class="induct">我是联系</p>
+    <a href="../../homepage.html" target="_self">111</a>
   </div>
 </template>
 
 <style scoped>
   .Contact{
     height: 200px;
-    width: 100%;
-    background-color: #4095E5;
+    display: flex;
+    justify-content: center;
   }
-
+  .induct{
+    width: 500px;
+    height: 200px;
+    border: black solid 2px;
+    float: left;
+  }
 </style>

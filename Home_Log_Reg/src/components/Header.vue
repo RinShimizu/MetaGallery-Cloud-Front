@@ -1,6 +1,4 @@
 <script setup>
-  let h_home = document.getElementById("page1").offsetHeight
-  let h_case = document.getElementById("page2").offsetHeight
   function Reg(){
     window.open('../public/register.html');//在当前页面直接打开，加_self
   }
@@ -11,10 +9,10 @@
     window.scrollTo({top:0,behavior:'smooth'})
   }
   function toCase(){
-    window.scrollTo({top:h_home,behavior:'smooth'})
+    window.scrollTo({top:600,behavior:'smooth'})
   }
   function toCont(){
-    window.scrollTo({top:h_home + h_case,behavior:'smooth'})
+    window.scrollTo({top:800,behavior:'smooth'})
   }
 </script>
 

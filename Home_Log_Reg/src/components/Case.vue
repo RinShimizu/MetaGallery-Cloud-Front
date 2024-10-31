@@ -3,8 +3,7 @@
 </script>
 
 <template>
-  <div class="Case" id="page2">
-    <h1>案例展示</h1>
+  <div class="Case">
     <div class="box">
       <img src="../assets/case1.png" alt="case1">
       <img src="../assets/case2.png" alt="case2">
@@ -12,6 +11,7 @@
       <img src="../assets/case4.png" alt="case4">
       <img src="../assets/case1.png" alt="case5">
     </div>
+    <p class="induct">我是案例</p>
   </div>
 </template>
 
@@ -24,14 +24,15 @@
     left: 0;
     z-index: -1;
   }
-  h1{
-    font-size: 45px;
-    text-align: center;
-    margin-top: 0;
+  .induct{
+    width: 500px;
+    height: 500px;
+    border: black solid 2px;
+    float: left;
   }
   .box {
     position: relative;
-    width: 60%;
+    width: 50%;
     height: auto;
     margin: 0 auto;
     overflow: hidden;
@@ -42,7 +43,7 @@
   .box img {
     width: 100%;
     height: auto;
-    animation: slideImages 30s linear infinite;
+    animation: slideImages 20s linear infinite;
   }
 
   @keyframes slideImages {
