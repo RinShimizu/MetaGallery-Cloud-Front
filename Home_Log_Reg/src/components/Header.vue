@@ -1,4 +1,14 @@
 <script setup>
+  import { onMounted, nextTick } from 'vue';
+
+  let h_home = 0;
+  let h_case = 0;
+  onMounted(async () => {
+    await nextTick(); // 确保 DOM 完全更新
+    h_home = document.getElementById("page1")?.offsetHeight;
+    h_case = document.getElementById("page2")?.offsetHeight;
+  });
+
   function Reg(){
     window.open('../public/register.html');//在当前页面直接打开，加_self
   }
@@ -9,10 +19,10 @@
     window.scrollTo({top:0,behavior:'smooth'})
   }
   function toCase(){
-    window.scrollTo({top:600,behavior:'smooth'})
+    window.scrollTo({top:h_home,behavior:'smooth'})
   }
   function toCont(){
-    window.scrollTo({top:800,behavior:'smooth'})
+    window.scrollTo({top:h_home + h_case,behavior:'smooth'})
   }
 </script>
 

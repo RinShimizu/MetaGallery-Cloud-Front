@@ -9,7 +9,7 @@
   import Header from "@/components/Header.vue";
   import Home from "@/components/Home.vue";
   import Case from "@/components/Case.vue";
-  //import Contact from "@/components/Contact.vue";
+  import Contact from "@/components/Contact.vue";
 </script>
 
 <style>

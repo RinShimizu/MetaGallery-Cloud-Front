@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="Home">
+  <div class="Home" id="page1">
     <h1>欢迎来到 MetaGallery Cloud</h1>
     <p id="p1">一个集<strong>文件管理</strong>、<strong>共享</strong>和<strong>去中心化存储</strong>于一体的云平台</p>
     <div class="induct">
