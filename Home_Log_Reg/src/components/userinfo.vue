@@ -2,6 +2,9 @@
   import { ref } from 'vue'
   const name = ref("111");
   const user = ref("111");
+  function toPerson(){
+    window.open('../public/person.html','_self');
+  }
 </script>
 
 <template>
@@ -10,7 +13,7 @@
     <p>昵称：{{name}}</p>
     <p>账号：{{user}}</p>
     <div id="buttons">
-      <button>查看个人资料</button>
+      <button @click="toPerson">查看个人资料</button>
       <button>退出</button>
       <button>切换账号</button>
     </div>
