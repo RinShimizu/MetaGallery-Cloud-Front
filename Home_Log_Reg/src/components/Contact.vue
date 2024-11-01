@@ -11,6 +11,7 @@
       <button><img src="../assets/邮件.svg" alt="qq"></button>
     </div>
     <span>©2024.only我们小组版权所有</span>
+    <a href="../../homepage.html">111</a>
   </div>
 </template>
 
@@ -34,8 +35,8 @@
     border-radius: 50%;
     background-color: transparent;
     border: none;
-    height: 60px;
-    width: 60px;
+    height: 50px;
+    width: 50px;
     margin: 0 10px 0 10px;
   }
   button::after{
@@ -54,7 +55,5 @@
     width: auto;
   }
 
-  span{
 
-  }
 </style>

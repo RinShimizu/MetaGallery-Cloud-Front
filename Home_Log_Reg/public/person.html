@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人主页</title>
+    <link rel="icon" href="云盘.svg" type="image/x-icon">
+    <style>
+        /* 设置页面背景颜色为白色 */
+        body {
+            background-color: #ffffff; /* 白色 */
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh; /* 让 body 占满整个视窗高度 */
+            display: flex;
+            flex-direction: column; /* 使内容垂直排列 */
+            align-items: center; /* 内容水平居中 */
+            position: relative; /* 使子元素可以绝对定位 */
+        }
+
+        /* 顶部空白框样式 */
+        .top-box {
+            width: 100%; /* 与页面一样宽 */
+            height: 40px; /* 高度 */
+            background-color: #ffffff; /* 背景色 */
+            display: flex; /* 使内容可居中 */
+            align-items: center; /* 内容垂直居中 */
+            justify-content: space-between; /* 内容两端对齐 */
+            padding: 0 20px; /* 左右内边距 */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+        }
+
+        /* 顶部图标样式 */
+        .top-icon {
+            width: 150px; /* 图标宽度 */
+            height: 30px; /* 图标高度 */
+        }
+
+        /* 右侧小图标容器样式 */
+        .small-icons {
+            display: flex; /* 使小图标水平排列 */
+            align-items: center; /* 垂直居中 */
+            margin-right: 20px; /* 距离右边界10px */
+        }
+
+        /* 小图标样式 */
+        .small-icon {
+            width: 30px; /* 小图标宽度 */
+            height: 30px; /* 小图标高度 */
+            margin-left: 10px; /* 小图标间距 */
+        }
+
+        /* 空白框样式 */
+        .box {
+            width: 900px; /* 框宽度 */
+            height: 550px; /* 框高度 */
+            background-color: #f3fbfe; /* 框背景色 */
+            border-radius: 20px; /* 圆角半径 */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+            display: flex; /* 使内容可居中 */
+            justify-content: flex-start; /* 内容左对齐 */
+            align-items: flex-start; /* 内容顶部对齐 */
+            position: relative; /* 使图标和文本相对于框定位 */
+            margin-top: 80px; /* 与顶部框的间距 */
+            padding: 20px; /* 内边距 */
+        }
+
+        /* 图标样式 */
+        .icon {
+            position: absolute; /* 绝对定位 */
+            top: -40px; /* 距离框顶部20像素 */
+            left: 20px; /* 距离左边20像素 */
+            width: 40px; /* 图标宽度 */
+            height: 40px; /* 图标高度 */
+        }
+
+        /* 文本样式 */
+        .text {
+            position: absolute; /* 绝对定位 */
+            top: -40px; /* 距离框顶部，保持与图标对齐 */
+            left: 70px; /* 距离左边70像素，保证与图标有间距 */
+            font-size: 23px; /* 字体大小 */
+            color: #7e7b7b; /* 字体颜色 */
+        }
+
+        /* 输入框容器样式 */
+        .input-container {
+            margin-left: 500px; /* 调整输入框的左侧位置 */
+            margin-top: 50px; /* 输入框与顶部的间距 */
+            display: flex; /* 使输入框和标签在同一行 */
+            flex-direction: column; /* 竖排 */
+            align-items: flex-end; /* 右对齐 */
+        }
+
+        /* 输入框样式 */
+        .input {
+            width: 300px; /* 输入框宽度 */
+            height: 30px; /* 输入框高度 */
+            border-radius: 15px; /* 圆角半径 */
+            border: 1px solid #ccc; /* 边框 */
+            margin-bottom: 30px; /* 输入框之间的间距 */
+            padding: 5px; /* 内边距 */
+        }
+
+        /* 标签样式 */
+        .label {
+            display: flex; /* 使标签和输入框并排 */
+            align-items: center; /* 垂直居中 */
+            margin-bottom: 10px; /* 标签与输入框之间的间距 */
+        }
+        
+        /* 账号部分样式 */
+        .account-label {
+            position: absolute; /* 绝对定位 */
+            top: 320px; /* 距离框顶部 */
+            left: 150px; /* 距离框左侧 */
+            font-size: 18px; /* 字体大小 */
+            color: #7e7b7b; /* 字体颜色 */
+        }
+
+        .account-value {
+            position: absolute; /* 绝对定位 */
+            top: 360px; /* 距离框顶部 */
+            left: 100px; /* 距离框左侧 */
+            width: 250px; /* 宽度 */
+            height: 50px; /* 高度 */
+            border-radius: 15px; /* 圆角半径 */
+            border: 1px solid #ccc; /* 边框 */
+            display: flex; /* 使内容可居中 */
+            justify-content: center; /* 内容水平居中 */
+            align-items: center; /* 内容垂直居中 */
+            background-color: #ffffff; /* 背景色 */
+        }
+
+        /* 按钮样式 */
+        .button {
+            width: 100px; /* 按钮宽度 */
+            height: 40px; /* 按钮高度 */
+            border-radius: 15px; /* 圆角半径 */
+            border: none; /* 无边框 */
+            color: white; /* 字体颜色 */
+            background-color: #007bff; /* 背景颜色 */
+            margin-right: 40px; /* 按钮间距 */
+        }
+
+        /* 按钮容器样式 */
+        .button-container {
+            display: flex; /* 使按钮水平排列 */
+            margin-top: 20px; /* 按钮与输入框的间距 */
+        }
+    </style>
+</head>
+<body>
+    <div class="top-box">
+        <img src="img1.png" alt="顶部图标" class="top-icon" />
+        <div class="small-icons">
+            <img src="small-icon1.png" alt="小图标1" class="small-icon" /> <!-- 替换为你的小图标路径 -->
+            <img src="small-icon2.png" alt="小图标2" class="small-icon" /> <!-- 替换为你的小图标路径 -->
+        </div>
+    </div>
+    <div class="box">
+        <img src="img.png" alt="图标" class="icon" /> <!-- 替换为你的图标路径 -->
+        <span class="text">个人中心</span> <!-- 添加的文本 -->
+        
+        <!-- 账号部分 -->
+        <span class="account-label">账号：</span>
+        <div class="account-value">不可修改</div>
+
+        <!-- 输入框部分 -->
+        <div class="input-container">
+            <div class="label">
+                <span>昵称：</span>
+                <input type="text" class="input" placeholder="如不修改昵称，此框可不写" />
+            </div>
+            <div class="label">
+                <span>个性签名：</span>
+                <input type="text" class="input" placeholder="这个人很懒，什么都没有写~" />
+            </div>
+            <div class="label">
+                <span>原密码：</span>
+                <input type="password" class="input" placeholder="如不修改密码，此框可不写" />
+            </div>
+            <div class="label">
+                <span>修改密码：</span>
+                <input type="password" class="input" placeholder="如不修改密码，此框可不写" />
+            </div>
+            <div class="label">
+                <span>确认密码：</span>
+                <input type="password" class="input" placeholder="如不修改密码，此框可不写" />
+            </div>
+            
+            <!-- 按钮部分 -->
+            <div class="button-container">
+                <button class="button">确认</button>
+                <button class="button">取消</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

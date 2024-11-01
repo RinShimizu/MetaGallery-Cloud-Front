@@ -6,22 +6,18 @@
 <template>
   <div class="header">
     <div class="logo">
-      <span class="s1">Meta</span><span class="s2">Gallery </span><span class="s3">Cloud</span>
+      <span id="s1">Meta</span><span id="s2">Gallery </span><span id="s3">&ensp;Cloud</span>
     </div>
     <div class="searchbox">
-      <div id="box">
-        <button class="button1"><img src="../assets/搜索.svg" alt=""></button>
-        <input type="text" class="input" placeholder="搜索">
-        <button class="button2"><img src="../assets/语音.svg" alt=""></button>
-      </div>
+      <button class="button1"><img src="../assets/搜索.svg" alt=""></button>
+      <input type="text" class="input" placeholder="搜索">
+      <button class="button2"><img src="../assets/语音.svg" alt=""></button>
     </div>
-    <div class="post">
-      <button>上传文件</button>
-    </div>
-    <div id="pic">
-      <img src="../assets/个人中心-我的.svg" alt=" ">
-    </div>
+    <button id="post">
+      <img src="../assets/上传.svg" alt="" width="25" height="25"> 上传文件
+    </button>
     <div class="user">
+      <img id="pic" src="../assets/个人中心-我的.svg" alt=" ">
       <button><img src="../assets/字体.svg" alt=""></button>
       <div class="info">
         <Userinfo />
@@ -30,28 +26,13 @@
 
   </div>
   <div class="sidebar">
-    <ul class="menu">
-      <li>
-        <img src="../assets/图片1.png" alt="">
-        <button>首页</button>
-      </li>
-      <li>
-        <img src="../assets/图片2.png" alt="">
-        <button>画廊</button>
-      </li>
-      <li>
-        <img src="../assets/图片3.png" alt="">
-        <button>我的文件</button>
-      </li>
-      <li>
-        <img src="../assets/图片4.png" alt="">
-        <button>我的共享</button>
-      </li>
-      <li>
-        <img src="../assets/图片5.png" alt="">
-        <button>回收站</button>
-      </li>
-    </ul>
+    <div class="menu">
+      <button><img src="../assets/首页.svg" alt="">首页</button>
+      <button><img src="../assets/图片.svg" alt="">画廊</button>
+      <button><img src="../assets/文件.svg" alt="">我的文件</button>
+      <button><img src="../assets/分享.svg" alt="">我的共享</button>
+      <button><img src="../assets/回收站.svg" alt="">回收站</button>
+    </div>
     <div class="bottom-image">
       <img src="../assets/图片6.png" alt="底部图片" />
     </div>
@@ -63,48 +44,59 @@
 </template>
 
 <style scoped>
+  /*头部*/
   .header{
-    height: 80px;
+    height: 60px;
     width: 100%;
-    display: table;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: white;
+    display: inline-flex;
+    box-shadow:0 3px 5px  rgba(0,0,0,0.18);
+    font-size: 30px;
+    z-index: 3;
   }
 
   .logo{
-    display: table-cell;
-    vertical-align: middle;
-    text-align: center;
-    width: 20%;
+    display: inline-flex;
+    position: relative;
+    width: max-content;
+    margin: auto 30px auto 20px;
   }
-  .s1{
-    font-size: 28px;
-    color: red;
-    font-family: 微软雅黑;
+  #s1{
+    width: max-content;
+    font-size: 70%;
+    color: #EE6363;
+    font-family: Verdana;
+    font-weight: bold;
   }
-  .s2{
-    font-size: 28px;
-    color: yellow;
-    font-family: 微软雅黑;
+  #s2{
+    width: max-content;
+    font-size: 70%;
+    color: #FFA54F;
+    font-family: Verdana;
+    font-weight: bold;
   }
-  .s3{
-    font-size: 28px;
-    color: dodgerblue;
-    font-family: 微软雅黑;
+  #s3{
+    width: max-content;
+    font-size: 70%;
+    color: #63B8FF;
+    font-family: Verdana;
+    font-weight: bold;
   }
 
   .searchbox{
-    display: table-cell;
-    vertical-align: middle;
-    text-align: center;
-    width: 50%;
-  }
-  #box{
-    border: gray solid 1px;
+    position: relative;
+    margin: auto 10% auto 15%;
+    border-radius: 2px;
+    border: #eee9e966 solid 1px;
     width: max-content;
     height: 40px;
-    position: relative;
-    left: 40%;
     display: flex;
     align-items: center;
+    box-shadow: 0 2px rgba(0, 0, 0, 0.2);
+    background-color: #eee9e933;
   }
   .button1{
     background-color: transparent;
@@ -127,55 +119,61 @@
   .input{
     border: none;
     text-align: center;
-    font-size: 20px;
+    font-size: 60%;
+    width: 350px;
     outline: none;
+    background-color: transparent;
   }
 
-  .post{
-    display: table-cell;
-    vertical-align: middle;
-    text-align: center;
-    width: 10%;
-  }
-  .post button{
+  #post{
+    position: relative;
+    margin: auto 5%;
     height: 40px;
-    width: 100px;
+    width: 160px;
     font-size: 20px;
     background-color: #4095E5;
     color: white;
-    border-radius: 5%;
+    border-radius: 25px;
     border: 2px solid #4095E5;
     transition-duration: 0.2s;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
   }
-  .post button:hover{
+  #post:hover{
     background-color: white;
     color: #4095E5;
     border: 1px solid #4095E5;
   }
-
-  #pic{
-    display: table-cell;
-    vertical-align: middle;
-    text-align: right;
-    width: 10%;
-  }
-  #pic img{
-    width: 30px;
-    height: 30px;
+  #post:hover img{
+    content:url("../assets/上传_hover.svg");
   }
   
   .user{
-    display: table-cell;
-    vertical-align: middle;
-    text-align: center;
+    position: relative;
+    display: inline-flex;
+    width: 15%;
+    height: 100%;
+    margin: auto 0 auto 10px;
+  }
+  #pic{
+    position: relative;
+    margin: auto 10px auto auto;
+    width: 40px;
+    height: 40px;
   }
   .user button{
+    position: relative;
+    margin: auto auto auto 10px;
     background-color: transparent;
     border: none;
+    width: 40px;
+    height: 40px;
   }
   .user button img{
-    width: 30px;
-    height: 30px;
+    width: 100%;
+    height: auto;
   }
   .info{
     position: absolute;
@@ -190,46 +188,52 @@
   .info:hover {
     display: block;
   }
+
+  /*侧边栏*/
   .sidebar {
     position: absolute;
     left: 0;
-    top: 80px;
-    width: 15%; /* 侧边栏宽度 */
-    height: calc(100vh - 80px); /* 全屏高度 */
+    top: 60px;
+    width: 13%; /* 侧边栏宽度 */
+    height: calc(100vh - 60px); /* 全屏高度 */
     background-color: white; /* 背景颜色 */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    z-index: 2;
+    box-shadow: 0 5px 5px rgba(0, 0, 0, 0.2);
   }
 
   .menu {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-  }
-  .menu li {
-    font-size: 16px;
-    padding: 10px;
     display: inline-flex;
-    vertical-align: middle;
-    text-align: left;
-    background-color: #93d2f377;
-    border-radius: 20px;
-    height: 50px;
+    flex-direction: column;
+    padding: 0;
+    margin:10px 0 0 0;
+    font-size: 16px;
+    height: max-content;
     width: 100%;
     border: none;
   }
   .menu button{
+    height: 50px;
     border: none;
-    background-color: transparent;
+    border-radius: 22px;
+    display: inline-flex;
+    justify-content: left;
+    align-items: center;
+    gap: 15px;
+    background-color: #93d2f377;
+    font-size: 15px;
+    font-family: 幼圆;
   }
-  .menu li:hover {
-    background-color: #34495e; /* 悬停时的背景颜色 */
-    border-radius: 4px;
+  .menu button img {
+    margin-left: 15px;
+    width: 20px;
+    height: auto;
   }
 
   .bottom-image {
-    margin: 20px;
+    margin: 28px;
     text-align: center;
   }
 
