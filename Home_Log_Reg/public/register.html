@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>注册 - MetaGallery Cloud</title>
     <link rel="icon" href="云盘.svg" type="image/x-icon">
+    <meta charset="UTF-8">
     <!-- 引入 Vue.js -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <style>
@@ -34,7 +33,7 @@
         /* 图片样式 */
         .image-container {
             margin-right: 10px; /* 图片与输入框之间的间距 */
-            margin-top: 70px; 
+            margin-top: 70px;
         }
 
         img {
@@ -88,72 +87,82 @@
     </style>
 </head>
 <body>
-    <div id="app" class="center-box">
-        <div class="image-container">
-            <img src="register.png" alt="示例图片" /> <!-- 替换为你的图片链接 -->
-        </div>
-        <!-- 输入框 -->
-        <input type="text" v-model="account" placeholder="账号" />
-        <input type="password" v-model="password" placeholder="密码" />
-        <input type="password" v-model="confirmPassword" placeholder="确认密码" />
-        <button @click="register">注册</button>
+<div id="app" class="center-box">
+    <div class="image-container">
+        <img src="/register.png" alt="示例图片" /> <!-- 替换为你的图片链接 -->
     </div>
+    <!-- 输入框 -->
+    <form @submit.prevent="register">
+        <input type="text" v-model="account" placeholder="账号" required autocomplete="username" />
+        <input type="password" v-model="password" placeholder="密码" required autocomplete="new-password" />
+        <input type="password" v-model="confirmPassword" placeholder="确认密码" required autocomplete="new-password" />
+        <button type="submit">注册</button>
+    </form>
+</div>
 
-    <script>
-        // 创建 Vue 实例
-        new Vue({
-            el: '#app',
-            data: {
-                account: '', // 用户名
-                password: '', // 密码
-                confirmPassword: '' // 确认密码
-            },
-            methods: {
-                register: function() {
-                    // 检查密码和确认密码是否匹配
-                    if (this.password !== this.confirmPassword) {
-                        alert("密码不匹配!");
-                        return;
-                    }
-
-                    // 创建请求头
-                    var myHeaders = new Headers();
-                    myHeaders.append("User-Agent", "Apifox/1.0.0 (https://apifox.com)");
-
-                    // 创建表单数据
-                    var formdata = new FormData();
-                    formdata.append("account", this.account);
-                    formdata.append("password", this.password);
-                    formdata.append("confirm_password", this.confirmPassword);
-
-                    // 请求选项
-                    var requestOptions = {
-                        method: 'POST',
-                        headers: myHeaders,
-                        body: formdata,
-                        redirect: 'follow'
-                    };
-
-                    // 发送请求
-                    fetch("http://127.0.0.1:8080/api/register", requestOptions)
-                        .then(response => {
-                            console.log('HTTP 响应状态:', response.status); 
-                            if (!response.ok) {
-                                throw new Error('网络响应不正常');
-                            }
-                            return response.text();
-                        })
-                        .then(result => {
-                            console.log(result);
-                            alert('注册成功: ' + result);
-                        })
-                        .catch(error => {
-                            console.error('错误:', error);
-                            alert('注册失败: ' + error.message);
-                        });
+<script>
+    // 创建 Vue 实例
+    new Vue({
+        el: '#app',
+        data: {
+            account: '', // 用户名
+            password: '', // 密码
+            confirmPassword: '' // 确认密码
+        },
+        methods: {
+            register: function() {
+                // 检查密码是否匹配
+                if (this.password !== this.confirmPassword) {
+                    alert('两次输入的密码不一致！');
+                    return;
                 }
+
+                // 构建请求体
+                const payload = new URLSearchParams();
+                payload.append('account', this.account);
+                payload.append('password', this.password);
+                payload.append('confirm_password', this.confirmPassword);
+
+                // 发送 POST 请求到注册接口
+                fetch('http://localhost:8080/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: payload.toString()
+                })
+                    .then(response => {
+                        // 打印状态码
+                        console.log(`响应状态: ${response.status}`);
+                        console.log('响应对象:', response);
+                        // 如果响应不成功，构建错误信息
+                        if (!response.ok) {
+                            return response.text().then(errorText => {
+                                throw new Error(`网络响应错误: ${response.status} ${response.statusText} - ${errorText}`);
+                            });
+                        }
+
+                        return response.json(); // 如果响应正常，解析 JSON
+                    })
+                    .then(data => {
+                        console.log('完整的响应数据:', data);  // 打印 result 以确认其结构
+                        if (data.status === "FAILED" && data.msg === "用户已经存在") {
+                            alert('注册失败: 用户已存在');
+                        } else if (data.status === "SUCCESS") {
+                            console.log(data);
+                            alert('注册成功: ' + data.msg);
+                            window.open('Load.html');
+                        } else {
+                            alert('注册失败: 未知错误');
+                        }
+                        // 在这里可以处理成功后的逻辑，例如跳转到登录页面
+                    })
+                    .catch(error => {
+                        alert('注册失败: ' + error.message);
+                    });
             }
-        });
-    </script>
+        }
+    });
+</script>
 </body>
 </html>

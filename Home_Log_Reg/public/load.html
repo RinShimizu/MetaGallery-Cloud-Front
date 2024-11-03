@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>登录 - MetaGallery Cloud</title>
     <link rel="icon" href="云盘.svg" type="image/x-icon">
+    <meta charset="UTF-8">
     <!-- 引入 Vue.js -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <style>
@@ -31,10 +30,10 @@
             box-sizing: border-box; /* 确保 padding 不影响宽度 */
         }
 
-         /* 图片样式 */
-         .image-container {
+        /* 图片样式 */
+        .image-container {
             margin-right: 10px; /* 图片与输入框之间的间距 */
-            margin-top: 70px; 
+            margin-top: 70px;
         }
 
         img {
@@ -95,64 +94,75 @@
     </style>
 </head>
 <body>
-    <div id="app" class="center-box">
-        <div class="image-container">
-            <img src="load.png" alt="示例图片" /> <!-- 替换为你的图片链接 -->
-        </div>
-        <!-- 输入框 -->
-        <input type="text" placeholder="账号" />
-        <input type="password" placeholder="密码" />
-        <button @click="load">登录</button>
-        <p class="forgot-password">忘记密码？</p> <!-- 添加的忘记密码文字 -->
+<div id="app" class="center-box">
+    <div class="image-container">
+        <img src="/load.png" alt="示例图片" /> <!-- 替换为你的图片链接 -->
     </div>
+    <!-- 输入框 -->
+    <form @submit.prevent="load">
+        <input type="text" v-model="account" placeholder="账号" required />
+        <input type="password" v-model="password" placeholder="密码" required />
+        <button type="submit">登录</button>
+    </form>
+    <p class="forgot-password">忘记密码？</p> <!-- 添加的忘记密码文字 -->
+</div>
 
-    <script>
-        // 创建 Vue 实例
-        new Vue({
-            el: '#app',
-            data: {
-                account: '', // 用户名
-                password: '', // 密码
-            },
-            methods: {
-                load: function() {
-                    // 创建请求头
-                    var myHeaders = new Headers();
-                    myHeaders.append("User-Agent", "Apifox/1.0.0 (https://apifox.com)");
+<script>
+    // 创建 Vue 实例
+    new Vue({
+        el: '#app',
+        data: {
+            account: '', // 用户名
+            password: '' // 密码
+        },
+        methods: {
+            load: function() {
+                // 创建 FormData 对象
+                const formData = new FormData();
+                formData.append('account', this.account);
+                formData.append('password', this.password);
 
-                    // 创建表单数据
-                    var formdata = new FormData();
-                    formdata.append("account", this.account);
-                    formdata.append("password", this.password);
+                // 发送 POST 请求到后端登录接口
+                fetch('http://localhost:8080/api/login', {
+                    method: 'POST',
+                    body: formData, // 使用 FormData 发送表单数据
+                })
+                    .then(response => {
+                        console.log(`响应状态: ${response.status}`);
+                        if (!response.ok) {
+                            throw new Error('网络响应错误');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // 处理成功响应，例如保存 token 或跳转页面
+                        console.log('完整的响应数据:', data);
+                        if (data.status === "NOT EXIST" && data.msg === "用户不存在") {
+                            alert('登录失败: 用户不存在');
+                        } else if (data.status === "SUCCESS") {
+                            console.log(data);
+                            alert('登录成功！');
+                            // 将 data 存储到 localStorage 中
+                            localStorage.setItem('userData', JSON.stringify(data));
+                            // 存储 token 到 localStorage
+                            localStorage.setItem('token', data.data.token);
+                            console.log("登录成功，token 存储成功:", data.data.token);
+                            // 跳转到 Person.html
+                            window.location.href = 'Person.html';
+                            //window.open('Person.html');
+                        } else {
+                            alert('登录失败: '+data.msg);
+                        }
+                        //alert('登录成功！');
 
-                    // 请求选项
-                    var requestOptions = {
-                        method: 'POST',
-                        headers: myHeaders,
-                        body: formdata,
-                        redirect: 'follow'
-                    };
-
-                    // 发送请求
-                    fetch("http://127.0.0.1:4523/api/load", requestOptions)
-                        .then(response => {
-                            console.log('HTTP 响应状态:', response.status); 
-                            if (!response.ok) {
-                                throw new Error('网络响应不正常');
-                            }
-                            return response.text();
-                        })
-                        .then(result => {
-                            console.log(result);
-                            alert('登录成功: ' + result);
-                        })
-                        .catch(error => {
-                            console.error('错误:', error);
-                            alert('登录失败: ' + error.message);
-                        });
-                }
+                    })
+                    .catch(error => {
+                        console.error('登录失败:', error);
+                        alert('登录失败，请重试。');
+                    });
             }
-        });
-    </script>
+        }
+    });
+</script>
 </body>
 </html>

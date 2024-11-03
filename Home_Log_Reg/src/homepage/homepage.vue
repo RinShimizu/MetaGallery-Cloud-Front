@@ -209,7 +209,7 @@
   }
   .info{
     position: absolute;
-    top: 55px;
+    top: 50px;
     right: 0;
     display: none;
     z-index: 99;

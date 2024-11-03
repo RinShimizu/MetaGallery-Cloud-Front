@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人主页</title>
     <link rel="icon" href="云盘.svg" type="image/x-icon">
+    <title>个人主页</title>
     <style>
         /* 设置页面背景颜色为白色 */
         body {
@@ -22,7 +21,7 @@
         /* 顶部空白框样式 */
         .top-box {
             width: 100%; /* 与页面一样宽 */
-            height: 40px; /* 高度 */
+            height: 80px; /* 高度 */
             background-color: #ffffff; /* 背景色 */
             display: flex; /* 使内容可居中 */
             align-items: center; /* 内容垂直居中 */
@@ -33,8 +32,8 @@
 
         /* 顶部图标样式 */
         .top-icon {
-            width: 150px; /* 图标宽度 */
-            height: 30px; /* 图标高度 */
+            width: 200px; /* 图标宽度 */
+            height: 50px; /* 图标高度 */
         }
 
         /* 右侧小图标容器样式 */
@@ -46,9 +45,9 @@
 
         /* 小图标样式 */
         .small-icon {
-            width: 30px; /* 小图标宽度 */
-            height: 30px; /* 小图标高度 */
-            margin-left: 10px; /* 小图标间距 */
+            width: 60px; /* 小图标宽度 */
+            height: 60px; /* 小图标高度 */
+            margin-left: 20px; /* 小图标间距 */
         }
 
         /* 空白框样式 */
@@ -109,7 +108,7 @@
             align-items: center; /* 垂直居中 */
             margin-bottom: 10px; /* 标签与输入框之间的间距 */
         }
-        
+
         /* 账号部分样式 */
         .account-label {
             position: absolute; /* 绝对定位 */
@@ -117,6 +116,27 @@
             left: 150px; /* 距离框左侧 */
             font-size: 18px; /* 字体大小 */
             color: #7e7b7b; /* 字体颜色 */
+        }
+
+        /* 修改 accountAvatarImage 的样式 */
+        //#accountAvatarImage {
+        //    position: absolute; /* 绝对定位 */
+        //    top: 200px; /* 调整顶部位置 */
+        //    left: 170px; /* 调整左侧位置 */
+        //    width: 700px; /* 修改为所需宽度 */
+        //    height: 700px; /* 修改为所需高度 */
+        //    border-radius: 50%; /* 圆形头像 */
+        //    //margin-bottom: 10px; /* 与下面元素的间距 */
+        //}
+
+        .avatar-image {
+            position: absolute; /* 绝对定位 */
+            top: 130px; /* 调整顶部位置 */
+            left: 150px; /* 调整左侧位置 */
+            width: 150px; /* 需要的宽度 */
+            height: 150px; /* 需要的高度 */
+            border-radius: 50%; /* 圆形头像 */
+            margin-bottom: 10px; /* 与下面元素的间距 */
         }
 
         .account-value {
@@ -152,50 +172,200 @@
     </style>
 </head>
 <body>
-    <div class="top-box">
-        <img src="img1.png" alt="顶部图标" class="top-icon" />
-        <div class="small-icons">
-            <img src="small-icon1.png" alt="小图标1" class="small-icon" /> <!-- 替换为你的小图标路径 -->
-            <img src="small-icon2.png" alt="小图标2" class="small-icon" /> <!-- 替换为你的小图标路径 -->
-        </div>
-    </div>
-    <div class="box">
-        <img src="img.png" alt="图标" class="icon" /> <!-- 替换为你的图标路径 -->
-        <span class="text">个人中心</span> <!-- 添加的文本 -->
-        
-        <!-- 账号部分 -->
-        <span class="account-label">账号：</span>
-        <div class="account-value">不可修改</div>
+<div class="top-box">
+    <img src="img1.png" alt="顶部图标" class="top-icon" />
+    <div class="small-icons">
+        <img src="small-icon1.png" alt="小图标1" class="small-icon" />
 
-        <!-- 输入框部分 -->
-        <div class="input-container">
-            <div class="label">
-                <span>昵称：</span>
-                <input type="text" class="input" placeholder="如不修改昵称，此框可不写" />
-            </div>
-            <div class="label">
-                <span>个性签名：</span>
-                <input type="text" class="input" placeholder="这个人很懒，什么都没有写~" />
-            </div>
-            <div class="label">
-                <span>原密码：</span>
-                <input type="password" class="input" placeholder="如不修改密码，此框可不写" />
-            </div>
-            <div class="label">
-                <span>修改密码：</span>
-                <input type="password" class="input" placeholder="如不修改密码，此框可不写" />
-            </div>
-            <div class="label">
-                <span>确认密码：</span>
-                <input type="password" class="input" placeholder="如不修改密码，此框可不写" />
-            </div>
-            
-            <!-- 按钮部分 -->
-            <div class="button-container">
-                <button class="button">确认</button>
-                <button class="button">取消</button>
-            </div>
+        <img id="avatarImage" src="small-icon2.png" alt="Avatar" style="width: 60px; height: 60px; border-radius: 50%;">
+    </div>
+</div>
+<div class="box">
+    <img src="img.png" alt="图标" class="icon" />
+    <span class="text">个人中心</span> <!-- 添加的文本 -->
+
+    <!-- 账号部分 -->
+    <img id="accountAvatarImage" src="small-icon2.png" alt="Avatar" class="avatar-image"> <!-- 新增头像 -->
+    <span class="account-label">账号：（不可修改）</span>
+    <div class="account-value" id="accountValue">不可修改</div>
+
+    <!-- 输入框部分 -->
+    <div class="input-container">
+        <div class="label">
+            <span>昵称：</span>
+            <input type="text" class="input" id="nickname" placeholder="如不修改昵称，此框可不写" />
+        </div>
+        <div class="label">
+            <span>个性签名：</span>
+            <input type="text" class="input" id="signature" placeholder="这个人很懒，什么都没有写~" />
+        </div>
+        <div class="label">
+            <span>原密码：</span>
+            <input type="password" class="input" id="oldpwd" placeholder="如不修改密码，此框可不写" />
+        </div>
+        <div class="label">
+            <span>修改密码：</span>
+            <input type="password" class="input" id="newpwd" placeholder="如不修改密码，此框可不写" />
+        </div>
+        <div class="label">
+            <span>确认密码：</span>
+            <input type="password" class="input" id="confirmnewpwd" placeholder="如不修改密码，此框可不写" />
+        </div>
+
+        <!-- 按钮部分 -->
+        <div class="button-container">
+            <button class="button" id="confirmButton">确认</button>
+            <button class="button" id="cancelButton">取消</button>
         </div>
     </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // 从 localStorage 中读取 userData
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        console.log("从 localStorage 读取到的数据:", userData);
+
+        // const token = localStorage.getItem('token');
+        // console.log("获取到的 token:", token);
+        if (userData && userData.data && userData.data.userInfo) {
+            // 获取嵌套的 userInfo
+            const userInfo = userData.data.userInfo;
+
+            // 获取要填充的元素
+            const accountValueElement = document.getElementById('accountValue');
+            const nicknameElement = document.getElementById('nickname');
+            const signatureElement = document.getElementById('signature');
+            const avatarImage = document.getElementById('avatarImage');
+            const accountAvatarImage = document.getElementById('accountAvatarImage'); // 修改为新的 ID
+
+            if (accountValueElement) {
+                accountValueElement.textContent = userInfo.account || '不可修改';
+                console.log("accountValue 填充成功:", userInfo.account);
+            } else {
+                console.error("accountValue 元素未找到");
+            }
+
+            if (nicknameElement) {
+                nicknameElement.value = userInfo.name || '';
+                console.log("nickname 填充成功:", userInfo.name);
+            } else {
+                console.error("nickname 元素未找到");
+            }
+
+            if (signatureElement) {
+                signatureElement.value = userInfo.intro || '';
+                console.log("signature 填充成功:", userInfo.intro);
+            } else {
+                console.error("signature 元素未找到");
+            }
+            if (avatarImage) {
+                // 使用 userInfo.avatar 替换 small-icon2.png
+                avatarImage.src = userInfo.avatar || 'small-icon2.png';
+                console.log("头像已成功更新为:", userInfo.avatar);
+            } else {
+                console.error("找不到头像 img 元素");
+            }
+            if (accountAvatarImage) {
+                // 使用 userInfo.avatar 替换 small-icon2.png
+                accountAvatarImage.src = userInfo.avatar || 'small-icon2.png';
+                console.log("头像已成功更新为:", userInfo.avatar);
+            } else {
+                console.error("找不到头像 img 元素");
+            }
+
+            // 确认按钮点击事件
+            const confirmButton = document.getElementById('confirmButton');
+            confirmButton.addEventListener('click', function () {
+                const oldPassword = document.getElementById('oldpwd').value; // 原密码
+                const newPassword = document.getElementById('newpwd').value; // 修改密码
+                const confirmPassword = document.getElementById('confirmnewpwd').value; // 确认密码
+                if (oldPassword && newPassword && confirmPassword){
+                    const formData1 = new FormData();
+                    formData1.append('account', userInfo.account); // 账号（不可修改）
+                    formData1.append('old_password', document.getElementById('oldpwd').value); // 原密码
+                    formData1.append('new_password', document.getElementById('newpwd').value); // 修改密码
+                    formData1.append('confirm_password', document.getElementById('confirmnewpwd').value);//确认密码
+
+                    fetch('http://127.0.0.1:8080/api/updatePassword', {
+                        method: 'POST', // 根据你的后端接口要求使用相应的 HTTP 方法
+                        headers: {
+                            //'Content-Type': 'application/json', // 发送 JSON 数据
+                            'Authorization':  localStorage.getItem('token'), // 包含 Token
+                        },
+                        body: formData1, // 将更新的数据转为 JSON 字符串
+                    })
+                        .then(response => {
+                            console.log('响应对象:', response);
+                            if (!response.ok) {
+                                throw new Error('网络响应不是 OK');
+                            }
+                            return response.json(); // 解析响应为 JSON
+                        })
+                        .then(data => {
+                            console.log('成功:', data);
+                            alert(data.msg)
+                        })
+                        .catch((error) => {
+                            console.error('发生错误:', error);
+                            // 在这里可以处理错误反馈，比如提示用户更新失败
+                        });
+
+                }
+                const formData = new FormData();
+                formData.append('account', userInfo.account); // 账号（不可修改）
+                formData.append('name', document.getElementById('nickname').value); // 昵称
+                formData.append('intro', document.getElementById('signature').value); // 个性签名
+                const nickname = document.getElementById('nickname').value;
+                const signature = document.getElementById('signature').value;
+                if(nickname!==userInfo.name||signature!==userInfo.intro){
+                    // 使用 fetch 发送 POST 请求到 UpdateUserInfo 接口
+                    fetch('http://127.0.0.1:8080/api/updateProfile', {
+                        method: 'POST', // 根据你的后端接口要求使用相应的 HTTP 方法
+                        headers: {
+                            //'Content-Type': 'application/json', // 发送 JSON 数据
+                            'Authorization':  localStorage.getItem('token'), // 包含 Token
+                        },
+                        body: formData, // 将更新的数据转为 JSON 字符串
+                    })
+                        .then(response => {
+                            console.log('响应对象:', response);
+                            if (!response.ok) {
+                                throw new Error('网络响应不是 OK');
+                            }
+                            return response.json(); // 解析响应为 JSON
+                        })
+                        .then(data => {
+                            console.log('成功:', data);
+                            alert(data.msg)
+                            if(data.status==='SUCCESS'){
+                                //localStorage.setItem('userData', JSON.stringify(data));
+                                userData.data.userInfo.name = nickname; // 更新昵称
+                                userData.data.userInfo.intro = signature; // 更新个性签名
+                                localStorage.setItem('userData', JSON.stringify(userData)); // 保存更新后的数据
+                                console.log("localStorage 更新成功:", userData);
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('发生错误:', error);
+                            // 在这里可以处理错误反馈，比如提示用户更新失败
+                        });
+                }
+                if (!oldPassword && !newPassword && !confirmPassword && nickname===userInfo.name && signature===userInfo.intro){
+                    alert('您未作出任何修改！')
+                }
+            });
+
+            // 取消按钮点击事件
+            const cancelButton = document.getElementById('cancelButton');
+            cancelButton.addEventListener('click', function (){
+                location.reload(); // 重新加载页面
+            });
+        } else {
+            console.error("用户数据未找到或数据格式不正确");
+        }
+    });
+
+</script>
 </body>
 </html>
