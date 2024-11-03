@@ -148,8 +148,8 @@
                             localStorage.setItem('token', data.data.token);
                             console.log("登录成功，token 存储成功:", data.data.token);
                             // 跳转到 Person.html
-                            window.location.href = 'Person.html';
-                            //window.open('Person.html');
+                            //window.location.href = 'homepage.html';
+                            window.open('../homepage.html');
                         } else {
                             alert('登录失败: '+data.msg);
                         }

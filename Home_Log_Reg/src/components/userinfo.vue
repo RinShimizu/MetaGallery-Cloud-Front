@@ -3,7 +3,7 @@
   const name = ref("111");
   const user = ref("111");
   function toPerson(){
-    window.open('../public/person.html','_self');
+    window.open('../public/person.html','_blank');
   }
 </script>
 
