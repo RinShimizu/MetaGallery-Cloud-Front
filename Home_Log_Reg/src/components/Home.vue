@@ -35,9 +35,6 @@
     width: 100%;
     margin-top: 85px;
     left: 0;
-    //background: linear-gradient(0deg,#4095E533,white,#4095E533);
-    //animation: backcolor 10s ease infinite alternate;
-    //background-size: 200% 200%;
     z-index: -1;
   }
   h1{
@@ -66,7 +63,6 @@
     aspect-ratio: 1 / 1;
     width: 20%;
     padding: 0 10px;
-    //background: radial-gradient(circle at 50% 50%, #4095E54c,#4095E519);
     border-radius: 50px; /* 使 div 呈圆形 */
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
     animation: position 8s linear infinite;

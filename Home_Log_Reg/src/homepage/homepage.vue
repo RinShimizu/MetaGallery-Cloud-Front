@@ -1,6 +1,19 @@
 <script setup>
+  import { ref } from 'vue';
   import Userinfo from "@/components/userinfo.vue";
   import Lhome from "@/components/Lhome.vue";
+  import Lfile from "@/components/Lfile.vue";
+  import Lstar from "@/components/Lstar.vue";
+  import Lgallery from "@/components/Lgallery.vue";
+  import Lshare from "@/components/Lshare.vue";
+  import Lrubbish from "@/components/Lrubbish.vue";
+
+  const selectedIndex = ref(0); // 默认选中第一个按钮
+
+  const selectButton = (index) => {
+    selectedIndex.value = index;
+  };
+
 </script>
 
 <template>
@@ -27,23 +40,42 @@
   </div>
   <div class="sidebar">
     <div class="menu">
-      <button><img src="../assets/首页.svg" alt="">首页</button>
-      <button><img src="../assets/图片.svg" alt="">画廊</button>
-      <button><img src="../assets/文件.svg" alt="">我的文件</button>
-      <button><img src="../assets/分享.svg" alt="">我的共享</button>
-      <button><img src="../assets/回收站.svg" alt="">回收站</button>
+      <button :class="{ active: selectedIndex === 0 }" @click="selectButton(0)"><img src="../assets/文件.svg" alt="">我的文件</button>
+      <button :class="{ active: selectedIndex === 1 }" @click="selectButton(1)"><img src="../assets/分享.svg" alt="">我的共享</button>
+      <button :class="{ active: selectedIndex === 2 }" @click="selectButton(2)"><img src="../assets/收藏.svg" alt="">我的收藏</button>
+      <button :class="{ active: selectedIndex === 3 }" @click="selectButton(3)"><img src="../assets/图片.svg" alt="">画廊</button>
+      <button :class="{ active: selectedIndex === 4 }" @click="selectButton(4)"><img src="../assets/回收站.svg" alt="">回收站</button>
     </div>
     <div class="bottom-image">
       <img src="../assets/图片6.png" alt="底部图片" />
     </div>
   </div>
   <div class="content">
-    <Lhome />
-
+    <div id="block_home">
+      <Lhome />
+    </div>
+    <div id="block_file" :class="{ show: selectedIndex === 0 }">
+      <Lfile />
+    </div>
+    <div id="block_share" :class="{ show: selectedIndex === 1 }">
+      <Lshare />
+    </div>
+    <div id="block_star" :class="{ show: selectedIndex === 2 }">
+      <Lstar />
+    </div>
+    <div id="block_gallery" :class="{ show: selectedIndex === 3 }">
+      <Lgallery />
+    </div>
+    <div id="block_rubbish" :class="{ show: selectedIndex === 4 }">
+      <Lrubbish />
+    </div>
   </div>
 </template>
 
 <style scoped>
+  #block_home{
+    display: none;
+  }
   /*头部*/
   .header{
     height: 60px;
@@ -194,7 +226,7 @@
     position: absolute;
     left: 0;
     top: 60px;
-    width: 13%; /* 侧边栏宽度 */
+    width: 15%; /* 侧边栏宽度 */
     height: calc(100vh - 60px); /* 全屏高度 */
     background-color: white; /* 背景颜色 */
     display: flex;
@@ -222,9 +254,13 @@
     justify-content: left;
     align-items: center;
     gap: 15px;
-    background-color: #93d2f377;
+    background-color: white;
     font-size: 15px;
     font-family: 幼圆;
+    transition-duration: 0.2s;
+  }
+  .menu button.active{
+    background-color: #93d2f377;
   }
   .menu button img {
     margin-left: 15px;
@@ -244,12 +280,21 @@
   }
 
   .content {
-    position: absolute;
-    top: 80px; /* 距离头部高度 */
+    position: relative;
+    top: 60px; /* 距离头部高度 */
     left: 15%; /* 距离侧边栏宽度 */
-    padding: 20px;
-    background-color: #f5f5f5;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 60px);
     width: 90%;
+  }
+  #block_file, #block_share, #block_star, #block_gallery, #block_rubbish{
+    display: none;
+    position: absolute;
+    height: calc(100vh - 60px);
+    width: 90%;
+    left: 0;
+    top: 0;
+  }
+  #block_file.show, #block_share.show, #block_star.show, #block_gallery.show, #block_rubbish.show{
+    display: block;
   }
 </style>
