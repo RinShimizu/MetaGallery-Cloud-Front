@@ -4,126 +4,151 @@
     <title>注册 - MetaGallery Cloud</title>
     <link rel="icon" href="云盘.svg" type="image/x-icon">
     <meta charset="UTF-8">
-    <!-- 引入 Vue.js -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <style>
-        /* 设置页面背景颜色为浅蓝色 */
         body {
-            background-color: #f3fbfe; /* 浅蓝色 */
+            background-color: #f3fbfe;
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            height: 100vh; /* 让 body 占满整个视窗高度 */
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        /* 设置中央的空白框 */
         .center-box {
             background-color: white;
             width: 800px;
             height: 500px;
             padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            position: relative; /* 设置相对定位 */
-            box-sizing: border-box; /* 确保 padding 不影响宽度 */
+            position: relative;
+            box-sizing: border-box;
         }
 
-        /* 图片样式 */
         .image-container {
-            margin-right: 10px; /* 图片与输入框之间的间距 */
+            margin-right: 10px;
             margin-top: 70px;
         }
 
         img {
-            width: 300px; /* 图片宽度 */
-            height: 300px; /* 图片高度 */
+            width: 300px;
+            height: 300px;
         }
 
-        /* 输入框样式 */
-        input[type="text"],
-        input[type="password"] {
-            width: 250px; /* 输入框宽度 */
-            height: 40px; /* 输入框高度 */
-            padding: 10px; /* 输入框内边距 */
-            margin: 20px 0; /* 输入框上下间距 */
-            border: 2px solid #ccc; /* 边框样式 */
-            border-radius: 5px; /* 圆角边框 */
-            box-sizing: border-box; /* 确保 padding 不影响宽度 */
-            position: absolute; /* 绝对定位 */
-            right: 130px; /* 从右边距离 */
+        .input-field {
+            width: 250px;
+            height: 40px;
+            padding: 10px;
+            margin: 20px 0;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            position: absolute;
+            right: 130px;
         }
 
-        input[type="text"] {
-            top: 80px; /* 距离顶部50像素 */
+        .input-account {
+            top: 80px;
         }
 
-        input[type="password"] {
-            top: 150px; /* 距离顶部100像素 */
+        .input-password {
+            top: 150px;
         }
 
-        input[type="password"]:last-of-type {
-            top: 220px; /* 距离顶部150像素 */
+        .input-confirm-password {
+            top: 220px;
+        }
+
+        .clear-btn, .toggle-password-btn, .toggle-confirm-password-btn {
+            position: absolute;
+            cursor: pointer;
+            font-size: 20px; /* 调整图标大小 */
+        }
+
+        .clear-btn {
+            right: 150px; /* 调整位置以适应输入框 */
+            top: 110px; /* 账号输入框位置 */
+        }
+
+        .toggle-password-btn {
+            right: 145px; /* 密码输入框位置，稍微向左 */
+            top: 175px; /* 密码输入框上下对齐 */
+        }
+
+        .toggle-confirm-password-btn {
+            right: 145px; /* 确认密码输入框位置，稍微向左 */
+            top: 245px; /* 确认密码输入框上下对齐 */
         }
 
         button {
-            padding: 10px 110px; /* 按钮的内边距 */
-            font-size: 16px; /* 按钮的字体大小 */
-            background-color: #5fbdd7; /* 按钮的填充颜色 */
-            color: white; /* 字体颜色 */
-            border: 2px solid #f8f8f8; /* 边框样式 */
-            border-radius: 5px; /* 圆角边框 */
-            cursor: pointer; /* 鼠标悬停时显示为指针 */
-            transition: background-color 0.3s; /* 添加过渡效果 */
-            position: absolute; /* 设置绝对定位 */
-            right: 130px; /* 从右边距离 */
-            bottom: 130px; /* 从底部距离 */
+            padding: 10px 110px;
+            font-size: 16px;
+            background-color: #5fbdd7;
+            color: white;
+            border: 2px solid #f8f8f8;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: absolute;
+            right: 130px;
+            bottom: 130px;
         }
 
         button:hover {
-            background-color: #459eb4; /* 鼠标悬停时的填充颜色 */
+            background-color: #459eb4;
         }
     </style>
 </head>
 <body>
 <div id="app" class="center-box">
     <div class="image-container">
-        <img src="/register.png" alt="示例图片" /> <!-- 替换为你的图片链接 -->
+        <img src="/register.png" alt="示例图片" />
     </div>
-    <!-- 输入框 -->
     <form @submit.prevent="register">
-        <input type="text" v-model="account" placeholder="账号" required autocomplete="username" />
-        <input type="password" v-model="password" placeholder="密码" required autocomplete="new-password" />
-        <input type="password" v-model="confirmPassword" placeholder="确认密码" required autocomplete="new-password" />
+        <div>
+            <input type="text" v-model="account" placeholder="账号" class="input-field input-account" required />
+            <span class="clear-btn" v-if="account" @click="account = ''">×</span>
+        </div>
+        <div>
+            <input :type="passwordVisible ? 'text' : 'password'" v-model="password" placeholder="密码" class="input-field input-password" required />
+            <span class="toggle-password-btn" @click="togglePasswordVisibility">
+                {{ passwordVisible ? '👁️' : '🙈' }}
+            </span>
+        </div>
+        <div>
+            <input :type="confirmPasswordVisible ? 'text' : 'password'" v-model="confirmPassword" placeholder="确认密码" class="input-field input-confirm-password" required />
+            <span class="toggle-confirm-password-btn" @click="toggleConfirmPasswordVisibility">
+                {{ confirmPasswordVisible ? '👁️' : '🙈' }} <!-- 使用独立的可见性状态 -->
+            </span>
+        </div>
         <button type="submit">注册</button>
     </form>
 </div>
 
 <script>
-    // 创建 Vue 实例
     new Vue({
         el: '#app',
         data: {
-            account: '', // 用户名
-            password: '', // 密码
-            confirmPassword: '' // 确认密码
+            account: '',
+            password: '',
+            confirmPassword: '',
+            passwordVisible: false,
+            confirmPasswordVisible: false, // 新增确认密码的可见性状态
         },
         methods: {
             register: function() {
-                // 检查密码是否匹配
                 if (this.password !== this.confirmPassword) {
                     alert('两次输入的密码不一致！');
                     return;
                 }
 
-                // 构建请求体
                 const payload = new URLSearchParams();
                 payload.append('account', this.account);
                 payload.append('password', this.password);
                 payload.append('confirm_password', this.confirmPassword);
 
-                // 发送 POST 请求到注册接口
                 fetch('http://localhost:8080/api/register', {
                     method: 'POST',
                     headers: {
@@ -132,32 +157,30 @@
                     body: payload.toString()
                 })
                     .then(response => {
-                        // 打印状态码
-                        console.log(`响应状态: ${response.status}`);
-                        console.log('响应对象:', response);
-                        // 如果响应不成功，构建错误信息
                         if (!response.ok) {
                             return response.text().then(errorText => {
                                 throw new Error(`网络响应错误: ${response.status} ${response.statusText} - ${errorText}`);
                             });
                         }
-
-                        return response.json(); // 如果响应正常，解析 JSON
+                        return response.json();
                     })
                     .then(data => {
-                        console.log('完整的响应数据:', data);  // 打印 result 以确认其结构
                         if (data.status === "FAILED") {
-                            alert('注册失败: '+ data.msg);
-                        } else{
-                            console.log(data);
+                            alert('注册失败: ' + data.msg);
+                        } else {
                             alert('注册成功: ' + data.msg);
-                            window.open('Load.html','_self');
+                            window.location.href = '../load.html';
                         }
-                        // 在这里可以处理成功后的逻辑，例如跳转到登录页面
                     })
                     .catch(error => {
                         alert('注册失败: ' + error.message);
                     });
+            },
+            togglePasswordVisibility() {
+                this.passwordVisible = !this.passwordVisible;
+            },
+            toggleConfirmPasswordVisibility() { // 新增确认密码的切换函数
+                this.confirmPasswordVisible = !this.confirmPasswordVisible;
             }
         }
     });

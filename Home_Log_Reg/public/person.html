@@ -18,6 +18,30 @@
             position: relative; /* 使子元素可以绝对定位 */
         }
 
+        /* 悬浮框样式 */
+        .floating-box {
+            display: none; /* 初始不显示 */
+            position: absolute; /* 绝对定位 */
+            top: 100px; /* 悬浮框顶部距离 */
+            right: 30px; /* 悬浮框右侧距离 */
+            width: 150px; /* 悬浮框宽度 */
+            padding: 10px; /* 内边距 */
+            background-color: white; /* 背景颜色 */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+            border-radius: 10px; /* 圆角 */
+            z-index: 1000; /* 确保在最上层 */
+        }
+
+        .floating-box button {
+            width: 100%; /* 按钮宽度 */
+            padding: 10px; /* 按钮内边距 */
+            border: none; /* 无边框 */
+            border-radius: 5px; /* 圆角 */
+            background-color: #007bff; /* 按钮背景颜色 */
+            color: white; /* 按钮文字颜色 */
+            cursor: pointer; /* 鼠标样式 */
+        }
+
         /* 顶部空白框样式 */
         .top-box {
             width: 100%; /* 与页面一样宽 */
@@ -40,14 +64,14 @@
         .small-icons {
             display: flex; /* 使小图标水平排列 */
             align-items: center; /* 垂直居中 */
-            margin-right: 20px; /* 距离右边界10px */
+            margin-right: 50px; /* 距离右边界10px */
         }
 
         /* 小图标样式 */
         .small-icon {
-            width: 60px; /* 小图标宽度 */
-            height: 60px; /* 小图标高度 */
-            margin-left: 20px; /* 小图标间距 */
+            width: 50px; /* 小图标宽度 */
+            height: 50px; /* 小图标高度 */
+            margin-left: 100px; /* 小图标间距 */
         }
 
         /* 空白框样式 */
@@ -169,15 +193,25 @@
             display: flex; /* 使按钮水平排列 */
             margin-top: 20px; /* 按钮与输入框的间距 */
         }
+
+        /* 眼睛图标样式 */
+        .toggle-password-btn {
+            position: absolute;
+            right: 10px; /* 调整到输入框的右边 */
+            top: 5px; /* 调整图标的垂直位置 */
+            cursor: pointer;
+            font-size: 16px; /* 图标大小 */
+            color: #aaa; /* 图标颜色 */
+        }
     </style>
 </head>
 <body>
 <div class="top-box">
     <img src="img1.png" alt="顶部图标" class="top-icon" />
     <div class="small-icons">
-        <img src="small-icon1.png" alt="小图标1" class="small-icon" />
+        <img src="small-icon1.svg" alt="小图标1" class="small-icon" />
 
-        <img id="avatarImage" src="small-icon2.png" alt="Avatar" style="width: 60px; height: 60px; border-radius: 50%;">
+        <img id="avatarImage" src="small-icon2.png" alt="Avatar" style="width: 60px; height: 60px; border-radius: 50%; cursor: pointer;">
     </div>
 </div>
 <div class="box">
@@ -201,15 +235,24 @@
         </div>
         <div class="label">
             <span>原密码：</span>
-            <input type="password" class="input" id="oldpwd" placeholder="如不修改密码，此框可不写" />
+            <div style="position: relative;">
+                <input type="password" class="input" id="oldpwd" placeholder="如不修改密码，此框可不写" />
+                <span class="toggle-password-btn" onclick="togglePasswordVisibility('oldpwd', this)">👁️</span>
+            </div>
         </div>
         <div class="label">
             <span>修改密码：</span>
-            <input type="password" class="input" id="newpwd" placeholder="如不修改密码，此框可不写" />
+            <div style="position: relative;">
+                <input type="password" class="input" id="newpwd" placeholder="如不修改密码，此框可不写" />
+                <span class="toggle-password-btn" onclick="togglePasswordVisibility('newpwd', this)">👁️</span>
+            </div>
         </div>
         <div class="label">
             <span>确认密码：</span>
-            <input type="password" class="input" id="confirmnewpwd" placeholder="如不修改密码，此框可不写" />
+            <div style="position: relative;">
+                <input type="password" class="input" id="confirmnewpwd" placeholder="如不修改密码，此框可不写" />
+                <span class="toggle-password-btn" onclick="togglePasswordVisibility('confirmnewpwd', this)">👁️</span>
+            </div>
         </div>
 
         <!-- 按钮部分 -->
@@ -220,8 +263,66 @@
     </div>
 </div>
 
+<!-- 悬浮框 -->
+<div class="floating-box" id="floatingBox">
+    <button id="logoutButton">退出</button>
+</div>
+
 <script>
+
+    function togglePasswordVisibility(inputId, iconElement) {
+        const inputField = document.getElementById(inputId);
+        if (inputField.type === "password") {
+            inputField.type = "text"; // 将密码输入框改为可见
+            iconElement.textContent = "👁️"; // 修改为可见图标
+        } else {
+            inputField.type = "password"; // 将密码输入框改为不可见
+            iconElement.textContent = "🙈"; // 修改为隐私图标
+        }
+    }
     document.addEventListener("DOMContentLoaded", function () {
+
+        // 设置密码输入框图标为 🙈
+        const passwordInputs = ['oldpwd', 'newpwd', 'confirmnewpwd'];
+        passwordInputs.forEach(inputId => {
+            const inputField = document.getElementById(inputId);
+            const iconElement = document.querySelector(`.toggle-password-btn[onclick*="${inputId}"]`);
+            if (inputField) {
+                inputField.type = "password"; // 确保输入框是不可见的
+                if (iconElement) {
+                    iconElement.textContent = "🙈"; // 设置图标为 🙈
+                }
+            }
+        });
+
+        // 显示悬浮框
+        const avatarImage = document.getElementById('avatarImage');
+        const floatingBox = document.getElementById('floatingBox'); // 确保有一个悬浮框的元素
+
+        avatarImage.addEventListener('click', function () {
+            // 切换悬浮框显示
+            if (floatingBox.style.display === 'none' || floatingBox.style.display === '') {
+                floatingBox.style.display = 'block'; // 显示悬浮框
+            } else {
+                floatingBox.style.display = 'none'; // 隐藏悬浮框
+            }
+        });
+
+        // 退出按钮事件
+        const logoutButton = document.getElementById('logoutButton');
+        logoutButton.addEventListener('click', function () {
+            // 这里可以执行退出逻辑，比如清除 token 等
+            localStorage.removeItem('token'); // 示例：清除 token
+            window.location.href = '../homepage.html'; // 跳转到上一个页面（替换为实际页面）
+        });
+
+        // 点击其他地方隐藏悬浮框
+        document.addEventListener('click', function (event) {
+            if (!avatarImage.contains(event.target) && !floatingBox.contains(event.target)) {
+                floatingBox.style.display = 'none'; // 隐藏悬浮框
+            }
+        });
+
         // 从 localStorage 中读取 userData
         const userData = JSON.parse(localStorage.getItem('userData'));
         console.log("从 localStorage 读取到的数据:", userData);

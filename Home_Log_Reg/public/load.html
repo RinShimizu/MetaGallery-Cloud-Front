@@ -4,162 +4,171 @@
     <title>登录 - MetaGallery Cloud</title>
     <link rel="icon" href="云盘.svg" type="image/x-icon">
     <meta charset="UTF-8">
-    <!-- 引入 Vue.js -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <style>
-        /* 设置页面背景颜色为浅蓝色 */
         body {
-            background-color: #f3fbfe; /* 浅蓝色 */
+            background-color: #f3fbfe;
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            height: 100vh; /* 让 body 占满整个视窗高度 */
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        /* 设置中央的空白框 */
         .center-box {
             background-color: white;
             width: 800px;
             height: 500px;
             padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            position: relative; /* 设置相对定位 */
-            box-sizing: border-box; /* 确保 padding 不影响宽度 */
+            position: relative;
+            box-sizing: border-box;
         }
 
-        /* 图片样式 */
         .image-container {
-            margin-right: 10px; /* 图片与输入框之间的间距 */
+            margin-right: 10px;
             margin-top: 70px;
         }
 
         img {
-            width: 300px; /* 图片宽度 */
-            height: 300px; /* 图片高度 */
+            width: 300px;
+            height: 300px;
         }
 
         /* 输入框样式 */
-        input[type="text"],
-        input[type="password"] {
-            width: 250px; /* 输入框宽度 */
-            height: 40px; /* 输入框高度 */
-            padding: 10px; /* 输入框内边距 */
-            margin: 25px 0; /* 输入框上下间距 */
-            border: 2px solid #ccc; /* 边框样式 */
-            border-radius: 5px; /* 圆角边框 */
-            box-sizing: border-box; /* 确保 padding 不影响宽度 */
-            position: absolute; /* 绝对定位 */
-            right: 130px; /* 从右边距离 */
+        .input-field {
+            width: 250px;
+            height: 40px;
+            padding: 10px;
+            margin: 25px 0;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            padding-right: 30px; /* 预留右侧空间用于图标 */
+            box-sizing: border-box;
+            position: absolute;
+            right: 130px;
         }
 
-        input[type="text"] {
-            top: 100px; /* 距离顶部50像素 */
+        /* 账号输入框位置 */
+        .input-account {
+            top: 100px;
         }
 
-        input[type="password"] {
-            top: 170px; /* 距离顶部100像素 */
+        /* 密码输入框位置 */
+        .input-password {
+            top: 170px;
+        }
+
+        /* 清除和显示密码按钮样式 */
+        .clear-btn, .toggle-password-btn {
+            position: absolute;
+            right: 145px; /* 调整到输入框的右边 */
+            font-size: 16px;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .clear-btn {
+            top: 137px;
+        }
+
+        .toggle-password-btn {
+            top: 202px;
         }
 
         button {
-            padding: 10px 110px; /* 按钮的内边距 */
-            font-size: 16px; /* 按钮的字体大小 */
-            background-color: #5fbdd7; /* 按钮的填充颜色 */
-            color: white; /* 字体颜色 */
-            border: 2px solid #f8f8f8; /* 边框样式 */
-            border-radius: 5px; /* 圆角边框 */
-            cursor: pointer; /* 鼠标悬停时显示为指针 */
-            transition: background-color 0.3s; /* 添加过渡效果 */
-            position: absolute; /* 设置绝对定位 */
-            right: 130px; /* 从右边距离 */
-            bottom: 150px; /* 从底部距离 */
+            padding: 10px 110px;
+            font-size: 16px;
+            background-color: #5fbdd7;
+            color: white;
+            border: 2px solid #f8f8f8;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: absolute;
+            right: 130px;
+            bottom: 150px;
         }
 
         button:hover {
-            background-color: #459eb4; /* 鼠标悬停时的填充颜色 */
+            background-color: #459eb4;
         }
 
-        /* 忘记密码的文字样式 */
         .forgot-password {
-            position: absolute; /* 设置绝对定位 */
-            right: 130px; /* 从右边距离 */
-            bottom: 90px; /* 距离按钮下方的距离 */
-            color: rgb(90, 128, 223); /* 字体颜色 */
-            cursor: pointer; /* 鼠标悬停时显示为指针 */
-            text-align: center; /* 文本居中对齐 */
-            transform: translateX(-100%); /* 向左移动50%以实现中心对齐 */
+            position: absolute;
+            right: 130px;
+            bottom: 90px;
+            color: rgb(90, 128, 223);
+            cursor: pointer;
+            text-align: center;
+            transform: translateX(-100%);
         }
     </style>
 </head>
 <body>
 <div id="app" class="center-box">
     <div class="image-container">
-        <img src="/load.png" alt="示例图片" /> <!-- 替换为你的图片链接 -->
+        <img src="/load.png" alt="示例图片" />
     </div>
-    <!-- 输入框 -->
     <form @submit.prevent="load">
-        <input type="text" v-model="account" placeholder="账号" required />
-        <input type="password" v-model="password" placeholder="密码" required />
+        <input type="text" v-model="account" placeholder="账号" class="input-field input-account" required />
+        <span class="clear-btn" v-if="account" @click="account = ''">×</span>
+
+        <input :type="passwordVisible ? 'text' : 'password'" v-model="password" placeholder="密码" class="input-field input-password" required />
+        <span class="toggle-password-btn" @click="togglePasswordVisibility">
+            {{ passwordVisible ? '👁️':'🙈'}}
+        </span>
+
         <button type="submit">登录</button>
     </form>
-    <p class="forgot-password">忘记密码？</p> <!-- 添加的忘记密码文字 -->
+    <p class="forgot-password">忘记密码？</p>
 </div>
 
 <script>
-    // 创建 Vue 实例
     new Vue({
         el: '#app',
         data: {
-            account: '', // 用户名
-            password: '' // 密码
+            account: '',
+            password: '',
+            passwordVisible: false
         },
         methods: {
             load: function() {
-                // 创建 FormData 对象
                 const formData = new FormData();
                 formData.append('account', this.account);
                 formData.append('password', this.password);
 
-                // 发送 POST 请求到后端登录接口
                 fetch('http://localhost:8080/api/login', {
                     method: 'POST',
-                    body: formData, // 使用 FormData 发送表单数据
+                    body: formData,
                 })
                     .then(response => {
-                        console.log(`响应状态: ${response.status}`);
                         if (!response.ok) {
                             throw new Error('网络响应错误');
                         }
                         return response.json();
                     })
                     .then(data => {
-                        // 处理成功响应，例如保存 token 或跳转页面
-                        console.log('完整的响应数据:', data);
                         if (data.status === "NOT EXIST" && data.msg === "用户不存在") {
                             alert('登录失败: 用户不存在');
                         } else if (data.status === "SUCCESS") {
-                            console.log(data);
                             alert('登录成功！');
-                            // 将 data 存储到 localStorage 中
                             localStorage.setItem('userData', JSON.stringify(data));
-                            // 存储 token 到 localStorage
                             localStorage.setItem('token', data.data.token);
-                            console.log("登录成功，token 存储成功:", data.data.token);
-                            // 跳转到 Person.html
-                            //window.location.href = 'homepage.html';
-                            window.open('../homepage.html','_self');
+                            window.location.href = '../homepage.html';
                         } else {
                             alert('登录失败: '+data.msg);
                         }
-                        //alert('登录成功！');
-
                     })
                     .catch(error => {
                         console.error('登录失败:', error);
                         alert('登录失败，请重试。');
                     });
+            },
+            togglePasswordVisibility() {
+                this.passwordVisible = !this.passwordVisible;
             }
         }
     });
