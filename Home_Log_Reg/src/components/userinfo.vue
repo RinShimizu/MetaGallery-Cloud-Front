@@ -1,17 +1,20 @@
 <script setup>
   import { ref } from 'vue'
-  const name = ref("111");
-  const user = ref("111");
   function toPerson(){
-    window.open('../public/person.html','_blank');
+    window.open('../public/person.html','_self');
   }
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  var userInfo = userData.data.userInfo;
+  var name = userInfo.name;
+  var account = userInfo.account;
+  var imgURL = userInfo.avatar;
 </script>
 
 <template>
   <div class="userinfo">
-    <img src="../assets/字体.svg" alt="我是头像">
+    <img :src=imgURL alt="我是头像">
     <p>昵称：{{name}}</p>
-    <p>账号：{{user}}</p>
+    <p>账号：{{account}}</p>
     <div id="buttons">
       <button @click="toPerson">查看个人资料</button>
       <button>退出</button>
@@ -34,9 +37,9 @@
     border-radius: 40px;
   }
   .userinfo img{
-    margin: 15px auto ;
-    width: 30px;
-    height: 30px;
+    margin: 10px auto ;
+    width: 50px;
+    height: 50px;
   }
   p{
     font-size: 18px;

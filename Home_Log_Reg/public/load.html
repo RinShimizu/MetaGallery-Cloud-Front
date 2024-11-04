@@ -149,7 +149,7 @@
                             console.log("登录成功，token 存储成功:", data.data.token);
                             // 跳转到 Person.html
                             //window.location.href = 'homepage.html';
-                            window.open('../homepage.html');
+                            window.open('../homepage.html','_self');
                         } else {
                             alert('登录失败: '+data.msg);
                         }

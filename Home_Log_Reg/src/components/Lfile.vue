@@ -7,6 +7,24 @@
     { name: '文件1.txt', icon: fileURL, selected: false },
     { name: '文件2.doc', icon: fileURL, selected: false },
     { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false }
 
   ]);
   const isAnyFileSelected = computed(() => {
@@ -75,6 +93,7 @@
     width: 100%; /* 列表宽度 */
     height: 90%;
     overflow-y: auto;
+    z-index: -1;
   }
   .file-item {
     min-height: 40px;
@@ -103,6 +122,7 @@
     display: inline-flex;
     width: 100%;
     z-index: 2;
+    border-radius: 20px;
     background-color: white;
   }
   .file-operations button{

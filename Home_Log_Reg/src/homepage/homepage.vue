@@ -14,6 +14,9 @@
     selectedIndex.value = index;
   };
 
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  var userInfo = userData.data.userInfo;
+  var imgURL = userInfo.avatar;
 </script>
 
 <template>
@@ -31,7 +34,7 @@
     </button>
     <div class="user">
       <img id="pic" src="../assets/个人中心-我的.svg" alt=" ">
-      <button><img src="../assets/字体.svg" alt=""></button>
+      <button><img :src=imgURL alt=""></button>
       <div class="info">
         <Userinfo />
       </div>
@@ -200,8 +203,8 @@
     margin: auto auto auto 10px;
     background-color: transparent;
     border: none;
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
   }
   .user button img{
     width: 100%;

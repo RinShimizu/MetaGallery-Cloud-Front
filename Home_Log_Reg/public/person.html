@@ -315,7 +315,7 @@
                 const formData = new FormData();
                 formData.append('account', userInfo.account); // 账号（不可修改）
                 formData.append('name', document.getElementById('nickname').value); // 昵称
-                formData.append('intro', document.getElementById('signature').value); // 个性签名
+                formData.append('info', document.getElementById('signature').value); // 个性签名
                 const nickname = document.getElementById('nickname').value;
                 const signature = document.getElementById('signature').value;
                 if(nickname!==userInfo.name||signature!==userInfo.intro){

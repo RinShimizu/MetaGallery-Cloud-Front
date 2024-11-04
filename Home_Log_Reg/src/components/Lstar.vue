@@ -73,6 +73,7 @@ const isAnyFileSelected = computed(() => {
     width: 100%; /* 列表宽度 */
     height: 90%;
     overflow-y: auto;
+    z-index: -1;
   }
   .file-item {
     min-height: 40px;
@@ -102,6 +103,7 @@ const isAnyFileSelected = computed(() => {
     width: 100%;
     z-index: 2;
     background-color: white;
+    border-radius: 20px;
   }
   .file-operations button{
     display: inline-flex;

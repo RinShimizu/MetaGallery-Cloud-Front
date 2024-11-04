@@ -146,14 +146,12 @@
                     })
                     .then(data => {
                         console.log('完整的响应数据:', data);  // 打印 result 以确认其结构
-                        if (data.status === "FAILED" && data.msg === "用户已经存在") {
-                            alert('注册失败: 用户已存在');
-                        } else if (data.status === "SUCCESS") {
+                        if (data.status === "FAILED") {
+                            alert('注册失败: '+ data.msg);
+                        } else{
                             console.log(data);
                             alert('注册成功: ' + data.msg);
-                            window.open('Load.html');
-                        } else {
-                            alert('注册失败: 未知错误');
+                            window.open('Load.html','_self');
                         }
                         // 在这里可以处理成功后的逻辑，例如跳转到登录页面
                     })
