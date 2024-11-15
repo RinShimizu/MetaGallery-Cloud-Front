@@ -1,7 +1,7 @@
 <script setup>
   import { ref } from 'vue'
   function toPerson(){
-    window.open('../public/person.html','_self');
+    window.open('person.html','_self');
   }
   const userData = JSON.parse(localStorage.getItem('userData'));
   var userInfo = userData.data.userInfo;

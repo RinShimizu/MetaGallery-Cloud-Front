@@ -17,6 +17,10 @@
   const userData = JSON.parse(localStorage.getItem('userData'));
   var userInfo = userData.data.userInfo;
   var imgURL = userInfo.avatar;
+
+  function clear() {
+    document.querySelector('.input').value = '';
+  }
 </script>
 
 <template>
@@ -27,7 +31,7 @@
     <div class="searchbox">
       <button class="button1"><img src="../assets/搜索.svg" alt=""></button>
       <input type="text" class="input" placeholder="搜索">
-      <button class="button2"><img src="../assets/语音.svg" alt=""></button>
+      <button class="button2" @click="clear"><img src="../assets/取消.svg" alt=""></button>
     </div>
     <button id="post">
       <img src="../assets/上传.svg" alt="" width="25" height="25"> 上传文件
@@ -158,6 +162,9 @@
     width: 350px;
     outline: none;
     background-color: transparent;
+  }
+  input:focus::placeholder{
+    opacity: 0;
   }
 
   #post{

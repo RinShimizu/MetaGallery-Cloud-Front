@@ -10,10 +10,10 @@
   });
 
   function Reg(){
-    window.open('../public/register.html');//在当前页面直接打开，加_self
+    window.open('register.html');//在当前页面直接打开，加_self
   }
   function Log(){
-    window.open('../public/load.html');
+    window.open('load.html');
   }
   function toHome(){
     window.scrollTo({top:0,behavior:'smooth'})
@@ -49,7 +49,6 @@
     top: 0;
     left: 0;
     background-color: white;
-    //border-bottom:2px #4095E5 solid;
     display: inline-flex;
     box-shadow:0 5px 5px  rgba(0,0,0,0.18);
     font-size: 30px;

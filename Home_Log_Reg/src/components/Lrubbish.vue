@@ -1,17 +1,49 @@
 <script setup>
-import { ref,computed } from 'vue';
-import fileURL from '../assets/文件.svg';
-import folderURL from '../assets/文件夹.svg';
+  import { ref,computed } from 'vue';
+  import fileURL from '../assets/文件.svg';
+  import folderURL from '../assets/文件夹.svg';
 
-const files = ref([
-  { name: '文件1.txt', icon: fileURL, selected: false },
-  { name: '文件2.doc', icon: fileURL, selected: false },
-  { name: '文件3.pdf', icon: folderURL, selected: false },
+  const files = ref([
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false },
+    { name: '文件1.txt', icon: fileURL, selected: false },
+    { name: '文件2.doc', icon: fileURL, selected: false },
+    { name: '文件3.pdf', icon: folderURL, selected: false }
 
-]);
-const isAnyFileSelected = computed(() => {
-  return files.value.some(file => file.selected);
-});
+  ]);
+  const isAnyFileSelected = computed(() => {
+    return files.value.some(file => file.selected);
+  });
+
+  function showMessage() {
+    var message = document.getElementById("message");
+    message.style.display = "inline-flex";
+  }
+  function cancel() {
+    var message = document.getElementById("message");
+    message.style.display = "none";
+  }
+  function confirm() {
+    var message = document.getElementById("message");
+    message.style.display = "none";
+  }
+
 </script>
 
 <template>
@@ -27,8 +59,15 @@ const isAnyFileSelected = computed(() => {
       </div>
       <div class="file-operations" v-if="isAnyFileSelected">
         <button><img src="../assets/恢复.svg" alt="">恢复</button>
-        <button><img src="../assets/回收站.svg" alt="">删除</button>
+        <button @click="showMessage"><img src="../assets/回收站.svg" alt="">删除</button>
       </div>
+    </div>
+  </div>
+  <div id="message">
+    <span>确认删除此文件（夹）吗</span>
+    <div class="con">
+      <button @click="confirm">确定</button>
+      <button @click="cancel">取消</button>
     </div>
   </div>
 </template>
@@ -121,4 +160,40 @@ const isAnyFileSelected = computed(() => {
     width: 50%;
     height: auto;
   }
+
+  #message{
+    position: absolute;
+    display: none;
+    flex-direction: column;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: #8EE5EE7F 2px solid;
+    width: 500px;
+    height: 250px;
+    z-index: 3;
+    border-radius: 40px;
+    background-color: white;
+  }
+  #message span{
+    font-size: 20px;
+    text-align: center;
+    margin: 12% auto 10% auto;
+  }
+  .con{
+    display: inline-flex;
+    margin: auto auto;
+    width: 100%;
+    height: 50%
+  }
+  .con button{
+    width: 150px;
+    height: 60px;
+    margin: 0 auto;
+    background-color: #93d2f377;
+    border-radius: 10px;
+    border: #cccccc 1px solid;
+    font-size: 15px;
+  }
+
 </style>
