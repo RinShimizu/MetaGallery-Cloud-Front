@@ -5,6 +5,7 @@
     <link rel="icon" href="云盘.svg" type="image/x-icon">
     <meta charset="UTF-8">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.js"></script> <!-- 引入 crypto-js -->
     <style>
         body {
             background-color: #f3fbfe;
@@ -15,6 +16,11 @@
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
         }
 
         .center-box {
@@ -37,7 +43,6 @@
             height: 300px;
         }
 
-        /* 输入框样式 */
         .input-field {
             width: 250px;
             height: 40px;
@@ -45,26 +50,23 @@
             margin: 25px 0;
             border: 2px solid #ccc;
             border-radius: 5px;
-            padding-right: 30px; /* 预留右侧空间用于图标 */
+            padding-right: 30px;
             box-sizing: border-box;
             position: absolute;
             right: 130px;
         }
 
-        /* 账号输入框位置 */
         .input-account {
             top: 100px;
         }
 
-        /* 密码输入框位置 */
         .input-password {
             top: 170px;
         }
 
-        /* 清除和显示密码按钮样式 */
         .clear-btn, .toggle-password-btn {
             position: absolute;
-            right: 145px; /* 调整到输入框的右边 */
+            right: 145px;
             font-size: 16px;
             cursor: pointer;
             color: #aaa;
@@ -134,11 +136,15 @@
             password: '',
             passwordVisible: false
         },
+
         methods: {
             load: function() {
+                // 对密码进行 SHA256 加密
+                const encryptedPassword = CryptoJS.SHA256(this.password).toString(CryptoJS.enc.Base64);
+
                 const formData = new FormData();
                 formData.append('account', this.account);
-                formData.append('password', this.password);
+                formData.append('password', encryptedPassword); // 发送加密后的密码
 
                 fetch('http://localhost:8080/api/login', {
                     method: 'POST',

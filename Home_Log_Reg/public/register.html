@@ -5,6 +5,8 @@
     <link rel="icon" href="云盘.svg" type="image/x-icon">
     <meta charset="UTF-8">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.js"></script>
+
     <style>
         body {
             background-color: #f3fbfe;
@@ -15,6 +17,11 @@
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
         }
 
         .center-box {
@@ -144,10 +151,14 @@
                     return;
                 }
 
+                // 使用 SHA256 对密码和确认密码进行加密
+                const encryptedPassword = CryptoJS.SHA256(this.password).toString(CryptoJS.enc.Base64);
+                const encryptedConfirmPassword = CryptoJS.SHA256(this.confirmPassword).toString(CryptoJS.enc.Base64);
+
                 const payload = new URLSearchParams();
                 payload.append('account', this.account);
-                payload.append('password', this.password);
-                payload.append('confirm_password', this.confirmPassword);
+                payload.append('password', encryptedPassword);
+                payload.append('confirm_password', encryptedConfirmPassword);
 
                 fetch('http://localhost:8080/api/register', {
                     method: 'POST',
