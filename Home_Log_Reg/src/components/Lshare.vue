@@ -37,8 +37,10 @@ const isAnyFileSelected = computed(() => {
 <style scoped>
   #filebox{
     position: relative;
-    width: 100%;
-    height: 100%;
+    height: calc(100vh - 60px);
+    width: 90%;
+    left: 0;
+    top: 0;
   }
   p{
     display: flex;

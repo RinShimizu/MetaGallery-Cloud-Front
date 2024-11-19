@@ -1,26 +1,66 @@
 <script setup>
   import { ref } from 'vue';
   import Userinfo from "@/components/userinfo.vue";
-  import Lhome from "@/components/Lhome.vue";
-  import Lfile from "@/components/Lfile.vue";
-  import Lstar from "@/components/Lstar.vue";
-  import Lgallery from "@/components/Lgallery.vue";
-  import Lshare from "@/components/Lshare.vue";
-  import Lrubbish from "@/components/Lrubbish.vue";
 
+  //用户信息加载,不要重复写
+  //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  var userInfo = userData.data.userInfo;
+
+
+  //切换界面
   const selectedIndex = ref(0); // 默认选中第一个按钮
-
   const selectButton = (index) => {
     selectedIndex.value = index;
   };
 
-  const userData = JSON.parse(localStorage.getItem('userData'));
-  var userInfo = userData.data.userInfo;
+  
   var imgURL = userInfo.avatar;
-
   function clear() {
     document.querySelector('.input').value = '';
   }
+
+
+  //上传文件
+  const fileInput = ref(null);
+  const selectedFile = ref(null);
+  const handleFileUpload = async () => {
+    fileInput.value.click();
+  };
+  const handleFileChange = (event) => {
+    const file = event.target;
+    if (file) {
+      selectedFile.value = file;
+      uploadFile();
+    }
+  };
+  const uploadFile = async () => {
+    if (!selectedFile.value) {
+      alert('请选择一个文件');
+      return;
+    }
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization",userData.data.token);
+
+    var formdata = new FormData();
+    formdata.append("account", userInfo.account);
+    formdata.append("parent_id", "1");//此处获取父文件夹id
+    formdata.append("file_name", selectedFile.value.files[0].name);
+    formdata.append("file", selectedFile.value.files[0], selectedFile.value.value);
+
+    console.log(formdata);
+    var requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: formdata,
+      redirect: 'follow'
+    };
+
+    fetch("http://localhost:8080/api/uploadFile", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+  };
 </script>
 
 <template>
@@ -33,9 +73,10 @@
       <input type="text" class="input" placeholder="搜索">
       <button class="button2" @click="clear"><img src="../assets/取消.svg" alt=""></button>
     </div>
-    <button id="post">
+    <button id="post" @click="handleFileUpload">
       <img src="../assets/上传.svg" alt="" width="25" height="25"> 上传文件
     </button>
+    <input type="file" ref="fileInput" @change="handleFileChange" style="display: none;" />
     <div class="user">
       <img id="pic" src="../assets/个人中心-我的.svg" alt=" ">
       <button><img :src=imgURL alt=""></button>
@@ -47,35 +88,32 @@
   </div>
   <div class="sidebar">
     <div class="menu">
-      <button :class="{ active: selectedIndex === 0 }" @click="selectButton(0)"><img src="../assets/文件.svg" alt="">我的文件</button>
-      <button :class="{ active: selectedIndex === 1 }" @click="selectButton(1)"><img src="../assets/分享.svg" alt="">我的共享</button>
-      <button :class="{ active: selectedIndex === 2 }" @click="selectButton(2)"><img src="../assets/收藏.svg" alt="">我的收藏</button>
-      <button :class="{ active: selectedIndex === 3 }" @click="selectButton(3)"><img src="../assets/图片.svg" alt="">画廊</button>
-      <button :class="{ active: selectedIndex === 4 }" @click="selectButton(4)"><img src="../assets/回收站.svg" alt="">回收站</button>
+      <router-link to="/">
+        <button :class="{ active: selectedIndex === 0 }" @click="selectButton(0)"><img src="../assets/文件.svg" alt="">我的文件</button>
+      </router-link>
+      <router-link to="/share">
+        <button :class="{ active: selectedIndex === 1 }" @click="selectButton(1)"><img src="../assets/分享.svg" alt="">我的共享</button>
+      </router-link>
+      <router-link to="/star">
+        <button :class="{ active: selectedIndex === 2 }" @click="selectButton(2)"><img src="../assets/收藏.svg" alt="">我的收藏</button>
+      </router-link>
+      <router-link to="/gallery">
+        <button :class="{ active: selectedIndex === 3 }" @click="selectButton(3)"><img src="../assets/图片.svg" alt="">画廊</button>
+      </router-link>
+      <router-link to="/rubbish">
+        <button :class="{ active: selectedIndex === 4 }" @click="selectButton(4)"><img src="../assets/回收站.svg" alt="">回收站</button>
+      </router-link>
     </div>
     <div class="bottom-image">
       <img src="../assets/图片6.png" alt="底部图片" />
     </div>
   </div>
   <div class="content">
-    <div id="block_home">
-      <Lhome />
-    </div>
-    <div id="block_file" :class="{ show: selectedIndex === 0 }">
-      <Lfile />
-    </div>
-    <div id="block_share" :class="{ show: selectedIndex === 1 }">
-      <Lshare />
-    </div>
-    <div id="block_star" :class="{ show: selectedIndex === 2 }">
-      <Lstar />
-    </div>
-    <div id="block_gallery" :class="{ show: selectedIndex === 3 }">
-      <Lgallery />
-    </div>
-    <div id="block_rubbish" :class="{ show: selectedIndex === 4 }">
-      <Lrubbish />
-    </div>
+    <nav>
+
+    </nav>
+    <router-view></router-view>
+
   </div>
 </template>
 
@@ -257,6 +295,7 @@
     border: none;
   }
   .menu button{
+    width: 100%;
     height: 50px;
     border: none;
     border-radius: 22px;
@@ -295,16 +334,5 @@
     left: 15%; /* 距离侧边栏宽度 */
     height: calc(100vh - 60px);
     width: 90%;
-  }
-  #block_file, #block_share, #block_star, #block_gallery, #block_rubbish{
-    display: none;
-    position: absolute;
-    height: calc(100vh - 60px);
-    width: 90%;
-    left: 0;
-    top: 0;
-  }
-  #block_file.show, #block_share.show, #block_star.show, #block_gallery.show, #block_rubbish.show{
-    display: block;
   }
 </style>
