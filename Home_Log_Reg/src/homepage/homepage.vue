@@ -61,6 +61,7 @@
         .then(result => console.log(result))
         .catch(error => console.log('error', error));
   };
+
 </script>
 
 <template>
@@ -109,11 +110,7 @@
     </div>
   </div>
   <div class="content">
-    <nav>
-
-    </nav>
     <router-view></router-view>
-
   </div>
 </template>
 

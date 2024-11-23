@@ -33,48 +33,98 @@ import {computed, ref} from "vue";
 </script>
 
 <template>
-  <div class="file">
-    <span id="induct">一段描述</span>
-    <div class="file-list">
-      <div class="file-item" v-for="(file, index) in files" :key="index">
-        <img :src="file.icon" alt="文件图标" class="file-icon" />
-        <span class="file-name">{{ file.name }}</span>
-        <input type="checkbox" v-model="file.selected" class="file-checkbox" />
+  <div id="content_box">
+    <router-link to="/gallery"><p>返回画廊</p></router-link>
+    <div class="details">
+      <div class="file">
+        <div class="induct">
+          <span>一段描述</span>
+        </div>
+        <div class="file-list">
+          <div class="file-item" v-for="(file, index) in files" :key="index">
+            <img :src="file.icon" alt="文件图标" class="file-icon" />
+            <span class="file-name">{{ file.name }}</span>
+            <input type="checkbox" v-model="file.selected" class="file-checkbox" />
+          </div>
+        </div>
+        <div class="file-operations" v-if="isAnyFileSelected">
+          <button><img src="../assets/下载.svg" alt="">下载</button>
+          <button><img src="../assets/展开.svg" alt="">转存</button>
+          <button><img src="../assets/收藏.svg" alt="">收藏</button>
+        </div>
+      </div>
+      <div class="info">
+        <button><img src="" alt="我"></button>
+        <span>账号</span>
+        <span>签名签名签名签名</span>
       </div>
     </div>
-    <div class="file-operations" v-if="isAnyFileSelected">
-      <button><img src="../assets/下载.svg" alt="">下载</button>
-      <button><img src="../assets/展开.svg" alt="">转存</button>
-      <button><img src="../assets/收藏.svg" alt="">收藏</button>
-    </div>
-  </div>
-  <div class="info">
-    <button><img src="" alt="我"></button>
-    <span>账号</span>
-    <span>签名签名签名签名</span>
   </div>
 </template>
 
 <style scoped>
+  #content_box{
+    position: relative;
+    height: calc(100vh - 60px);
+    width: 90%;
+    left: 0;
+    top: 0;
+  }
+  a{
+    display: block;
+    width: max-content;
+    text-decoration:none;
+  }
+  a:visited {
+    color: black !important;
+  }
+  p{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-family: 幼圆;
+    margin: 15px 0 20px 15px ;
+    width: max-content;
+  }
+  p::before{
+    content: "";
+    background-image: url("../assets/返回.svg");
+    display: inline-block;
+    width: 20px; /* 控制宽度 */
+    height: 20px; /* 控制高度 */
+    background-size: contain; /* 图片自适应大小 */
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  .details{
+    position: relative;
+    margin: 0 30px 20px 30px;
+    width: 100%; /* 列表宽度 */
+    height: 90%;
+    border: #cccccc 1px solid;
+    border-radius: 20px;
+    display: flex;
+  }
   .file{
     position: relative;
     flex: 1;
   }
-  #induct{
-    position: absolute;
+  .induct{
     padding: 10px;
-
+    top: 10px;
+    height: 15%;
+    margin: 10px 20px;
   }
   .file-list {
     display: flex;
     flex-direction: column; /* 单列显示 */
     width: 90%; /* 列表宽度 */
-    height: 80%;
+    height: 50%;
     overflow-y: auto;
-    z-index: -1;
     border: #cccccc 1px solid;
-    margin-left: 20px;
-    position: absolute;
+    margin: 10px 20px;
   }
   .file-item {
     min-height: 40px;
@@ -126,7 +176,7 @@ import {computed, ref} from "vue";
   .info{
     height: 90%;
     width: 15%;
-    border: #cccccc 1px solid;
+    border: #cccccc 2px solid;
     margin: auto 30px auto 0;
   }
   .info button{

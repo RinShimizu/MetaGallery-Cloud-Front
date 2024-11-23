@@ -34,13 +34,24 @@
     <p>画廊</p>
     <div class="content_box">
       <div class="file_box">
-        <div class="item" v-for="(file,index) in files" :key="index">
-          <img id="cover" :src=file.img alt="封面">
-          <img id="avatar" :src=file.avatar alt="我">
-          <span>{{file.title}}</span>
-        </div>
+        <router-link to="/content" custom v-slot="{ navigate }">
+          <div class="item" v-for="(file,index) in files" :key="index" @click="navigate" role="link">
+            <img id="cover" :src=file.img alt="封面">
+            <img id="avatar" :src=file.avatar alt="我">
+            <span>{{file.title}}</span>
+          </div>
+        </router-link>
       </div>
       <div class="pages">
+        <!--如果要使用动态加载的话，这里需要动态加载数据，然后根据数据长度来设置页码按钮的数量。
+        <button id="left" :class="{ disabled: selectedIndex === 1 }" @click="selectDecrement"><img src="../assets/向左箭头.svg" alt=""></button>
+        <button v-for="(item, index) in buttons" :key="index"
+                :class="{ active: selectedIndex === index }"
+                @click="selectButton(index)">
+          {{ index }}
+        </button>
+        <button id="right" :class="{ disabled: selectedIndex === 5 }" @click="selectIncrement"><img src="../assets/向右箭头.svg" alt=""></button>
+        -->
         <button id="left" :class="{ disabled: selectedIndex === 1 }" @click="selectDecrement"><img src="../assets/向左箭头.svg" alt=""></button>
         <button id="1" :class="{ active: selectedIndex === 1 }" @click="selectButton(1)">1</button>
         <button id="2" :class="{ active: selectedIndex === 2 }" @click="selectButton(2)">2</button>
@@ -49,9 +60,6 @@
         <button id="5" :class="{ active: selectedIndex === 5 }" @click="selectButton(5)">5</button>
         <button id="right" :class="{ disabled: selectedIndex === 5 }" @click="selectIncrement"><img src="../assets/向右箭头.svg" alt=""></button>
       </div>
-    </div>
-    <div class="details">
-      <Content />
     </div>
   </div>
 </template>
@@ -89,7 +97,6 @@
     height: 90%;
     border: #cccccc 1px solid;
     border-radius: 20px;
-    display: none;
   }
   .file_box{
     display: grid;
@@ -163,10 +170,7 @@
     background-color: transparent;
     border: none;
   }
-  .pages button:hover{
-    color: #4095E5;
-  }
-  .pages button.active{
+  .pages button:hover,.pages button.active{
     color: #4095E5;
   }
   #left:hover img{
@@ -190,15 +194,5 @@
   #left img,#right img{
     height: 100%;
     width: 100%;
-  }
-
-  .details{
-    position: relative;
-    margin: 20px 30px;
-    width: 100%; /* 列表宽度 */
-    height: 90%;
-    border: #cccccc 1px solid;
-    border-radius: 20px;
-    display: flex;
   }
 </style>

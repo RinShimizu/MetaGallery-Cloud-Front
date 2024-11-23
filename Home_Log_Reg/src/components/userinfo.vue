@@ -1,13 +1,26 @@
 <script setup>
   import { ref } from 'vue'
-  function toPerson(){
-    window.open('person.html','_self');
-  }
   const userData = JSON.parse(localStorage.getItem('userData'));
   var userInfo = userData.data.userInfo;
   var name = userInfo.name;
   var account = userInfo.account;
   var imgURL = userInfo.avatar;
+  
+  const toPerson = () => {
+    window.open('person.html','_self');
+  }
+  //切换账号
+  const changeAccount = () => {
+    localStorage.removeItem('userData');
+    window.close();
+    window.open('load.html');
+  };
+
+  //退出
+  const exit = () => {
+    localStorage.removeItem('userData');
+    window.close();
+  };
 </script>
 
 <template>
@@ -17,8 +30,8 @@
     <p>账号：{{account}}</p>
     <div id="buttons">
       <button @click="toPerson">查看个人资料</button>
-      <button>退出</button>
-      <button>切换账号</button>
+      <button @click="exit">退出</button>
+      <button @click="changeAccount">切换账号</button>
     </div>
   </div>
 </template>

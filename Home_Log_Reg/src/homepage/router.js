@@ -4,6 +4,7 @@ import Lstar from "@/components/Lstar.vue";
 import Lgallery from "@/components/Lgallery.vue";
 import Lshare from "@/components/Lshare.vue";
 import Lrubbish from "@/components/Lrubbish.vue";
+import Content from "@/components/Content.vue";
 
 const routes = [
     {
@@ -30,6 +31,11 @@ const routes = [
         path: '/rubbish',
         name: 'Lrubbish',
         component: Lrubbish
+    },
+    {
+        path: '/content',
+        name: 'Content',
+        component: Content
     }
 ];
 

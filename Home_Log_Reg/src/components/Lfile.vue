@@ -2,41 +2,20 @@
   import { ref, computed, onMounted } from 'vue';
   import fileURL from '../assets/文件.svg';
   import folderURL from '../assets/文件夹.svg';
+  import { fetchSubFileInfo } from '../homepage/api.js'
 
   //用户信息加载,不要重复写
   //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
   const userData = JSON.parse(localStorage.getItem('userData'));
   var userInfo = userData.data.userInfo;
 
-  const files = ref([]);
+  //获取文件夹内文件
+  var files = ref([]);
   onMounted(async () =>{
-    //获取文件夹内文件
-    var myHeaders = new Headers();
-    myHeaders.append("Authorization", userData.data.token);
-    myHeaders.append("Content-Type", "application/json");
-    var raw = JSON.stringify({
-      "account": userInfo.account,
-      "folder_id": 1
-    });
-    var requestOptions = {
-      method: 'GET',
-      headers: myHeaders,
-      body: raw,
-      redirect: 'follow'
-    };
-    fetch("http://localhost:8080/api/loadFolder/getChildrenInfo", requestOptions)
-        .then(response => response.json())
-        .then(result => {
-          files.value = result.data;
-          console.log("获取文件列表成功11");
-          console.log(result)
-        })
-        .catch(error => {
-          console.log('error', error)
-          console.log("获取文件列表失败11");
-        });
+    files.value=await fetchSubFileInfo(userData.data.token, userInfo.account,1);
   })
 
+  //判断是否选中
   const isAnyFileSelected = computed(() => {
     return files.value.some(file => file.selected);
   });
@@ -48,7 +27,7 @@
     <div class="file_op">
       <div class="file-list">
         <div class="file-item" v-for="(file, index) in files" :key="index">
-          <img :src="file.icon" alt="文件图标" class="file-icon" />
+          <img :src="fileURL" alt="文件图标" class="file-icon" />
           <span class="file-name">{{ file.FileName }}</span>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
