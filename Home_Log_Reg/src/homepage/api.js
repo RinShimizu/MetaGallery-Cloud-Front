@@ -28,3 +28,12 @@ export const getTopOfFileStack = () => {
     }
     return fileStack[fileStack.length - 1]; // 返回栈顶元素
 };
+
+
+
+
+
+
+
+
+

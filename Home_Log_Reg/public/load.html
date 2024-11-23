@@ -163,14 +163,32 @@
                             alert('登录成功！');
                             localStorage.setItem('userData', JSON.stringify(data));
                             localStorage.setItem('token', data.data.token);
-                            window.location.href = '../homepage.html';
+                            return fetch(`http://localhost:8080/api/getRootFolder?account=${encodeURIComponent(this.account)}`, {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': data.data.token,
+                                },
+                            });
                         } else {
                             alert('登录失败: '+data.msg);
                         }
                     })
+                    .then(response => {
+                        if (!response.ok) throw new Error(`获取根目录路径失败: ${response.statusText}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.status === "FAILED") {
+                            alert('获取根目录路径失败: ' + data.msg);
+                        } else {
+                            localStorage.setItem('rootFolderData', JSON.stringify(data.data));
+                            console.log('After set:', data.data.id);
+                            window.location.href = '../homepage.html';
+                        }
+                    })
                     .catch(error => {
-                        console.error('登录失败:', error);
-                        alert('登录失败，请重试。');
+                        console.error(error);
+                        alert(error.message || '登录过程中出现错误');
                     });
             },
             togglePasswordVisibility() {
