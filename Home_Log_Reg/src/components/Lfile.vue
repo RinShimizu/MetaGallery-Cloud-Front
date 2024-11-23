@@ -3,6 +3,7 @@
   import fileURL from '../assets/文件.svg';
   import folderURL from '../assets/文件夹.svg';
   import { fetchSubFileInfo } from '../homepage/api.js'
+  import { getTopOfFileStack } from '../homepage/api.js'
 
   //用户信息加载,不要重复写
   //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
@@ -12,7 +13,8 @@
   //获取文件夹内文件
   var files = ref([]);
   onMounted(async () =>{
-    files.value=await fetchSubFileInfo(userData.data.token, userInfo.account,1);
+    await fetchSubFileInfo(userData.data.token, userInfo.account,1);
+    files.value = getTopOfFileStack();
   })
 
   //判断是否选中
@@ -28,7 +30,7 @@
       <div class="file-list">
         <div class="file-item" v-for="(file, index) in files" :key="index">
           <img :src="fileURL" alt="文件图标" class="file-icon" />
-          <span class="file-name">{{ file.FileName }}</span>
+          <a href="" class="file-name">{{ file.FileName }}</a>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>
@@ -102,6 +104,13 @@
   .file-name {
     font-size: 16px;
     flex: 1; /* 文件名占用剩余空间 */
+    text-decoration:none;
+  }
+  .file-name:visited {
+    color: black;
+  }
+  .file-name:hover{
+    color: #007bff;
   }
   .file-checkbox {
     margin-left: 8px; /* 文件名和复选框之间的间距 */

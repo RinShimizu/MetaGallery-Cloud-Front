@@ -1,3 +1,5 @@
+let fileStack = []; // 定义一个栈来存储文件信息
+
 export const fetchSubFileInfo = (token, account, folder_id) => {
     const myHeaders = new Headers();
     myHeaders.append("Authorization",token);
@@ -12,10 +14,17 @@ export const fetchSubFileInfo = (token, account, folder_id) => {
         .then(response => response.json())
         .then(result => {
             console.log(result);
-            return result.data;
+            fileStack.push(result.data)
         })
         .catch(error => {
             console.log('error', error);
             throw error;
         });
+};
+
+export const getTopOfFileStack = () => {
+    if (fileStack.length === 0) {
+        return []; // 栈为空时返回 null
+    }
+    return fileStack[fileStack.length - 1]; // 返回栈顶元素
 };
