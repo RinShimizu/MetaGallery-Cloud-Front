@@ -5,6 +5,8 @@
   import { fetchSubFileInfo } from '../homepage/api.js'
   import { getTopOfFileStack } from '../homepage/api.js'
 
+  import favoriteIcon from '../assets/已收藏.svg';
+  import unfavoriteIcon from '../assets/收藏.svg';
   //用户信息加载,不要重复写
   //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
   const userData = JSON.parse(localStorage.getItem('userData'));
@@ -247,7 +249,101 @@
       showLabelAlert('当前目录为系统默认目录');
     }
   };
+  //收藏按钮
+  // 判断是否所有选中的文件/文件夹已收藏
+  const isAllSelectedFilesFavorited = computed(() => {
+    const allSelectedFilesFavorited = files.value
+        .filter(file => file.selected)  // 过滤选中的文件
+        .every(file => file.isFavorite);  // 检查是否所有选中的文件都已收藏
 
+    const allSelectedFoldersFavorited = folders.value
+        .filter(folder => folder.selected)  // 过滤选中的文件夹
+        .every(folder => folder.isFavorite);  // 检查是否所有选中的文件夹都已收藏
+
+    // 返回是否文件和文件夹都已收藏
+    return allSelectedFilesFavorited && allSelectedFoldersFavorited;
+  });
+
+  var account = userInfo.account;
+  //var imgURL = userInfo.avatar;
+  const markAsFavorite = () => {
+    const newFavoriteState = isAllSelectedFilesFavorited.value ? 1 : 2;
+
+    files.value.forEach(file => {
+      if (file.selected) {
+        const requestData = {
+          account: account,
+          file_id: file.ID,
+          is_favorite: newFavoriteState,
+        };
+        // console.log('Account:', account); // 打印 account 的值
+        // console.log('File ID:', file.ID); // 打印 file.ID 的值
+        // console.log('Is Favorite:', newFavoriteState); // 打印 newFavoriteState 的值
+        fetch('http://localhost:8080/api/favoriteFile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: localStorage.getItem('token'),
+          },
+          body: JSON.stringify(requestData),
+        })
+            .then(response => response.json())
+            .then(data => {
+              console.log('Response Data:', data); // 打印响应体内容
+              if (data.status === 'SUCCESS') {
+                const favoriteStateFromMsg = data.msg.includes('true');
+                file.isFavorite = favoriteStateFromMsg;
+                console.log(`${file.name} 收藏状态已更新：${file.isFavorite ? '已收藏' : '未收藏'}`);
+              } else {
+                console.error(`更新收藏状态失败：${file.name}`, data.message);
+              }
+            })
+            .catch(error => {
+              console.error(`请求失败：${file.name}`, error);
+            });
+      }
+    });
+    folders.value.forEach(folder => {
+      if (folder.selected) {
+        const requestData = {
+          account: account,
+          folder_id: folder.id,
+          is_favorite: newFavoriteState,
+        };
+        console.log('Account:', account); // 打印 account 的值
+        console.log('Foler ID:', folder.id); // 打印 file.ID 的值
+        console.log('Is Favorite:', newFavoriteState); // 打印 newFavoriteState 的值
+        fetch('http://localhost:8080/api/favoriteFolder', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: localStorage.getItem('token'),
+          },
+          body: JSON.stringify(requestData),
+        })
+            .then(response => response.json())
+            .then(data => {
+              console.log('Response Data:', data); // 打印响应体内容
+              if (data.status === 'SUCCESS') {
+                const favoriteStateFromMsg = data.msg.includes('true');
+                folder.isFavorite = favoriteStateFromMsg;
+                console.log(`${folder.name} 收藏状态已更新：${folder.isFavorite ? '已收藏' : '未收藏'}`);
+              } else {
+                console.error(`更新收藏状态失败：${folder.name}`, data.message);
+              }
+            })
+            .catch(error => {
+              console.error(`请求失败：${folder.name}`, error);
+            });
+      }
+    });
+  };
+
+  // 变更收藏按钮的图标，根据选中的文件是否已收藏来判断
+  const favoriteButtonIcon = computed(() => {
+    console.log('isAllSelectedFilesFavorited.value', isAllSelectedFilesFavorited.value);
+    return isAllSelectedFilesFavorited.value ? favoriteIcon : unfavoriteIcon;
+  });
 
 </script>
 
@@ -291,7 +387,9 @@
         <button><img src="../assets/下载.svg" alt="">下载</button>
         <button><img src="../assets/分享.svg" alt="">共享</button>
         <button><img src="../assets/回收站.svg" alt="">删除</button>
-        <button><img src="../assets/收藏.svg" alt="">收藏</button>
+        <button @click="markAsFavorite">
+          <img :src="favoriteButtonIcon" alt="收藏按钮">收藏
+        </button>
       </div>
     </div>
   </div>
