@@ -4,14 +4,21 @@ import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
 
 const files = ref([
-  { name: '文件1.txt', icon: fileURL, selected: false },
-  { name: '文件2.doc', icon: fileURL, selected: false },
-  { name: '文件3.pdf', icon: folderURL, selected: false },
+  { name: '文件1.txt', icon: fileURL, selected: false,isFavorite:false},
+  { name: '文件2.doc', icon: fileURL, selected: false,isFavorite:false },
+  { name: '文件3.pdf', icon: folderURL, selected: false,isFavorite:false },
 
 ]);
 const isAnyFileSelected = computed(() => {
   return files.value.some(file => file.selected);
 });
+//收藏按钮
+const userData = JSON.parse(localStorage.getItem('userData'));
+var userInfo = userData.data.userInfo;
+var account = userInfo.account;
+const markAsFavorite = () => {
+
+};
 </script>
 
 <template>
@@ -28,7 +35,9 @@ const isAnyFileSelected = computed(() => {
       <div class="file-operations" v-if="isAnyFileSelected">
         <button><img src="../assets/下载.svg" alt="">下载</button>
         <button><img src="../assets/回收站.svg" alt="">删除</button>
-        <button><img src="../assets/收藏.svg" alt="">收藏</button>
+        <button @click="markAsFavorite">
+          <img src="../assets/收藏.svg" alt="">收藏
+        </button>
       </div>
     </div>
   </div>

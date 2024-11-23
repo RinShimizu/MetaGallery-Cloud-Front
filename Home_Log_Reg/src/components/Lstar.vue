@@ -1,17 +1,43 @@
 <script setup>
-import { ref,computed } from 'vue';
+import {ref, computed, onMounted} from 'vue';
 import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
-
-const files = ref([
-  { name: '文件1.txt', icon: fileURL, selected: false },
-  { name: '文件2.doc', icon: fileURL, selected: false },
-  { name: '文件3.pdf', icon: folderURL, selected: false },
-
-]);
+import {fetchSubFileInfo, getTopOfFileStack,fetchSubFolderInfo,getTopOfFolderStack} from "@/homepage/api.js";
+const userData = JSON.parse(localStorage.getItem('userData'));
+var userInfo = userData.data.userInfo;
+var files = ref([]);
+var folders = ref([]);
+// onMounted(async () =>{
+//   await fetchSubFileInfo(userData.data.token, userInfo.account,1);
+//   files.value = getTopOfFileStack();
+// })
 const isAnyFileSelected = computed(() => {
   return files.value.some(file => file.selected);
 });
+// 过滤出已收藏的文件
+const favoriteFiles = computed(() => {
+  return files.value.filter(file => file.isFavorite);
+});
+const favoriteFolders = computed(() => {
+  return folders.value.filter(folder => folder.is_favorite);
+});
+onMounted(async () => {
+  const filePromise = fetchSubFileInfo(userData.data.token, userInfo.account, 1);
+  const folderPromise = fetchSubFolderInfo(userData.data.token, userInfo.account, 1);
+
+  await Promise.all([filePromise, folderPromise]); // 同时加载
+  files.value = getTopOfFileStack();
+  folders.value = getTopOfFolderStack();
+  console.log("2"+files.value);
+  console.log("1"+folders.value);
+});
+// 处理点击文件夹进入
+const handleFolderClick = (folder) => {
+  // 更新当前路径
+  curPath = folder;
+  // 假设你有一个方法来获取文件夹下的文件
+  loadFilesInFolder(folder.id);
+};
 </script>
 
 <template>
@@ -19,9 +45,18 @@ const isAnyFileSelected = computed(() => {
     <p>我的收藏</p>
     <div class="file_op">
       <div class="file-list">
-        <div class="file-item" v-for="(file, index) in files" :key="index">
-          <img :src="file.icon" alt="文件图标" class="file-icon" />
-          <span class="file-name">{{ file.name }}</span>
+
+        <div class="file-item" v-for="(folder, index) in favoriteFolders" :key="folder.id" @click="handleFolderClick(folder)">
+          <img :src="folderURL" alt="文件夹图标" class="file-icon" />
+
+          <span class="file-name">{{ folder.folder_name }}</span>
+          <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
+
+        </div>
+
+        <div class="file-item" v-for="(file, index) in favoriteFiles" :key="index">
+          <img :src="fileURL" alt="文件图标" class="file-icon" />
+          <span class="file-name">{{ file.FileName }}</span>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>
