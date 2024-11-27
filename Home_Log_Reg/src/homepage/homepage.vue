@@ -1,11 +1,15 @@
 <script setup>
   import { ref } from 'vue';
   import Userinfo from "@/components/userinfo.vue";
+  import { getCurrentFolderID, uploadFile } from "@/homepage/api.js";
+  import { useEventBus } from "@vueuse/core"; // VueUse 提供的事件总线
 
   //用户信息加载,不要重复写
   //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
   const userData = JSON.parse(localStorage.getItem('userData'));
   var userInfo = userData.data.userInfo;
+  const folder_id = ref();
+  const eventBus = useEventBus("folder-update");
 
 
   //切换界面
@@ -27,39 +31,15 @@
   const handleFileUpload = async () => {
     fileInput.value.click();
   };
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
     const file = event.target;
     if (file) {
       selectedFile.value = file;
-      uploadFile();
+      folder_id.value = getCurrentFolderID();
+      await uploadFile(selectedFile, userData.data.token, userInfo.account, folder_id.value)
+      console.log("Upload complete, now emitting the event");
+      eventBus.emit(folder_id.value); // 触发事件
     }
-  };
-  const uploadFile = async () => {
-    if (!selectedFile.value) {
-      alert('请选择一个文件');
-      return;
-    }
-    var myHeaders = new Headers();
-    myHeaders.append("Authorization",userData.data.token);
-
-    var formdata = new FormData();
-    formdata.append("account", userInfo.account);
-    formdata.append("parent_id", "1");//此处获取父文件夹id
-    formdata.append("file_name", selectedFile.value.files[0].name);
-    formdata.append("file", selectedFile.value.files[0], selectedFile.value.value);
-
-    console.log(formdata);
-    var requestOptions = {
-      method: 'POST',
-      headers: myHeaders,
-      body: formdata,
-      redirect: 'follow'
-    };
-
-    fetch("http://localhost:8080/api/uploadFile", requestOptions)
-        .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
   };
 
 </script>

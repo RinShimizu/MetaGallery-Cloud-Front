@@ -11,7 +11,6 @@
       <button><img src="../assets/邮件.svg" alt="qq"></button>
     </div>
     <span>©2024.only我们小组版权所有</span>
-    <a href="../../homepage.html">111</a>
   </div>
 </template>
 
