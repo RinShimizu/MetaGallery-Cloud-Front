@@ -1,9 +1,9 @@
 <script setup>
   import { ref, computed,  nextTick, onMounted } from 'vue';
+  import { useEventBus } from "@vueuse/core";
   import fileURL from '../assets/文件.svg';
   import folderURL from '../assets/文件夹.svg';
-  import { fetchSubFileInfo } from '../homepage/api.js'
-  import { getTopOfFileStack } from '../homepage/api.js'
+  import { changeCurrentFolderID, fetchSubInfo, getCurrentFolderID } from '../homepage/api.js'
 
   import favoriteIcon from '../assets/已收藏.svg';
   import unfavoriteIcon from '../assets/收藏.svg';
@@ -11,6 +11,9 @@
   //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
   const userData = JSON.parse(localStorage.getItem('userData'));
   var userInfo = userData.data.userInfo;
+  let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
+  const eventBus = useEventBus("folder-update");
+
   const rootFolderData = JSON.parse(localStorage.getItem('rootFolderData'));
   let curPath=rootFolderData;
   const token = localStorage.getItem('token');
@@ -19,12 +22,14 @@
   ]);
   var isCancel = false;
 
-  //获取文件夹内文件
+  //获取当前页面文件夹和文件
   var files = ref([]);
-  onMounted(async () =>{
-    await loadFilesInFolder(rootFolderData.id); // 传入根目录的 ID
-    await fetchSubFileInfo(userData.data.token, userInfo.account,1);
-    files.value = getTopOfFileStack();
+  onMounted(async () => {
+    Stack.length = 0;
+    changeCurrentFolderID(1);
+    await fetchSubInfo(Stack,userData.data.token, userInfo.account,1);
+    folders.value = Stack[Stack.length - 1][0];
+    files.value = Stack[Stack.length - 1][1];
   })
 
   //判断是否选中
@@ -33,8 +38,28 @@
     return files.value.some(file => file.selected) || folders.value.some(folder => folder.selected);
   });
 
+  const getFolderFile = async (ID) => {
+    changeCurrentFolderID(ID);
+    console.log("curPathID:"+ID);
+    await fetchSubInfo(Stack, userData.data.token, userInfo.account, ID);
+    folders.value = Stack[Stack.length - 1][0];
+    files.value = Stack[Stack.length - 1][1];
+    console.log("Stack:",Stack);
+  }
+
+  onMounted(() => {
+    eventBus.on((folderID) => {
+      if(folderID !== 1){
+        goBackToParentFolder();
+      }
+      else{
+        Stack.length = 0;
+      }
+      getFolderFile(folderID); // 响应事件
+    });
+  });
   // 加载文件夹下的文件（模拟）
-  const loadFilesInFolder = (folderId) => {
+  /*const loadFilesInFolder = (folderId) => {
     // 假设你通过文件夹 id 获取文件
     // 这里模拟一个文件加载过程，实际应该是调用API或从本地获取
     fetch(`http://localhost:8080/api/loadFolder/getChildrenInfo?account=${encodeURIComponent(userInfo.account)}&folder_id=${encodeURIComponent(folderId)}`, {
@@ -70,7 +95,7 @@
 
           }
         })
-  };
+  };*/
 
 
   //alert
@@ -152,7 +177,8 @@
     // 调用创建文件夹
     console.log("parent_id"+curPath.id);
     console.log("rootFolderData"+rootFolderData.id);
-    createFolder(curPath.id, file, token, account, index);
+    const folderID = getCurrentFolderID();
+    createFolder(folderID, file, token, account, index);
   };
 
   // 创建文件夹
@@ -195,16 +221,13 @@
                 inputEl.select();
                 inputEl.classList.add('shake');
                 setTimeout(() => inputEl.classList.remove('shake'), 300); // 移除震动效果
-
               }
             });
           } else {
             console.log('文件夹创建成功');
-
             showLabelAlert('文件夹创建成功!');
           }
         })
-
         .catch((error) => {
           alert('文件夹创建失败: ' + error.message);
         });
@@ -212,16 +235,16 @@
 
 
   // 处理点击文件夹进入
-  const handleFolderClick = (folder) => {
+  /*const handleFolderClick = (folder) => {
     // 更新当前路径
     curPath = folder;
     // 假设你有一个方法来获取文件夹下的文件
     loadFilesInFolder(folder.id);
-  };
+  };*/
 
 
   // 返回上一级文件夹
-  const goBackToParentFolder = () => {
+  /*const goBackToParentFolder = () => {
     console.log(curPath.parent_id);
     if (curPath.parent_id){
       loadFilesInFolder(curPath.parent_id);
@@ -248,7 +271,18 @@
     else{
       showLabelAlert('当前目录为系统默认目录');
     }
+  };*/
+  const goBackToParentFolder = () => {
+    if(Stack.length > 1){
+      Stack.pop();
+      folders.value = Stack[Stack.length - 1][0];
+      files.value = Stack[Stack.length - 1][1];
+    }
+    else{
+      showLabelAlert('当前目录为系统默认目录');
+    }
   };
+
   //收藏按钮
   // 判断是否所有选中的文件/文件夹已收藏
   const isAllSelectedFilesFavorited = computed(() => {
@@ -349,35 +383,34 @@
 
 <template>
   <div id="filebox">
-    <div class="file-header">
+    <div class="file_header">
       <p>我的文件</p>
       <div id="alert-container"></div> <!-- 中间的label容器 -->
       <button id="addFolder" @click="addNewFolder">
-        <img src="../assets/新建文件夹.svg" alt="">
+        <img src="../assets/新建文件夹.svg" alt="" style="width: 30px; height: 30px;">
       </button>
       <button id="back" @click="goBackToParentFolder">
-        <img src="../assets/回退.svg" alt="" style="width: 20px; height: 20px;">
+        <img src="../assets/回退.svg" alt="" style="width: 30px; height: 30px;">
       </button>
     </div>
     <div class="file_op">
       <div class="file-list">
         <!-- 文件夹列表 -->
-        <div class="file-item" v-for="(folder, index) in folders" :key="folder.id" @click="handleFolderClick(folder)">
-          <img :src="folder.icon" alt="文件夹图标" class="file-icon" />
-
+        <div class="folder-item" v-for="(folder, index) in folders" :key="folder.id">
+          <img src="../assets/已收藏文件.svg" alt="" v-if="folder.isFavorite" style="width: 20px;height: 20px;">
+          <img :src=folderURL alt="文件夹图标" class="file-icon" />
           <template v-if="folder.isEditing">
             <input v-model="folder.name" :id="`folder-input-${index}`" class="file-input"
                    @blur="finishEditing(folder, index)" @keydown.enter="finishEditing(folder, index)" />
             <button @mousedown.prevent="handleCancel(index)">取消</button> <!-- 添加取消按钮 -->
           </template>
           <template v-else>
-            <span class="file-name">{{ folder.name }}</span>
+            <a href="" class="file-name" @click.prevent="getFolderFile(folder.id)">{{ folder.name }}</a>
             <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
           </template>
-
         </div>
-
-        <div class="file-item" v-for="(file, index) in files" :key="index">
+        <div class="file-item" v-for="file in files" :key="file.ID">
+          <img src="../assets/已收藏文件.svg" alt="" v-if="file.Favorite" style="width: 20px;height: 20px;">
           <img :src="fileURL" alt="文件图标" class="file-icon" />
           <a href="" class="file-name">{{ file.FileName }}</a>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
@@ -403,15 +436,21 @@
     left: 0;
     top: 0;
   }
-  p{
+  .file_header{
+    position: relative;
+    display: flex;
+    height: 20px;
+    margin: 15px 0 20px 15px;
+  }
+  .file_header p{
     display: flex;
     align-items: center;
     gap: 10px;
     font-size: 16px;
     font-family: 幼圆;
-    margin: 15px 0 0 15px ;
+    margin: 0;
   }
-  p::before{
+  .file_header p::before{
     content: "";
     background-image: url("../assets/文件.svg");
     display: inline-block;
@@ -421,10 +460,16 @@
     background-repeat: no-repeat;
     background-position: center;
   }
+  .file_header button {
+    background: none; /* 去掉按钮背景 */
+    border: none; /* 去掉按钮边框 */
+    padding: 0; /* 去掉内边距 */
+    cursor: pointer; /* 设置鼠标指针 */
+  }
 
   .file_op{
     position: relative;
-    margin: 20px 30px;
+    margin: 0 30px 20px 30px;
     width: 100%; /* 列表宽度 */
     height: 90%;
     border: #cccccc 1px solid;
@@ -439,22 +484,29 @@
     overflow-y: auto;
     z-index: -1;
   }
+  .folder-item {
+     min-height: 40px;
+     display: flex;
+     align-items: center;
+     padding: 8px;
+     border-bottom: 1px solid #ddd; /* 分隔线 */
+   }
   .file-item {
     min-height: 40px;
     display: flex;
     align-items: center;
-    justify-content: space-between; /* 左右对齐 */
     padding: 8px;
     border-bottom: 1px solid #ddd; /* 分隔线 */
   }
   .file-icon {
     width: 20px;
     height: 20px;
-    margin: 0 8px 0 12px; /* 图标和文件名之间的间距 */
+    margin: 0 8px 0 10px; /* 图标和文件名之间的间距 */
   }
   .file-name {
     font-size: 16px;
-    flex: 1; /* 文件名占用剩余空间 */
+    width: fit-content;
+    display: block;
     text-decoration:none;
   }
   .file-name:visited {
@@ -464,7 +516,7 @@
     color: #007bff;
   }
   .file-checkbox {
-    margin-left: 8px; /* 文件名和复选框之间的间距 */
+    margin-left: auto; /* 文件名和复选框之间的间距 */
   }
 
   .file-operations{
@@ -500,33 +552,10 @@
   #back {
     margin-left: 10px; /* 给返回按钮添加一点间隔 */
   }
-
-  /* 主容器样式 */
-  .file-header {
-    display: flex; /* 使用 Flexbox */
-    align-items: center;
-    justify-content: space-between; /* 元素均匀分布 */
-    gap: 10px; /* 控制间距 */
-    margin: 15px 0 0 15px;
-  }
-
   /* alert-container 样式 */
   #alert-container {
     flex: 1; /* 让其占据可用空间 */
     text-align: center; /* 文本居中 */
-  }
-
-  /* 调整按钮样式 */
-  button {
-    background: none; /* 去掉按钮背景 */
-    border: none; /* 去掉按钮边框 */
-    padding: 0; /* 去掉内边距 */
-    cursor: pointer; /* 设置鼠标指针 */
-  }
-
-  button img {
-    width: 24px; /* 调整按钮图标大小 */
-    height: 24px;
   }
 
   @keyframes fadeInOut {

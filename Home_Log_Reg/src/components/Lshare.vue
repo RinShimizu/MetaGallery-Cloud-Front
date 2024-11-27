@@ -103,6 +103,13 @@ const markAsFavorite = () => {
   .file-name {
     font-size: 16px;
     flex: 1; /* 文件名占用剩余空间 */
+    text-decoration:none;
+  }
+  .file-name:visited {
+    color: black;
+  }
+  .file-name:hover{
+    color: #007bff;
   }
   .file-checkbox {
     margin-left: 8px; /* 文件名和复选框之间的间距 */
