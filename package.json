@@ -1,5 +1,9 @@
 {
   "dependencies": {
-    "crypto-js": "^4.2.0"
+    "vue": "^3.5.12"
+  },
+  "devDependencies": {
+    "vue-loader": "^17.4.2",
+    "vue-template-compiler": "^2.7.16"
   }
 }

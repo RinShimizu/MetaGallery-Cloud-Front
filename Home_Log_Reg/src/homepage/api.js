@@ -1,3 +1,5 @@
+import { nextTick} from 'vue';
+import folderURL from "@/assets/文件夹.svg";
 var CurrentFolderID = 1;
 
 export const changeCurrentFolderID = (ID) => {
@@ -7,58 +9,6 @@ export const changeCurrentFolderID = (ID) => {
 export const getCurrentFolderID = () => {
     return CurrentFolderID;
 }
-
-/*export const fetchSubFileInfo = (token, account, folder_id) => {
-    var foldersFromServer,filesFromServer;
-    //获取文件夹
-    const myHeadersFolder = new Headers();
-    myHeadersFolder.append("Authorization",token);
-    const requestOptionsFolder = {
-        method: 'GET',
-        headers: myHeadersFolder,
-        redirect: 'follow'
-    };
-    fetch(`http://localhost:8080/api/loadFolder/getChildrenInfo?account=${account}&folder_id=${folder_id}`, requestOptionsFolder)
-        .then(response => response.json())
-        .then(result => {
-            console.log(result);
-            foldersFromServer = result.data; // 获取返回的数据
-        })
-        .catch(error => {
-            console.log('error', error);
-            throw error;
-        });
-
-    //获取文件
-    const myHeadersFile = new Headers();
-    myHeadersFile.append("Authorization",token);
-    const requestOptionsFile = {
-        method: 'GET',
-        headers: myHeadersFile,
-        redirect: 'follow'
-    };
-    fetch(`http://localhost:8080/api/loadFolder/getSubFileinfo?account=${account}&folder_id=${folder_id}`, requestOptionsFile)
-        .then(response => response.json())
-        .then(result => {
-            console.log(result);
-            filesFromServer = result.data; // 获取返回的数据
-
-            // 遍历返回的数据，更新栈中的文件信息
-            filesFromServer.forEach((file) => {
-                const existingFile = Stack[Stack.length - 1].find(f => f.ID === file.ID); // 查找当前栈顶文件中是否有相同ID的文件
-                if (existingFile) {
-                    existingFile.isFavorite = file.Favorite; // 更新 isFavorite 属性
-                }
-            });
-        })
-        .catch(error => {
-            console.log('error', error);
-            throw error;
-        });
-
-    //压入栈中
-    Stack.push([foldersFromServer, filesFromServer])
-};*/
 
 export const fetchSubInfo = (Stack, token, account, folder_id) => {
     console.log("开始获取子文件信息");
@@ -125,37 +75,6 @@ export const fetchSubInfo = (Stack, token, account, folder_id) => {
     });
 };
 
-
-// export const fetchSubFolderInfo = (token, account, folder_id) => {
-//     const myHeaders = new Headers();
-//     myHeaders.append("Authorization",token);
-//
-//     const requestOptions = {
-//         method: 'GET',
-//         headers: myHeaders,
-//         redirect: 'follow'
-//     };
-//
-//     return fetch(`http://localhost:8080/api/loadFolder/getChildrenInfo?account=${account}&folder_id=${folder_id}`, requestOptions)
-//         .then(response => response.json())
-//         .then(result => {
-//             console.log(result);
-//             const flodersFromServer = result.data; // 获取返回的数据
-//             folderStack.push(flodersFromServer);
-//         })
-//         .catch(error => {
-//             console.log('error', error);
-//             throw error;
-//         });
-// };
-/*export const getTopOfStack = () => {
-    console.log("这是测试",Stack);
-    if (Stack.length === 0) {
-        return []; // 栈为空时返回 null
-    }
-    return Stack[Stack.length - 1]; // 返回栈顶元素
-};*/
-
 export const uploadFile = async (selectedFile, token, account, folder_id) => {
     if (!selectedFile.value) {
         alert('请选择一个文件');
@@ -186,8 +105,178 @@ export const uploadFile = async (selectedFile, token, account, folder_id) => {
         .catch(error => console.log('error', error));
 };
 
+export const creatIng=(folders,isCancel)=>{
+    const newFolder = {
+        name: '未命名文件夹', // 默认名称
+        icon: folderURL,
+        selected: false,
+        isEditing: true,
+    };
+    isCancel=false;
+    // 将新文件夹添加到数组末尾
+    folders.value.unshift(newFolder);
+    return newFolder;
+}
 
+// 创建文件夹
+export const createFolder = (folderPath, file, token, account,index,isEditing,inputEl) => {
+    console.log('index2:', index);
+    fetch('http://localhost:8080/api/createFolder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token,  // 使用 token 进行授权
+        },
+        body: JSON.stringify({
+            account: account,   // 使用存储在 localStorage 的用户数据
+            parent_id: folderPath,      // 使用根路径和文件夹名称拼接得到完整路径
+            folder_name: file.name,
+        }),
+    })
+        .then((response) => {
+            if (!response.ok) {
+                return response.text().then((errorText) => {
+                    throw new Error(`创建文件夹失败: ${response.status} ${response.statusText} - ${errorText}`);
+                });
+            }
+            return response.json(); // 返回的数据为 JSON
+        })
+        .then((data) => {
+            console.log("返回的数据：", data); // 查看返回的数据内容
 
+            // 如果返回的状态是失败
+            if (data.status === "FAILED") {
+                console.log('文件夹创建失败，返回消息:', data.msg);
+                // 重新聚焦输入框并全选
+                nextTick(() => {
+
+                    console.log('inputEI2:', inputEl);
+                    if (inputEl) {
+                        inputEl.focus();
+                        inputEl.select();
+                        inputEl.classList.add('shake');
+                        setTimeout(() => inputEl.classList.remove('shake'), 300); // 移除震动效果
+                    }
+                });
+            } else {
+                console.log('文件夹创建成功');
+                isEditing=false;
+            }
+        })
+        .catch((error) => {
+            alert('文件夹创建失败: ' + error.message);
+        });
+
+};
+export const renameFolder=(folders,file,inputEl,oldName,account,token)=>{
+    if(file.name===oldName)return '文件夹重命名成功！';
+    const isDuplicate = folders.some(existingFolder => existingFolder.name === file.name);
+
+    if (isDuplicate) {
+        return '文件夹名重复！';
+    } else {
+        const folder = folders.filter(existingFolder => existingFolder.name === oldName);
+        fetch('http://localhost:8080/api/renameFolder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token,  // 使用 token 进行授权
+            },
+            body: JSON.stringify({
+                account: account,   // 使用存储在 localStorage 的用户数据
+                folder_id:folder.id ,      // 使用根路径和文件夹名称拼接得到完整路径
+                new_folder_name: file.name,
+            }),
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    return response.text().then((errorText) => {
+                        throw new Error(`文件夹重命名失败: ${response.status} ${response.statusText} - ${errorText}`);
+                    });
+                }
+                return response.json(); // 返回的数据为 JSON
+            })
+            .then((data) => {
+                console.log("返回的数据：", data); // 查看返回的数据内容
+
+                // 如果返回的状态是失败
+                if (data.status === "FAILED") {
+                    console.log('文件夹重命名失败，返回消息:', data.msg);
+                } else {
+                    return '文件夹重命名成功！';
+                }
+            })
+            .catch((error) => {
+                alert('文件夹重命名失败: ' + error.message);
+            });
+
+    }
+}
+
+export const preJudge=(folders,file)=>{
+    let msg='';
+    // 1. 文件夹名称长度不能超过 255 个字符
+    if (file.name.length > 255) {
+        return "文件夹名称不能超过 255 个字符";
+    }
+    // 2. 文件夹名称不能包含保留字符
+    if (!file.name.trim() || /[\/\\:*?"<>|]/.test(file.name)) {
+        msg = '文件名不能为空或包含非法字符！';
+    }
+
+    // 3. 文件夹名称不能是保留名称
+    const reservedNames = [
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+    ];
+    if (reservedNames.includes(file.name.toUpperCase())) {
+        return "文件夹名称不能是保留名称";
+    }
+
+    // 4. 文件夹名称不能以空格或句点结尾
+    if (file.name.trim().endsWith('.') || file.name.endsWith(' ')) {
+        return "文件夹名称不能以空格或句点结尾";
+    }
+
+    const folderExists = folders.slice(1).some(existingFolder => existingFolder.name === file.name);
+    if (folderExists) {
+        msg='该文件夹名已存在！';
+        console.log('folders:', folders); // 查看所有文件夹数据
+
+        console.log(file.name.trim());
+    }
+    return msg;
+}
+export const labelShake=(inputEl)=>{
+    if (inputEl) {
+        inputEl.focus();
+        inputEl.select();
+        inputEl.classList.add('shake');
+        setTimeout(() => inputEl.classList.remove('shake'), 300); // 移除震动效果
+    }
+}
+export const labelFocus=(inputEl)=>{
+    if (inputEl) {
+        inputEl.focus();
+        inputEl.select();
+    }
+}
+
+export const showLabelAlert = (msg) => {
+    const container = document.getElementById('alert-container');
+
+    // 创建提示框元素
+    const alertLabel = document.createElement('div');
+    alertLabel.className = 'alert-label';
+    alertLabel.textContent = msg;
+    // 添加提示框到容器中
+    container.appendChild(alertLabel);
+    // 1 秒后移除提示框
+    setTimeout(() => {
+        container.removeChild(alertLabel);
+    }, 1000);
+};
 
 
 

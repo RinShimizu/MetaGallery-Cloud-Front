@@ -3,7 +3,15 @@
   import { useEventBus } from "@vueuse/core";
   import fileURL from '../assets/文件.svg';
   import folderURL from '../assets/文件夹.svg';
-  import { changeCurrentFolderID, fetchSubInfo, getCurrentFolderID } from '../homepage/api.js'
+  import {
+    changeCurrentFolderID,
+    fetchSubInfo,
+    getCurrentFolderID,
+    createFolder,
+    preJudge,
+    labelShake, labelFocus,
+    creatIng,showLabelAlert
+  } from '../homepage/api.js'
 
   import favoriteIcon from '../assets/已收藏.svg';
   import unfavoriteIcon from '../assets/收藏.svg';
@@ -13,16 +21,16 @@
   var userInfo = userData.data.userInfo;
   let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
   const eventBus = useEventBus("folder-update");
-
   const rootFolderData = JSON.parse(localStorage.getItem('rootFolderData'));
   let curPath=rootFolderData;
   const token = localStorage.getItem('token');
-  const folders = ref([
-    // { name: '我的文件夹', icon: folderURL, selected: false, isEditing: false },
-  ]);
+
   var isCancel = false;
+  var isEd=false;
+  const isAllSelected = ref(false);
 
   //获取当前页面文件夹和文件
+  var folders = ref([]);
   var files = ref([]);
   onMounted(async () => {
     Stack.length = 0;
@@ -32,11 +40,33 @@
     files.value = Stack[Stack.length - 1][1];
   })
 
-  //判断是否选中
-  const isAnyFileSelected = computed(() => {
-    // 判断 files 或 folders 中是否有任何一个被选中
-    return files.value.some(file => file.selected) || folders.value.some(folder => folder.selected);
+  const selectedCount = computed(() => {
+    // 统计选中的文件和文件夹数量
+    const filesSelected = files.value.filter(file => file.selected).length;
+    const foldersSelected = folders.value.filter(folder => folder.selected).length;
+    return filesSelected + foldersSelected;
   });
+
+  const isSingleSelected = computed(() => {
+    // 如果总选中数量为 1，返回 true
+    return selectedCount.value === 1;
+  });
+
+  const isMultipleSelected = computed(() => {
+    // 如果总选中数量大于 1，返回 true
+    return selectedCount.value > 1;
+  });
+
+  const selectAll = () => {
+    // 切换全选状态
+    isAllSelected.value = !isAllSelected.value;
+
+    // 设置所有文件和文件夹的选中状态为全选状态
+    files.value.forEach(file => (file.selected = isAllSelected.value));
+    folders.value.forEach(folder => (folder.selected = isAllSelected.value));
+  };
+
+
 
   const getFolderFile = async (ID) => {
     changeCurrentFolderID(ID);
@@ -57,90 +87,20 @@
       }
       getFolderFile(folderID); // 响应事件
     });
-  });
-  // 加载文件夹下的文件（模拟）
-  /*const loadFilesInFolder = (folderId) => {
-    // 假设你通过文件夹 id 获取文件
-    // 这里模拟一个文件加载过程，实际应该是调用API或从本地获取
-    fetch(`http://localhost:8080/api/loadFolder/getChildrenInfo?account=${encodeURIComponent(userInfo.account)}&folder_id=${encodeURIComponent(folderId)}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': token,
-      },
-    })
-        .then(response => {
-          if (!response.ok) throw new Error(`获取根目录文件夹失败: ${response.statusText}`);
-          return response.json();
-        })
-        .then(data => {
-          if (data.status === "FAILED") {
-            console.log(data);
-            alert('获取根目录文件夹失败: ' + data.msg);
-          }
-          else {
-            console.log(data);
-            folders.value = data.data.map(folder => ({
-              id: folder.id,              // 文件夹 ID
-              parent_id:folder.parent_id,
-              name: folder.folder_name,   // 文件夹名称
-              path: folder.path,          // 文件夹路径
-              isFavorite: folder.is_favorite, // 是否收藏
-              shared: folder.is_share,    // 是否分享
-              icon: folderURL,         // 图标 (假设为固定值)
-              selected: false,            // 默认未选中
-              isEditing:false
-            }));
-
-            folders.value.sort((a, b) => a.name.localeCompare(b.name));
-
-          }
-        })
-  };*/
-
-
-  //alert
-  const showLabelAlert = (msg) => {
-    const container = document.getElementById('alert-container');
-
-    // 创建提示框元素
-    const alertLabel = document.createElement('div');
-    alertLabel.className = 'alert-label';
-    alertLabel.textContent = msg;
-
-    // 添加提示框到容器中
-    container.appendChild(alertLabel);
-
-    // 1 秒后移除提示框
-    setTimeout(() => {
-      container.removeChild(alertLabel);
-    }, 1000);
-  };
+  })
 
 
   // 新建文件夹函数
   const addNewFolder = async () => {
-    const newFolder = {
-      name: '未命名文件夹', // 默认名称
-      icon: folderURL,
-      selected: false,
-      isEditing: true,
-    };
-    isCancel=false;
-
-    // 将新文件夹添加到数组末尾
-    folders.value.unshift(newFolder);
-
-    // 等待下一次 DOM 渲染
+    if(isEd)return;
+    isEd=true;
+    let newFolder;
+    newFolder=creatIng(folders,isCancel);
     await nextTick();
-
     // 焦点集中在新文件夹的输入框上
     const index = folders.value.indexOf(newFolder);
     const inputEl = document.getElementById(`folder-input-${index}`);
-    if (inputEl) {
-      inputEl.focus();
-      inputEl.select();
-    }
-    console.log('inputEI1:', inputEl);
+    labelFocus(inputEl);
   };
 
   const handleCancel=(index)=>{
@@ -151,127 +111,30 @@
 
   // 完成文件夹编辑并调用接口创建文件夹
   const finishEditing = (file,index) => {
-    if (!file.isEditing) return; // 防止重复处理
-    file.isEditing = false;
-    if(isCancel)return;
+    if (!file.isEditing||isCancel) return; // 防止重复处理
     // 文件名校验逻辑
-    if (!file.name.trim() || /[\/\\:*?"<>|]/.test(file.name)) {
-      showLabelAlert('文件名不能为空或包含非法字符！');
+    const msg=preJudge(folders.value,file);
+    console.log('editing:');
+    if (msg.trim()!=='') {
+      showLabelAlert(msg);
       file.isEditing = true;
       nextTick(() => {
         const inputEl = document.getElementById(`folder-input-${index}`);
-        console.log('inputEI3:', inputEl);
-        if (inputEl) {
-          inputEl.focus();
-          inputEl.select();
-          inputEl.classList.add('shake');
-          setTimeout(() => inputEl.classList.remove('shake'), 300); // 移除震动效果
-
-        }
+        labelShake(inputEl);
       });
-      return;
-    }
-    // 获取 token 和用户数据
-
-    const account =userInfo.account; // 从 userData 获取 account
-    // 调用创建文件夹
-    console.log("parent_id"+curPath.id);
-    console.log("rootFolderData"+rootFolderData.id);
-    const folderID = getCurrentFolderID();
-    createFolder(folderID, file, token, account, index);
-  };
-
-  // 创建文件夹
-  const createFolder = (folderPath, file, token, account,index) => {
-    console.log('index2:', index);
-    fetch('http://localhost:8080/api/createFolder', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token,  // 使用 token 进行授权
-      },
-      body: JSON.stringify({
-        account: account,   // 使用存储在 localStorage 的用户数据
-        parent_id: folderPath,      // 使用根路径和文件夹名称拼接得到完整路径
-        folder_name: file.name,
-      }),
-    })
-        .then((response) => {
-          if (!response.ok) {
-            return response.text().then((errorText) => {
-              throw new Error(`创建文件夹失败: ${response.status} ${response.statusText} - ${errorText}`);
-            });
-          }
-          return response.json(); // 返回的数据为 JSON
-        })
-        .then((data) => {
-          console.log("返回的数据：", data); // 查看返回的数据内容
-
-          // 如果返回的状态是失败
-          if (data.status === "FAILED") {
-            console.log('文件夹创建失败，返回消息:', data.msg);
-            showLabelAlert('文件夹创建失败: ' + data.msg);
-            // 重新聚焦输入框并全选
-            file.isEditing = true;
-            nextTick(() => {
-              const inputEl = document.getElementById(`folder-input-${index}`);
-              console.log('inputEI2:', inputEl);
-              if (inputEl) {
-                inputEl.focus();
-                inputEl.select();
-                inputEl.classList.add('shake');
-                setTimeout(() => inputEl.classList.remove('shake'), 300); // 移除震动效果
-              }
-            });
-          } else {
-            console.log('文件夹创建成功');
-            showLabelAlert('文件夹创建成功!');
-          }
-        })
-        .catch((error) => {
-          alert('文件夹创建失败: ' + error.message);
-        });
-  };
-
-
-  // 处理点击文件夹进入
-  /*const handleFolderClick = (folder) => {
-    // 更新当前路径
-    curPath = folder;
-    // 假设你有一个方法来获取文件夹下的文件
-    loadFilesInFolder(folder.id);
-  };*/
-
-
-  // 返回上一级文件夹
-  /*const goBackToParentFolder = () => {
-    console.log(curPath.parent_id);
-    if (curPath.parent_id){
-      loadFilesInFolder(curPath.parent_id);
-      fetch(`http://localhost:8080/api/loadFolder/getFolderInfo?account=${encodeURIComponent(userInfo.account)}&folder_id=${encodeURIComponent(curPath.parent_id)}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': token,
-        },
-      })
-          .then(response => {
-            if (!response.ok) throw new Error(`获取上一级目录失败: ${response.statusText}`);
-            return response.json();
-          })
-          .then(data => {
-            if (data.status === "FAILED") {
-              console.log(data);
-              alert('获取上一级目录失败: ' + data.msg);
-            }
-            else {
-              curPath= data.data;
-            }
-          })
     }
     else{
-      showLabelAlert('当前目录为系统默认目录');
+      const account = userInfo.account; // 从 userData 获取 account
+      const folderID = getCurrentFolderID();
+      const inputEl = document.getElementById(`folder-input-${index}`);
+      showLabelAlert('文件夹创建成功!');
+      createFolder(folderID, file, token, account, index, file.isEditing, inputEl);
+      getFolderFile(folderID);
+      file.isEditing=false;
+      isEd=false;
     }
-  };*/
+  };
+
   const goBackToParentFolder = () => {
     if(Stack.length > 1){
       Stack.pop();
@@ -379,6 +242,7 @@
     return isAllSelectedFilesFavorited.value ? favoriteIcon : unfavoriteIcon;
   });
 
+
 </script>
 
 <template>
@@ -386,6 +250,7 @@
     <div class="file_header">
       <p>我的文件</p>
       <div id="alert-container"></div> <!-- 中间的label容器 -->
+      <button id="allSelected" style="margin-right: 15px;" @click="selectAll"><img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;"></button>
       <button id="addFolder" @click="addNewFolder">
         <img src="../assets/新建文件夹.svg" alt="" style="width: 30px; height: 30px;">
       </button>
@@ -416,8 +281,17 @@
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>
-      <div class="file-operations" v-if="isAnyFileSelected">
+      <div class="file-operations" v-if="isMultipleSelected">
         <button><img src="../assets/下载.svg" alt="">下载</button>
+        <button><img src="../assets/分享.svg" alt="">共享</button>
+        <button><img src="../assets/回收站.svg" alt="">删除</button>
+        <button @click="markAsFavorite">
+          <img :src="favoriteButtonIcon" alt="收藏按钮">收藏
+        </button>
+      </div>
+      <div class="file-operations" v-else-if="isSingleSelected">
+        <button><img src="../assets/下载.svg" alt="">下载</button>
+        <button><img src="../assets/重命名.svg" alt="">重命名</button>
         <button><img src="../assets/分享.svg" alt="">共享</button>
         <button><img src="../assets/回收站.svg" alt="">删除</button>
         <button @click="markAsFavorite">
