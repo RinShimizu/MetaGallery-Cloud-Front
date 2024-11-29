@@ -1,5 +1,7 @@
-import { nextTick} from 'vue';
+import {computed, nextTick} from 'vue';
 import folderURL from "@/assets/文件夹.svg";
+import favoriteIcon from "@/assets/已收藏.svg";
+import unfavoriteIcon from "@/assets/收藏.svg";
 var CurrentFolderID = 1;
 
 export const changeCurrentFolderID = (ID) => {
@@ -168,50 +170,103 @@ export const createFolder = (folderPath, file, token, account,index,isEditing,in
         });
 
 };
-export const renameFolder=(folders,file,inputEl,oldName,account,token)=>{
-    if(file.name===oldName)return '文件夹重命名成功！';
-    const isDuplicate = folders.some(existingFolder => existingFolder.name === file.name);
+export const renameFolder =  (folders, folder, oldName, account, token, isEditing) => {
+    console.log('renameAPI');
 
-    if (isDuplicate) {
-        return '文件夹名重复！';
-    } else {
-        const folder = folders.filter(existingFolder => existingFolder.name === oldName);
-        fetch('http://localhost:8080/api/renameFolder', {
+    // 如果名称未更改，直接返回成功
+    if (folder.name === oldName) return '文件夹重命名成功！';
+
+    // 检查是否有重复名字
+    const duplicateCount = folders.filter(existingFolder => existingFolder.name === folder.name).length;
+    if (duplicateCount > 1) {
+        return `重命名失败：名称 "${folder.name}" 已经存在！`;
+    }
+
+    try {
+        // 发起重命名请求
+        const response = fetch('http://localhost:8080/api/renameFolder', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': token,  // 使用 token 进行授权
             },
             body: JSON.stringify({
-                account: account,   // 使用存储在 localStorage 的用户数据
-                folder_id:folder.id ,      // 使用根路径和文件夹名称拼接得到完整路径
-                new_folder_name: file.name,
+                account: account,
+                folder_id: folder.id,
+                new_folder_name: folder.name,
             }),
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    return response.text().then((errorText) => {
-                        throw new Error(`文件夹重命名失败: ${response.status} ${response.statusText} - ${errorText}`);
-                    });
-                }
-                return response.json(); // 返回的数据为 JSON
-            })
-            .then((data) => {
-                console.log("返回的数据：", data); // 查看返回的数据内容
+        });
 
-                // 如果返回的状态是失败
-                if (data.status === "FAILED") {
-                    console.log('文件夹重命名失败，返回消息:', data.msg);
-                } else {
-                    return '文件夹重命名成功！';
-                }
-            })
-            .catch((error) => {
-                alert('文件夹重命名失败: ' + error.message);
-            });
+        // 检查 HTTP 状态码
+        if (!response.ok) {
+            const errorText =  response.text();
+            throw new Error(`文件夹重命名失败: ${response.status} ${response.statusText} - ${errorText}`);
+        }
 
+        // 解析返回数据
+        const data =  response.json();
+
+        // 根据返回数据状态判断是否成功
+        if (data.status === "FAILED") {
+            return `文件夹重命名失败，返回消息: ${data.msg}`;
+        }
+
+        return '文件夹重命名成功！';
+    } catch (error) {
+        // 捕获错误并返回信息
+        return `文件夹重命名失败: ${error.message}`;
+    }
+};
+
+export const deleteItems = (selectedIds, token, account) => {
+    const folders=selectedIds.value.folders;
+    const files=selectedIds.value.files;
+    console.log(folders);
+    for(const folder of folders){
+        console.log(111);
+        deleteFolder(folder,token,account);
+    }
+    for(const file of files){}
+    return '删除成功';
+
+};
+
+export const deleteFolder=(folder,token,account)=>{
+    try {
+        // 发起重命名请求
+        const myHeaders = new Headers();
+        myHeaders.append("Authorization", token);
+        const response = fetch('http://localhost:8080/api/removeFolder', {
+            method: 'DELETE',
+            headers: myHeaders,
+            redirect: 'follow',
+            body: JSON.stringify({
+            account: account,
+            folder_id: folder.id,
+            }),
+        });
+
+        // 检查 HTTP 状态码
+        if (!response.ok) {
+            const errorText = response.text();
+            throw new Error(`文件夹删除失败: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        // 解析返回数据
+        const data = response.json();
+        // 根据返回数据状态判断是否成功
+        if (data.status === "FAILED") {
+            console.log('文件夹删除失败，返回消息:', data.msg);
+        }
+        else{
+            console.log('succ')
+        }
+    } catch (error) {
+        // 捕获错误并返回信息
+        return `文件夹删除失败: ${error.message}`;
     }
 }
+
 
 export const preJudge=(folders,file)=>{
     let msg='';
@@ -277,6 +332,7 @@ export const showLabelAlert = (msg) => {
         container.removeChild(alertLabel);
     }, 1000);
 };
+
 
 
 

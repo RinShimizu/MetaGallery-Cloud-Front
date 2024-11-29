@@ -10,7 +10,7 @@
     createFolder,
     preJudge,
     labelShake, labelFocus,
-    creatIng,showLabelAlert
+    creatIng, showLabelAlert, renameFolder, deleteItems
   } from '../homepage/api.js'
 
   import favoriteIcon from '../assets/已收藏.svg';
@@ -21,17 +21,19 @@
   var userInfo = userData.data.userInfo;
   let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
   const eventBus = useEventBus("folder-update");
-  const rootFolderData = JSON.parse(localStorage.getItem('rootFolderData'));
-  let curPath=rootFolderData;
   const token = localStorage.getItem('token');
 
   var isCancel = false;
   var isEd=false;
+  var isRe=false;
+  let isFolder = false; // 标记是否为文件夹
   const isAllSelected = ref(false);
 
   //获取当前页面文件夹和文件
   var folders = ref([]);
   var files = ref([]);
+  var oldName='';
+
   onMounted(async () => {
     Stack.length = 0;
     changeCurrentFolderID(1);
@@ -40,30 +42,30 @@
     files.value = Stack[Stack.length - 1][1];
   })
 
-  const selectedCount = computed(() => {
-    // 统计选中的文件和文件夹数量
-    const filesSelected = files.value.filter(file => file.selected).length;
-    const foldersSelected = folders.value.filter(folder => folder.selected).length;
-    return filesSelected + foldersSelected;
+  const selectedIds = computed(() => {
+    return {
+      files: files.value.filter(file => file.selected), // 选中的文件对象数组
+      folders: folders.value.filter(folder => folder.selected), // 选中的文件夹对象数组
+    };
   });
 
+
   const isSingleSelected = computed(() => {
-    // 如果总选中数量为 1，返回 true
-    return selectedCount.value === 1;
+    // 计算总选中数量
+    const totalSelected = selectedIds.value.files.length + selectedIds.value.folders.length;
+    return totalSelected === 1; // 如果总选中数量为 1，返回 true
   });
 
   const isMultipleSelected = computed(() => {
-    // 如果总选中数量大于 1，返回 true
-    return selectedCount.value > 1;
+    // 计算总选中数量
+    const totalSelected = selectedIds.value.files.length + selectedIds.value.folders.length;
+    return totalSelected > 1; // 如果总选中数量大于 1，返回 true
   });
 
   const selectAll = () => {
-    // 切换全选状态
     isAllSelected.value = !isAllSelected.value;
-
-    // 设置所有文件和文件夹的选中状态为全选状态
-    files.value.forEach(file => (file.selected = isAllSelected.value));
-    folders.value.forEach(folder => (folder.selected = isAllSelected.value));
+    const newState = isAllSelected.value;
+    [...files.value, ...folders.value].forEach(item => (item.selected = newState));
   };
 
 
@@ -103,36 +105,62 @@
     labelFocus(inputEl);
   };
 
-  const handleCancel=(index)=>{
-    isCancel=true;
-    folders.value.splice(index, 1); // 删除当前条目
-  }
+  const handleCancel = (index) => {
+    isCancel = true;
 
-
-  // 完成文件夹编辑并调用接口创建文件夹
-  const finishEditing = (file,index) => {
-    if (!file.isEditing||isCancel) return; // 防止重复处理
-    // 文件名校验逻辑
-    const msg=preJudge(folders.value,file);
-    console.log('editing:');
-    if (msg.trim()!=='') {
-      showLabelAlert(msg);
-      file.isEditing = true;
-      nextTick(() => {
+    // 如果 isRe 为 false，则删除当前条目
+    if (!isRe) {
+      folders.value.splice(index, 1); // 删除当前条目
+    } else {
+      // 如果是重命名取消，不做任何修改，只关闭输入框
+      const item = folders.value[index];
+      if (item) {
+        item.isEditing = false; // 设置为非编辑状态
         const inputEl = document.getElementById(`folder-input-${index}`);
+        if (inputEl) {
+          inputEl.blur(); // 关闭输入框
+        }
+      }
+    }
+  };
+
+
+
+  const finishEditing = (item, index, isRename, isFolder) => {
+    if (!item.isEditing || isCancel) return; // 防止重复处理
+
+    // 文件名校验逻辑
+    const msg = preJudge(isFolder ? folders.value : files.value, item);
+    const inputEl = document.getElementById(`folder-input-${index}`);
+    if (msg.trim() !== '') {
+      showLabelAlert(msg);
+      item.isEditing = true;
+      nextTick(() => {
         labelShake(inputEl);
       });
+      return;
     }
-    else{
-      const account = userInfo.account; // 从 userData 获取 account
-      const folderID = getCurrentFolderID();
-      const inputEl = document.getElementById(`folder-input-${index}`);
-      showLabelAlert('文件夹创建成功!');
-      createFolder(folderID, file, token, account, index, file.isEditing, inputEl);
-      getFolderFile(folderID);
-      file.isEditing=false;
-      isEd=false;
+    console.log(isRename);
+    const account = userInfo.account; // 从 userData 获取 account
+    const folderID = getCurrentFolderID();
+    var result='';
+    //
+    if (!isRename) {
+      createFolder(folderID, item, token, account, index, item.isEditing, inputEl);
+      result='文件夹创建成功!';
+    } else {
+      if (isFolder) {
+        renameFolder(folders.value, item, oldName, account, token, item.isEditing);
+        result='文件夹重命名成功！';
+        isRe=false;
+      } else {
+        // showLabelAlert(renameFile(files, item, oldName, account, token, item.isEditing));
+      }
     }
+    showLabelAlert(result);
+    item.isEditing = false;
+    isEd = false;
+
   };
 
   const goBackToParentFolder = () => {
@@ -146,101 +174,157 @@
     }
   };
 
+  const reName = (selectedIds) => {
+    isRe = true;
+    const folderIds = selectedIds.folders; // 选中的文件夹数组
+    const fileIds = selectedIds.files; // 选中的文件数组
+    console.log('Selected IDs:', folderIds);
+    let item = null; // 将用于保存目标文件/文件夹
+
+    let index;
+
+    if (folderIds.length === 1) {
+      // 文件夹重命名
+      index = folders.value.findIndex((folder) => folder.id === folderIds[0].id);
+      item = folders.value[index];
+      isFolder = true;
+    } else if (fileIds.length === 1) {
+      // 文件重命名
+      index = files.value.findIndex((file) => file.id === fileIds[0].id);
+      item = files.value[index];
+    }
+    oldName=item.name;
+    // 设置为编辑模式
+    item.isEditing = true;
+    console.log("item:", item);
+    nextTick(() => {
+      const inputEl = document.getElementById(`folder-input-${index}`);
+      if (inputEl) {
+        labelFocus(inputEl); // 聚焦到输入框
+      }
+    });
+
+  };
+
+  const showDeleteModal = ref(false); // 控制模态框显示的状态
+
+  const clickDel = (selectedIds) => {
+    // 显示模态框而不是直接删除
+    showDeleteModal.value = true;
+  };
+
+  // 确认删除
+  const confirmDelete = () => {
+    console.log(selectedIds);
+    showLabelAlert(deleteItems(selectedIds, token, userInfo.account));
+    const folderID = getCurrentFolderID();
+    getFolderFile(folderID);
+    showDeleteModal.value = false; // 关闭模态框
+  };
+
+  // 取消删除
+  const cancelDelete = () => {
+    showDeleteModal.value = false; // 关闭模态框
+  };
+
   //收藏按钮
   // 判断是否所有选中的文件/文件夹已收藏
   const isAllSelectedFilesFavorited = computed(() => {
-    const allSelectedFilesFavorited = files.value
-        .filter(file => file.selected)  // 过滤选中的文件
-        .every(file => file.isFavorite);  // 检查是否所有选中的文件都已收藏
+      const allSelectedFilesFavorited = files.value
+          .filter(file => file.selected)  // 过滤选中的文件
+          .every(file => file.isFavorite);  // 检查是否所有选中的文件都已收藏
 
-    const allSelectedFoldersFavorited = folders.value
-        .filter(folder => folder.selected)  // 过滤选中的文件夹
-        .every(folder => folder.isFavorite);  // 检查是否所有选中的文件夹都已收藏
+      const allSelectedFoldersFavorited = folders.value
+          .filter(folder => folder.selected)  // 过滤选中的文件夹
+          .every(folder => folder.isFavorite);  // 检查是否所有选中的文件夹都已收藏
 
-    // 返回是否文件和文件夹都已收藏
-    return allSelectedFilesFavorited && allSelectedFoldersFavorited;
+      // 返回是否文件和文件夹都已收藏
+      return allSelectedFilesFavorited && allSelectedFoldersFavorited;
   });
 
   var account = userInfo.account;
   //var imgURL = userInfo.avatar;
   const markAsFavorite = () => {
-    const newFavoriteState = isAllSelectedFilesFavorited.value ? 1 : 2;
+      const newFavoriteState = isAllSelectedFilesFavorited.value ? 1 : 2;
 
-    files.value.forEach(file => {
-      if (file.selected) {
-        const requestData = {
-          account: account,
-          file_id: file.ID,
-          is_favorite: newFavoriteState,
-        };
-        // console.log('Account:', account); // 打印 account 的值
-        // console.log('File ID:', file.ID); // 打印 file.ID 的值
-        // console.log('Is Favorite:', newFavoriteState); // 打印 newFavoriteState 的值
-        fetch('http://localhost:8080/api/favoriteFile', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: localStorage.getItem('token'),
-          },
-          body: JSON.stringify(requestData),
-        })
-            .then(response => response.json())
-            .then(data => {
-              console.log('Response Data:', data); // 打印响应体内容
-              if (data.status === 'SUCCESS') {
-                const favoriteStateFromMsg = data.msg.includes('true');
-                file.isFavorite = favoriteStateFromMsg;
-                console.log(`${file.name} 收藏状态已更新：${file.isFavorite ? '已收藏' : '未收藏'}`);
-              } else {
-                console.error(`更新收藏状态失败：${file.name}`, data.message);
-              }
-            })
-            .catch(error => {
-              console.error(`请求失败：${file.name}`, error);
-            });
-      }
-    });
-    folders.value.forEach(folder => {
-      if (folder.selected) {
-        const requestData = {
-          account: account,
-          folder_id: folder.id,
-          is_favorite: newFavoriteState,
-        };
-        console.log('Account:', account); // 打印 account 的值
-        console.log('Foler ID:', folder.id); // 打印 file.ID 的值
-        console.log('Is Favorite:', newFavoriteState); // 打印 newFavoriteState 的值
-        fetch('http://localhost:8080/api/favoriteFolder', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: localStorage.getItem('token'),
-          },
-          body: JSON.stringify(requestData),
-        })
-            .then(response => response.json())
-            .then(data => {
-              console.log('Response Data:', data); // 打印响应体内容
-              if (data.status === 'SUCCESS') {
-                const favoriteStateFromMsg = data.msg.includes('true');
-                folder.isFavorite = favoriteStateFromMsg;
-                console.log(`${folder.name} 收藏状态已更新：${folder.isFavorite ? '已收藏' : '未收藏'}`);
-              } else {
-                console.error(`更新收藏状态失败：${folder.name}`, data.message);
-              }
-            })
-            .catch(error => {
-              console.error(`请求失败：${folder.name}`, error);
-            });
-      }
-    });
+      files.value.forEach(file => {
+          if (file.selected) {
+              const requestData = {
+                  account: account,
+                  file_id: file.ID,
+                  is_favorite: newFavoriteState,
+              };
+              // console.log('Account:', account); // 打印 account 的值
+              // console.log('File ID:', file.ID); // 打印 file.ID 的值
+              // console.log('Is Favorite:', newFavoriteState); // 打印 newFavoriteState 的值
+              fetch('http://localhost:8080/api/favoriteFile', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: localStorage.getItem('token'),
+                  },
+                  body: JSON.stringify(requestData),
+              })
+                  .then(response => response.json())
+                  .then(data => {
+                      console.log('Response Data:', data); // 打印响应体内容
+                      if (data.status === 'SUCCESS') {
+                          const favoriteStateFromMsg = data.msg.includes('true');
+                          file.isFavorite = favoriteStateFromMsg;
+                          console.log(`${file.name} 收藏状态已更新：${file.isFavorite ? '已收藏' : '未收藏'}`);
+                      } else {
+                          console.error(`更新收藏状态失败：${file.name}`, data.message);
+                      }
+                  })
+                  .catch(error => {
+                      console.error(`请求失败：${file.name}`, error);
+                  });
+          }
+      });
+      folders.value.forEach(folder => {
+          if (folder.selected) {
+              const requestData = {
+                  account: account,
+                  folder_id: folder.id,
+                  is_favorite: newFavoriteState,
+              };
+              console.log('Account:', account); // 打印 account 的值
+              console.log('Foler ID:', folder.id); // 打印 file.ID 的值
+              console.log('Is Favorite:', newFavoriteState); // 打印 newFavoriteState 的值
+              fetch('http://localhost:8080/api/favoriteFolder', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: localStorage.getItem('token'),
+                  },
+                  body: JSON.stringify(requestData),
+              })
+                  .then(response => response.json())
+                  .then(data => {
+                      console.log('Response Data:', data); // 打印响应体内容
+                      if (data.status === 'SUCCESS') {
+                          const favoriteStateFromMsg = data.msg.includes('true');
+                          folder.isFavorite = favoriteStateFromMsg;
+                          console.log(`${folder.name} 收藏状态已更新：${folder.isFavorite ? '已收藏' : '未收藏'}`);
+                      } else {
+                          console.error(`更新收藏状态失败：${folder.name}`, data.message);
+                      }
+                  })
+                  .catch(error => {
+                      console.error(`请求失败：${folder.name}`, error);
+                  });
+          }
+      });
   };
 
   // 变更收藏按钮的图标，根据选中的文件是否已收藏来判断
   const favoriteButtonIcon = computed(() => {
-    console.log('isAllSelectedFilesFavorited.value', isAllSelectedFilesFavorited.value);
-    return isAllSelectedFilesFavorited.value ? favoriteIcon : unfavoriteIcon;
+      console.log('isAllSelectedFilesFavorited.value', isAllSelectedFilesFavorited.value);
+      return isAllSelectedFilesFavorited.value ? favoriteIcon : unfavoriteIcon;
   });
+
+
+
 
 
 </script>
@@ -266,7 +350,7 @@
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
           <template v-if="folder.isEditing">
             <input v-model="folder.name" :id="`folder-input-${index}`" class="file-input"
-                   @blur="finishEditing(folder, index)" @keydown.enter="finishEditing(folder, index)" />
+                   @blur="finishEditing(folder, index, isRe,isFolder)" @keydown.enter="finishEditing(folder, index, isRe,isFolder)" />
             <button @mousedown.prevent="handleCancel(index)">取消</button> <!-- 添加取消按钮 -->
           </template>
           <template v-else>
@@ -284,22 +368,40 @@
       <div class="file-operations" v-if="isMultipleSelected">
         <button><img src="../assets/下载.svg" alt="">下载</button>
         <button><img src="../assets/分享.svg" alt="">共享</button>
-        <button><img src="../assets/回收站.svg" alt="">删除</button>
+        <button @click="clickDel(selectedIds)"><img src="../assets/回收站.svg" alt="">删除</button>
         <button @click="markAsFavorite">
           <img :src="favoriteButtonIcon" alt="收藏按钮">收藏
         </button>
       </div>
       <div class="file-operations" v-else-if="isSingleSelected">
-        <button><img src="../assets/下载.svg" alt="">下载</button>
-        <button><img src="../assets/重命名.svg" alt="">重命名</button>
-        <button><img src="../assets/分享.svg" alt="">共享</button>
-        <button><img src="../assets/回收站.svg" alt="">删除</button>
+        <button @click="download(selectedIds)">
+          <img src="../assets/下载.svg" alt="">下载
+        </button>
+        <button @click="reName(selectedIds)">
+          <img src="../assets/重命名.svg" alt="">重命名
+        </button>
+        <button @click="share(selectedIds)">
+          <img src="../assets/分享.svg" alt="">共享
+        </button>
+        <button @click="clickDel(selectedIds)">
+          <img src="../assets/回收站.svg" alt="">删除
+        </button>
         <button @click="markAsFavorite">
           <img :src="favoriteButtonIcon" alt="收藏按钮">收藏
         </button>
       </div>
     </div>
+    <!-- 删除确认模态框 -->
+    <div v-if="showDeleteModal" class="modal">
+      <div class="modal-content">
+        <h3>确认删除</h3>
+        <p>您确定要删除选中的项目吗？</p>
+        <button @click="confirmDelete">确认</button>
+        <button @click="cancelDelete">取消</button>
+      </div>
+    </div>
   </div>
+
 </template>
 
 <style scoped>
@@ -478,4 +580,25 @@
     animation: shake 0.3s ease-in-out;
   }
 
+  /* 模态框样式 */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    text-align: center;
+  }
 </style>
