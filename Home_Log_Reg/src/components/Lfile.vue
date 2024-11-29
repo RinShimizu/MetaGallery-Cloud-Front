@@ -339,7 +339,7 @@
         <img src="../assets/新建文件夹.svg" alt="" style="width: 30px; height: 30px;">
       </button>
       <button id="back" @click="goBackToParentFolder">
-        <img src="../assets/回退.svg" alt="" style="width: 30px; height: 30px;">
+        <img src="../assets/回退.svg" alt="" style="width: 30px; height: 30px;margin-right: -15px;">
       </button>
     </div>
     <div class="file_op">
@@ -435,6 +435,7 @@
     background-size: contain; /* 图片自适应大小 */
     background-repeat: no-repeat;
     background-position: center;
+    margin-left: 15px;
   }
   .file_header button {
     background: none; /* 去掉按钮背景 */
