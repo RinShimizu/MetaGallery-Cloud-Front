@@ -2,8 +2,14 @@ import {computed, nextTick} from 'vue';
 import folderURL from "@/assets/文件夹.svg";
 import favoriteIcon from "@/assets/已收藏.svg";
 import unfavoriteIcon from "@/assets/收藏.svg";
+import { ref } from 'vue';
 var CurrentFolderID = 1;
-
+export const fileOrFolderInfo =  ref({
+    type: '',  // 'file' 或 'folder'
+    data: null  // 存储文件或文件夹的具体信息
+});// 用于存储当前文件或文件夹的信息
+export const popupTop = ref('0px');  // 存储悬浮框的 top 值
+export const popupLeft = ref('0px'); // 存储悬浮框的 left 值
 export const changeCurrentFolderID = (ID) => {
     CurrentFolderID = ID;
 }
@@ -56,11 +62,17 @@ export const fetchSubInfo = (Stack, token, account, folder_id) => {
                 }));
                 // 处理文件数据
                 const filesFromServer = fileResponse.data == null ? [] : fileResponse.data;
+                Stack.push(filesFromServer);
+                console.log("fileResponse.data",fileResponse.data);
                 filesFromServer.forEach(file => {
-                    console.log(1);
+                    //console.log(1);
                     const existingFile = Stack[Stack.length - 1]?.find(f => f.ID === file.ID);
+                    //console.log("existingFile",existingFile);
                     if (existingFile) {
                         existingFile.isFavorite = file.Favorite;
+                    }
+                    else{
+                        console.log(222);
                     }
                 });
 
@@ -241,8 +253,8 @@ export const deleteFolder=(folder,token,account)=>{
             headers: myHeaders,
             redirect: 'follow',
             body: JSON.stringify({
-            account: account,
-            folder_id: folder.id,
+                account: account,
+                folder_id: folder.id,
             }),
         });
 
@@ -377,11 +389,16 @@ export const fetchDelSubInfo = (Stack, token, account) => {
                 }));
                 // 处理文件数据
                 const filesFromServer = fileResponse.data == null ? [] : fileResponse.data;
+                Stack.push(filesFromServer);
                 filesFromServer.forEach(file => {
-                    console.log(1);
+                    //console.log(1);
                     const existingFile = Stack[Stack.length - 1]?.find(f => f.ID === file.ID);
+                    //console.log("existingFile.isFavorite",existingFile.isFavorite);
                     if (existingFile) {
                         existingFile.isFavorite = file.Favorite;
+                    }
+                    else{
+                        console.log(222);
                     }
                 });
 
@@ -398,6 +415,132 @@ export const fetchDelSubInfo = (Stack, token, account) => {
     });
 };
 
+export const isAllSelectedFilesFavorited = (selectedIds) =>{
+    const folders=selectedIds.value.folders;
+    const files=selectedIds.value.files;
+    console.log(folders);
+    const allSelectedFilesFavorited = files
+        //.filter(file => file.selected)  // 过滤选中的文件
+        .every(file => file.isFavorite);  // 检查是否所有选中的文件都已收藏
+
+    const allSelectedFoldersFavorited = folders
+        //.filter(folder => folder.selected)  // 过滤选中的文件夹
+        .every(folder => folder.isFavorite);  // 检查是否所有选中的文件夹都已收藏
+
+    // 返回是否文件和文件夹都已收藏
+    return allSelectedFilesFavorited && allSelectedFoldersFavorited;
+};
+
+export const markAsFavorite = (selectedIds, account, token, isAllFavorited) => {
+    const folders=selectedIds.value.folders;
+    const files=selectedIds.value.files;
+    const newFavoriteState = isAllFavorited ? 1 : 2;
+    console.log(folders);
+    for(const file of files) {
+        //if (file.selected) {
+        const requestData = {
+            account,
+            file_id: file.ID,
+            is_favorite: newFavoriteState,
+        };
+        fetch('http://localhost:8080/api/favoriteFile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: token,
+            },
+            body: JSON.stringify(requestData),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'SUCCESS') {
+                    file.isFavorite = data.msg.includes('true');
+                }
+            })
+            .catch(error => console.error(`请求失败：${file.name}`, error));
+        //}
+    }
+
+    for(const folder of folders){
+        //if (folder.selected) {
+        const requestData = {
+            account,
+            folder_id: folder.id,
+            is_favorite: newFavoriteState,
+        };
+        fetch('http://localhost:8080/api/favoriteFolder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: token,
+            },
+            body: JSON.stringify(requestData),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'SUCCESS') {
+                    folder.isFavorite = data.msg.includes('true');
+                }
+            })
+            .catch(error => console.error(`请求失败：${folder.name}`, error));
+        //}
+    }
+};
+
+export const favoriteButtonIcon = (isAllFavorited, favoriteIcon, unfavoriteIcon) => {
+    return isAllFavorited ? favoriteIcon : unfavoriteIcon;
+};
+
+// 显示文件/文件夹信息
+export const showFileOrFolderInfo = async (id, type, token, account,event) => {
+    //console.log("id",id);
+    //console.log("正在显示详细信息");
+    //console.log("type",type);
+    const info = await fetchFileOrFolderInfo(id, type, token, account);
+    console.log("fileOrFolderInfo.value",fileOrFolderInfo.value.data);
+    // 设置一个定时器，延迟 1 秒后显示悬浮框
+    // setTimeout(() => {
+    //     nextTick(() => {
+
+            fileOrFolderInfo.value = {
+                type: type,  // 将 type 添加到 fileOrFolderInfo
+                data: info   // 存储具体的信息
+            };
+
+    //     });
+    // }, 1000); // 延迟 1 秒（1000 毫秒）\
+    // 更新悬浮框的位置，使其跟随鼠标
+    popupTop.value = `${event.clientY - 70}px`; // 10px 为偏移量
+    popupLeft.value = `${event.clientX - 200}px`; // 10px 为偏移量
+    console.log("fileOrFolderInfo.value.data",fileOrFolderInfo.value.data);
+};
+
+// 隐藏文件/文件夹信息
+export const hideFileOrFolderInfo = () => {
+    fileOrFolderInfo.value = { type: '', data: null };  // 清空数据
+};
+// 从服务器获取文件或文件夹信息
+export const fetchFileOrFolderInfo = async (id, type, token, account) => {
+    console.log("fetchFileOrFolderInfo id",id);
+    let url = '';
+    if (type === 'file') {
+        url = `http://localhost:8080/api/getFileData?account=${account}&file_id=${id}`;
+    } else if (type === 'folder') {
+        console.log(123);
+        url = `http://localhost:8080/api/loadFolder/getFolderInfo?account=${account}&folder_id=${id}`;
+    }
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': token,
+        }
+    });
+
+    const data = await response.json();
+    console.log("data",data);
+    return data.data;  // 返回相关的信息
+};
 
 
 

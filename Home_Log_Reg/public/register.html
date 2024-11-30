@@ -146,6 +146,19 @@
         },
         methods: {
             register: function() {
+                // 账号验证
+                const accountRegex = /^[a-zA-Z][a-zA-Z0-9]{4,9}$/;
+                if (!accountRegex.test(this.account)) {
+                    alert('账号必须以字母开头，且只能包含字母和数字，长度为5到10个字符');
+                    return;
+                }
+
+                // 密码验证
+                const passwordRegex = /^[a-zA-Z0-9_@#$%&.]{6,}$/;
+                if (!passwordRegex.test(this.password)) {
+                    alert('密码必须至少6个字符，可以包含字母、数字和特殊字符（_@#$%&.）');
+                    return;
+                }
                 if (this.password !== this.confirmPassword) {
                     alert('两次输入的密码不一致！');
                     return;
