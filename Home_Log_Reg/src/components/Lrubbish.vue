@@ -2,17 +2,19 @@
 import {ref, computed, onMounted} from 'vue';
 import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
-import { fetchDelSubInfo} from "@/homepage/api.js";
-import {useEventBus} from "@vueuse/core";
+import { fetchDelSubInfo } from "@/homepage/api.js";
+import { useEventBus } from "@vueuse/core";
 
 //用户信息加载,不要重复写
 //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
 const userData = JSON.parse(localStorage.getItem('userData'));
 var userInfo = userData.data.userInfo;
+
 let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
 const eventBus = useEventBus("folder-update");
 const token = localStorage.getItem('token');
 const isAllSelected = ref(false);
+
 
 //获取当前页面文件夹和文件
 var folders = ref([]);
@@ -23,6 +25,7 @@ onMounted(async () => {
   await fetchDelSubInfo(Stack,userData.data.token, userInfo.account);
   folders.value = Stack[Stack.length - 1][0];
   files.value = Stack[Stack.length - 1][1];
+  console.log(Stack);
 })
 
 const selectedIds = computed(() => {
@@ -36,18 +39,18 @@ const isAnyFileSelected = computed(() => {
   return files.value.some(file => file.selected)||folders.value.some(folder => folder.selected);
 });
 
-function showMessage() {
-  var message = document.getElementById("message");
-  message.style.display = "inline-flex";
-}
-function cancel() {
-  var message = document.getElementById("message");
-  message.style.display = "none";
-}
-function confirm() {
-  var message = document.getElementById("message");
-  message.style.display = "none";
-}
+  const showMessage = () => {
+    var message = document.getElementById("message");
+    message.style.display = "inline-flex";
+  }
+  const cancel = () => {
+    var message = document.getElementById("message");
+    message.style.display = "none";
+  }
+  const confirm = () => {
+    var message = document.getElementById("message");
+    message.style.display = "none";
+  }
 
 </script>
 
@@ -63,12 +66,12 @@ function confirm() {
         <!-- 文件夹列表 -->
         <div class="folder-item" v-for="(folder, index) in folders" :key="folder.id">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
-            <a href="" class="file-name">{{ folder.name }}</a>
+            <span href="" class="file-name">{{ folder.name }}</span>
             <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
         </div>
         <div class="file-item" v-for="file in files" :key="file.ID">
           <img :src="fileURL" alt="文件图标" class="file-icon" />
-          <a href="" class="file-name">{{ file.FileName }}</a>
+          <span href="" class="file-name">{{ file.FileName }}</span>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>

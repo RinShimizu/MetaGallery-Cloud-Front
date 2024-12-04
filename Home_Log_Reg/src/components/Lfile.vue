@@ -1,6 +1,6 @@
 <script setup>
-import {ref, computed, nextTick, onMounted} from 'vue';
-import {useEventBus} from "@vueuse/core";
+import { ref, computed, nextTick, onMounted } from 'vue';
+import { useEventBus } from "@vueuse/core";
 import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
 import {
@@ -11,15 +11,17 @@ import {
   preJudge,
   labelShake, labelFocus,
   creatIng, showLabelAlert, renameFolder, deleteItems,
-  isAllSelectedFilesFavorited,markAsFavorite,favoriteButtonIcon,
-  showFileOrFolderInfo,hideFileOrFolderInfo,fileOrFolderInfo,popupTop,popupLeft
+  isAllSelectedFilesFavorited, markAsFavorite, favoriteButtonIcon,
+  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, deleteFile, renameFile
 } from '../homepage/api.js'
+
 
 import favoriteIcon from '../assets/已收藏.svg';
 import unfavoriteIcon from '../assets/收藏.svg';
 //用户信息加载,不要重复写
 //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
 const userData = JSON.parse(localStorage.getItem('userData'));
+const rootFolderID = JSON.parse(localStorage.getItem('rootFolderData'));
 var userInfo = userData.data.userInfo;
 let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
 const eventBus = useEventBus("folder-update");
@@ -38,8 +40,8 @@ var oldName = '';
 
 onMounted(async () => {
   Stack.length = 0;
-  changeCurrentFolderID(1);
-  await fetchSubInfo(Stack, userData.data.token, userInfo.account, 1);
+  changeCurrentFolderID(rootFolderID); //这里更改为用户根文件夹ID
+  await fetchSubInfo(Stack, userData.data.token, userInfo.account, rootFolderID);
   folders.value = Stack[Stack.length - 1][0];
   files.value = Stack[Stack.length - 1][1];
   console.log(Stack,"tishi");
@@ -52,11 +54,8 @@ const selectedIds = computed(() => {
   };
 });
 
-
-const isSingleSelected = computed(() => {
-  // 计算总选中数量
-  const totalSelected = selectedIds.value.files.length + selectedIds.value.folders.length;
-  return totalSelected === 1; // 如果总选中数量为 1，返回 true
+const isAnyFileSelected = computed(() => {
+  return files.value.some(file => file.selected)||folders.value.some(folder => folder.selected);
 });
 
 const isMultipleSelected = computed(() => {
@@ -71,29 +70,20 @@ const selectAll = () => {
   [...files.value, ...folders.value].forEach(item => (item.selected = newState));
 };
 
-
 const getFolderFile = async (ID) => {
   changeCurrentFolderID(ID);
   console.log("curPathID:" + ID);
   await fetchSubInfo(Stack, userData.data.token, userInfo.account, ID);
   folders.value = Stack[Stack.length - 1][0];
   files.value = Stack[Stack.length - 1][1];
-  console.log("Stack:", Stack);
 }
 
 onMounted(() => {
   eventBus.on((folderID) => {
-    if (folderID !== 1) {
-      goBackToParentFolder();
-    } else {
-      Stack.length = 0;
-    }
+    Stack.pop();
     getFolderFile(folderID); // 响应事件
-
   });
-  console.log(userInfo);
-})
-
+});
 
 // 新建文件夹函数
 const addNewFolder = async () => {
@@ -106,33 +96,51 @@ const addNewFolder = async () => {
   const index = folders.value.indexOf(newFolder);
   const inputEl = document.getElementById(`folder-input-${index}`);
   labelFocus(inputEl);
+  isFolder = true;
 };
 
 const handleCancel = (index) => {
   isCancel = true;
-
+  var inputEl;
   // 如果 isRe 为 false，则删除当前条目
-  if (!isRe) {
-    folders.value.splice(index, 1); // 删除当前条目
-  } else {
-    // 如果是重命名取消，不做任何修改，只关闭输入框
-    const item = folders.value[index];
-    if (item) {
-      item.isEditing = false; // 设置为非编辑状态
-      const inputEl = document.getElementById(`folder-input-${index}`);
-      if (inputEl) {
-        inputEl.blur(); // 关闭输入框
+  if(isFolder){
+    if (!isRe) {
+      folders.value.splice(index, 1); // 删除当前条目
+    }
+    else {
+      // 如果是重命名取消，不做任何修改，只关闭输入框
+      const item = folders.value[index];
+      if (item) {
+        item.isEditing = false; // 设置为非编辑状态
+        inputEl = document.getElementById(`folder-input-${index}`);
+        if (inputEl) {
+          inputEl.blur(); // 关闭输入框
+          item.name = oldName;
+        }
       }
     }
   }
+  else{
+    console.log("这是文件重命名",oldName);
+    const item = files.value[index];
+    if (item) {
+      item.isEditing = false; // 设置为非编辑状态
+      inputEl = document.getElementById(`file-input-${index}`);
+    }
+    if (inputEl) {
+      inputEl.blur(); // 关闭输入框
+      console.log(123);
+      item.FileName = oldName;
+      console.log(123);
+    }
+  }
 };
-
 
 const finishEditing = (item, index, isRename, isFolder) => {
   if (!item.isEditing || isCancel) return; // 防止重复处理
 
   // 文件名校验逻辑
-  const msg = preJudge(isFolder ? folders.value : files.value, item);
+  const msg = preJudge(isFolder,(isFolder ? folders.value : files.value), item);
   const inputEl = document.getElementById(`folder-input-${index}`);
   if (msg.trim() !== '') {
     showLabelAlert(msg);
@@ -156,27 +164,31 @@ const finishEditing = (item, index, isRename, isFolder) => {
       renameFolder(folders.value, item, oldName, account, token, item.isEditing);
       result = '文件夹重命名成功！';
       isRe = false;
-    } else {
-      // showLabelAlert(renameFile(files, item, oldName, account, token, item.isEditing));
+    }
+    else{
+      renameFile(files.value, item, oldName, account, token, item.isEditing);
+      result = '文件重命名成功！';
+      isRe = false;
     }
   }
   showLabelAlert(result);
   item.isEditing = false;
-  isEd = false;
-
+  isEd = false
 };
 
 const goBackToParentFolder = () => {
-  if (Stack.length > 1) {
-    Stack.pop();
-    folders.value = Stack[Stack.length - 1][0];
-    files.value = Stack[Stack.length - 1][1];
-  } else {
-    showLabelAlert('当前目录为系统默认目录');
-  }
-};
+    if(Stack.length > 1){
+      Stack.pop();
+      folders.value = Stack[Stack.length - 1][0];
+      files.value = Stack[Stack.length - 1][1];
+    }
+    else{
+      showLabelAlert('当前目录为系统默认目录');
+    }
+  };
 
 const reName = (selectedIds) => {
+  isFolder = false;
   isRe = true;
   const folderIds = selectedIds.folders; // 选中的文件夹数组
   const fileIds = selectedIds.files; // 选中的文件数组
@@ -190,21 +202,36 @@ const reName = (selectedIds) => {
     index = folders.value.findIndex((folder) => folder.id === folderIds[0].id);
     item = folders.value[index];
     isFolder = true;
-  } else if (fileIds.length === 1) {
-    // 文件重命名
-    index = files.value.findIndex((file) => file.id === fileIds[0].id);
-    item = files.value[index];
+    oldName = item.name;
+
+    // 设置为编辑模式
+    item.isEditing = true;
+    console.log("item:", item);
+    nextTick(() => {
+      const inputEl = document.getElementById(`folder-input-${index}`);
+      if (inputEl) {
+        labelFocus(inputEl); // 聚焦到输入框
+      }
+    });
   }
-  oldName = item.name;
-  // 设置为编辑模式
-  item.isEditing = true;
-  console.log("item:", item);
-  nextTick(() => {
-    const inputEl = document.getElementById(`folder-input-${index}`);
-    if (inputEl) {
-      labelFocus(inputEl); // 聚焦到输入框
-    }
-  });
+  else if (fileIds.length === 1) {
+    // 文件重命名
+    index = files.value.findIndex((file) => file.ID === fileIds[0].ID);
+    item = files.value[index];
+    oldName = item.FileName;
+
+    // 设置为编辑模式
+    item.isEditing = true;
+    console.log("item:", item);
+    nextTick(() => {
+      const inputEl = document.getElementById(`file-input-${index}`);
+      if (inputEl) {
+        labelFocus(inputEl); // 聚焦到输入框
+      }
+    });
+  }
+
+
 
 };
 
@@ -218,9 +245,18 @@ const clickDel = (selectedIds) => {
 // 确认删除
 const confirmDelete = () => {
   console.log(selectedIds);
-  showLabelAlert(deleteItems(selectedIds, token, userInfo.account));
-  const folderID = getCurrentFolderID();
-  getFolderFile(folderID);
+  deleteItems(selectedIds, token, userInfo.account)
+      .then(result => {
+        showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
+      })
+      .catch(error => {
+        console.error('处理删除结果时发生错误:', error);
+      });
+  // const ID = getCurrentFolderID();
+  // Stack.pop();
+  // getFolderFile(ID);
+  folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
+  files.value = files.value.filter(folder => !selectedIds.value.files.includes(folder));
   showDeleteModal.value = false; // 关闭模态框
 };
 
@@ -243,7 +279,6 @@ const handleMarkAsFavorite = () => {
 };
 
 const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorited.value, favoriteIcon, unfavoriteIcon));
-
 </script>
 
 <template>
@@ -251,8 +286,8 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
     <div class="file_header">
       <p>我的文件</p>
       <div id="alert-container"></div> <!-- 中间的label容器 -->
-      <button id="allSelected" style="margin-right: 15px;" @click="selectAll"><img src="../assets/全选.svg" alt=""
-                                                                                   style="width: 30px; height: 30px;">
+      <button id="allSelected" style="margin-right: 15px;" @click="selectAll">
+        <img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;">
       </button>
       <button id="addFolder" @click="addNewFolder">
         <img src="../assets/新建文件夹.svg" alt="" style="width: 30px; height: 30px;">
@@ -264,12 +299,10 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
     <div class="file_op">
       <div class="file-list">
         <!-- 文件夹列表 -->
-        <div class="folder-item" v-for="(folder, index) in folders" :key="folder.id"
-             @mouseover="showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account,$event)"
-             @mouseout="hideFileOrFolderInfo">
+        <div class="folder-item" v-for="(folder, index) in folders" :key="folder.id">
           <img src="../assets/已收藏文件.svg" alt="" v-if="folder.isFavorite" style="width: 20px;height: 20px;">
-          <img src="../assets/收藏.svg" alt="" v-if="!folder.isFavorite" style="width: 15px;height: 15px;">
-          <img :src=folderURL alt="文件夹图标" class="file-icon"/>
+          <img v-else src="../assets/未收藏文件.svg" alt="" style="width: 20px;height: 20px;">
+          <img :src=folderURL alt="文件夹图标" class="file-icon" />
           <template v-if="folder.isEditing">
             <input v-model="folder.name" :id="`folder-input-${index}`" class="file-input"
                    @blur="finishEditing(folder, index, isRe,isFolder)"
@@ -277,43 +310,37 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
             <button @mousedown.prevent="handleCancel(index)">取消</button> <!-- 添加取消按钮 -->
           </template>
           <template v-else>
-            <a href="" class="file-name" @click.prevent="getFolderFile(folder.id)">{{ folder.name }}</a>
-            <input type="checkbox" v-model="folder.selected" class="file-checkbox" @click.stop/> <!-- 文件夹复选框 -->
+            <a href="" class="file-name" @click.prevent="getFolderFile(folder.id)"
+               @mouseover="showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account,$event)"
+               @mouseout="hideFileOrFolderInfo">{{ folder.name }}</a>
+            <input type="checkbox" v-model="folder.selected" class="file-checkbox" /> <!-- 文件夹复选框 -->
           </template>
         </div>
-        <div class="file-item" v-for="file in files" :key="file.ID"
-             @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
-             @mouseout="hideFileOrFolderInfo">
-          <img src="../assets/已收藏文件.svg" alt="" v-if="file.isFavorite" style="width: 20px;height: 20px;">
-          <img src="../assets/收藏.svg" alt="" v-if="!file.isFavorite" style="width: 15px;height: 15px;">
+        <div class="file-item" v-for="(file, index) in files" :key="file.ID">
+          <img src="../assets/已收藏文件.svg" alt="" v-if="file.Favorite" style="width: 20px;height: 20px;">
+          <img v-else src="../assets/未收藏文件.svg" alt="" style="width: 20px;height: 20px;">
           <img :src="fileURL" alt="文件图标" class="file-icon"/>
-          <a href="" class="file-name">{{ file.FileName }}</a>
-          <input type="checkbox" v-model="file.selected" class="file-checkbox"/>
+          <template v-if="file.isEditing">
+            <input v-model="file.FileName" :id="`file-input-${index}`" class="file-input"
+                   @blur="finishEditing(file, index, isRe,isFolder)"
+                   @keydown.enter="finishEditing(file, index, isRe,isFolder)"/>
+            <button @mousedown.prevent="handleCancel(index)">取消</button> <!-- 添加取消按钮 -->
+          </template>
+          <template v-else>
+            <a href="" class="file-name"
+               @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
+               @mouseout="hideFileOrFolderInfo">{{ file.FileName }}</a>
+            <input type="checkbox" v-model="file.selected" class="file-checkbox" /> <!-- 文件夹复选框 -->
+          </template>
         </div>
       </div>
-      <div class="file-operations" v-if="isMultipleSelected">
+      <div class="file-operations" v-if=isAnyFileSelected>
         <button><img src="../assets/下载.svg" alt="">下载</button>
-        <button><img src="../assets/分享.svg" alt="">共享</button>
+        <button v-if="!isMultipleSelected" @click="reName(selectedIds)"><img src="../assets/重命名.svg" alt="">重命名</button>
+        <button @click="share(selectedIds)"><img src="../assets/分享.svg" alt="">共享</button>
         <button @click="clickDel(selectedIds)"><img src="../assets/回收站.svg" alt="">删除</button>
         <button @click="handleMarkAsFavorite">
-          <img :src="currentFavoriteButtonIcon" alt="">收藏
-        </button>
-      </div>
-      <div class="file-operations" v-else-if="isSingleSelected">
-        <button @click="download(selectedIds)">
-          <img src="../assets/下载.svg" alt="">下载
-        </button>
-        <button @click="reName(selectedIds)">
-          <img src="../assets/重命名.svg" alt="">重命名
-        </button>
-        <button @click="share(selectedIds)">
-          <img src="../assets/分享.svg" alt="">共享
-        </button>
-        <button @click="clickDel(selectedIds)">
-          <img src="../assets/回收站.svg" alt="">删除
-        </button>
-        <button @click="handleMarkAsFavorite">
-          <img :src="currentFavoriteButtonIcon" alt="">收藏
+          <img :src="currentFavoriteButtonIcon" alt="收藏按钮">收藏
         </button>
       </div>
     </div>
@@ -326,8 +353,6 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
         <button @click="cancelDelete">取消</button>
       </div>
     </div>
-
-
     <!-- 显示悬停的文件/文件夹信息 -->
     <div v-if="fileOrFolderInfo.type=='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
       <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
@@ -345,7 +370,6 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
       <p>分享状态: {{ fileOrFolderInfo.data.Share ? '已共享' : '未共享' }}</p>
     </div>
   </div>
-
 </template>
 
 <style scoped>

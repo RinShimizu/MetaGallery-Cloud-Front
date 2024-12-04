@@ -13,13 +13,10 @@ export const popupLeft = ref('0px'); // 存储悬浮框的 left 值
 export const changeCurrentFolderID = (ID) => {
     CurrentFolderID = ID;
 }
-
 export const getCurrentFolderID = () => {
     return CurrentFolderID;
 }
-
 export const fetchSubInfo = (Stack, token, account, folder_id) => {
-    console.log("开始获取子文件信息");
     return new Promise((resolve, reject) => {
         // 初始化文件夹和文件的请求头
         const myHeaders = new Headers();
@@ -48,7 +45,6 @@ export const fetchSubInfo = (Stack, token, account, folder_id) => {
         // 使用 Promise.all 同时处理两个请求
         Promise.all([folderRequest, fileRequest])
             .then(([folderResponse, fileResponse]) => {
-
                 // 处理文件夹数据
                 const foldersFromServer = folderResponse.data == null ? [] : folderResponse.data.map(folder => ({
                     id: folder.id,              // 文件夹 ID
@@ -61,18 +57,20 @@ export const fetchSubInfo = (Stack, token, account, folder_id) => {
                     isEditing:false
                 }));
                 // 处理文件数据
-                const filesFromServer = fileResponse.data == null ? [] : fileResponse.data;
-                Stack.push(filesFromServer);
-                console.log("fileResponse.data",fileResponse.data);
+                const filesFromServer = fileResponse.data == null ? [] : fileResponse.data.map(file => ({
+                    ID: file.ID,
+                    FileName: file.FileName,
+                    FileType: file.FileType,
+                    Favorite: file.Favorite,
+                    Share: file.Share,
+                    InBin: file.InBin,
+                    selected: false,            // 默认未选中
+                    isEditing:false
+                }));
                 filesFromServer.forEach(file => {
-                    //console.log(1);
                     const existingFile = Stack[Stack.length - 1]?.find(f => f.ID === file.ID);
-                    //console.log("existingFile",existingFile);
                     if (existingFile) {
                         existingFile.isFavorite = file.Favorite;
-                    }
-                    else{
-                        console.log(222);
                     }
                 });
 
@@ -88,7 +86,6 @@ export const fetchSubInfo = (Stack, token, account, folder_id) => {
             });
     });
 };
-
 export const uploadFile = async (selectedFile, token, account, folder_id) => {
     if (!selectedFile.value) {
         alert('请选择一个文件');
@@ -118,7 +115,6 @@ export const uploadFile = async (selectedFile, token, account, folder_id) => {
         .then(result => console.log(result))
         .catch(error => console.log('error', error));
 };
-
 export const creatIng=(folders,isCancel)=>{
     const newFolder = {
         name: '未命名文件夹', // 默认名称
@@ -131,7 +127,6 @@ export const creatIng=(folders,isCancel)=>{
     folders.value.unshift(newFolder);
     return newFolder;
 }
-
 // 创建文件夹
 export const createFolder = (folderPath, file, token, account,index,isEditing,inputEl) => {
     console.log('index2:', index);
@@ -229,90 +224,189 @@ export const renameFolder =  (folders, folder, oldName, account, token, isEditin
         return `文件夹重命名失败: ${error.message}`;
     }
 };
+export const renameFile =  (files, file, oldName, account, token, isEditing) => {
+    // 如果名称未更改，直接返回成功
+    if (file.FileName === oldName) return '文件夹重命名成功！';
 
-export const deleteItems = (selectedIds, token, account) => {
-    const folders=selectedIds.value.folders;
-    const files=selectedIds.value.files;
-    console.log(folders);
-    for(const folder of folders){
-        console.log(111);
-        deleteFolder(folder,token,account);
+    // 检查是否有重复名字
+    const duplicateCount = files.filter(existingFile => existingFile.FileName === file.FileName).length;
+    if (duplicateCount > 1) {
+        return `重命名失败：名称 "${file.FileName}" 已经存在！`;
     }
-    for(const file of files){}
-    return '删除成功';
 
-};
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
 
-export const deleteFolder=(folder,token,account)=>{
-    try {
-        // 发起重命名请求
-        const myHeaders = new Headers();
-        myHeaders.append("Authorization", token);
-        const response = fetch('http://localhost:8080/api/removeFolder', {
-            method: 'DELETE',
-            headers: myHeaders,
-            redirect: 'follow',
-            body: JSON.stringify({
-                account: account,
-                folder_id: folder.id,
-            }),
+    var formdata = new FormData();
+    formdata.append("account", account);
+    formdata.append("file_id", file.ID);
+    formdata.append("new_file_name", file.FileName);
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formdata,
+        redirect: 'follow'
+    };
+
+    fetch("http://localhost:8080/api/renameFile", requestOptions)
+        .then(response => response.text())
+        .then(result => {
+            console.log(result);
+        })
+        .catch(error => {
+            console.log('error', error)
         });
-
-        // 检查 HTTP 状态码
-        if (!response.ok) {
-            const errorText = response.text();
-            throw new Error(`文件夹删除失败: ${response.status} ${response.statusText} - ${errorText}`);
+};
+export const deleteItems = async (selectedIds, token, account) => {
+    const folders = selectedIds.value.folders;
+    const files = selectedIds.value.files;
+    try {
+        for (const folder of folders) {
+            console.log(111);
+            await deleteFolder(folder, token, account);
         }
-
-        // 解析返回数据
-        const data = response.json();
-        // 根据返回数据状态判断是否成功
-        if (data.status === "FAILED") {
-            console.log('文件夹删除失败，返回消息:', data.msg);
+        for (const file of files) {
+            console.log(111);
+            await deleteFile(token, account, file.ID);
         }
-        else{
-            console.log('succ')
-        }
+        return '删除成功';
     } catch (error) {
-        // 捕获错误并返回信息
-        return `文件夹删除失败: ${error.message}`;
+        console.error('删除过程中发生错误:', error);
+        return `删除失败: ${error.message}`;
     }
+};
+export const deleteFolder=(folder,token,account)=>{
+    return new Promise((resolve, reject) => {
+        try {
+            const myHeaders = new Headers();
+            myHeaders.append("Authorization", token);
+
+            fetch('http://localhost:8080/api/removeFolder', {
+                method: 'DELETE',
+                headers: myHeaders,
+                redirect: 'follow',
+                body: JSON.stringify({
+                    account: account,
+                    folder_id: folder.id,
+                }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(errorText => {
+                            throw new Error(`文件夹删除失败: ${response.status} ${response.statusText} - ${errorText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === "FAILED") {
+                        console.log('文件夹删除失败，返回消息:', data.msg);
+                        reject(new Error(data.msg));
+                    } else {
+                        console.log('succ');
+                        resolve(data); // 或者 resolve(true)，根据你的需求决定返回什么
+                    }
+                })
+                .catch(error => {
+                    reject(`文件夹删除失败: ${error.message}`);
+                });
+        } catch (error) {
+            reject(`文件夹删除失败: ${error.message}`);
+        }
+    });
 }
+export const deleteFile =  (token, account, file_id) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    myHeaders.append("Content-Type", "application/json");
 
+    var raw = JSON.stringify({
+        "account": account,
+        "file_id": file_id
+    });
 
-export const preJudge=(folders,file)=>{
+    console.log(raw);
+    var requestOptions = {
+        method: 'DELETE',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
+
+    return fetch("http://localhost:8080/api/removeFile", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}
+export const preJudge=(isFolder,folders,file)=>{
     let msg='';
+    if(isFolder){
+        if (file.name.length > 255) {
+            return "文件夹名称不能超过 255 个字符";
+        }
+        // 2. 文件夹名称不能包含保留字符
+        if (!file.name.trim() || /[\/\\:*?"<>|]/.test(file.name)) {
+            msg = '文件名不能为空或包含非法字符！';
+        }
+
+        // 3. 文件夹名称不能是保留名称
+        const reservedNames = [
+            "CON", "PRN", "AUX", "NUL",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        ];
+        if (reservedNames.includes(file.name.toUpperCase())) {
+            return "文件夹名称不能是保留名称";
+        }
+
+        // 4. 文件夹名称不能以空格或句点结尾
+        if (file.name.trim().endsWith('.') || file.name.endsWith(' ')) {
+            return "文件夹名称不能以空格或句点结尾";
+        }
+
+        const folderExists = folders.slice(1).some(existingFolder => existingFolder.name === file.name);
+        if (folderExists) {
+            msg='该文件夹名已存在！';
+            console.log('folders:', folders); // 查看所有文件夹数据
+
+            console.log(file.name.trim());
+        }
+    }
+    else{
+        if (file.FileName.length > 255) {
+            return "文件夹名称不能超过 255 个字符";
+        }
+        // 2. 文件夹名称不能包含保留字符
+        if (!file.FileName.trim() || /[\/\\:*?"<>|]/.test(file.FileName)) {
+            msg = '文件名不能为空或包含非法字符！';
+        }
+
+        // 3. 文件夹名称不能是保留名称
+        const reservedNames = [
+            "CON", "PRN", "AUX", "NUL",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        ];
+        if (reservedNames.includes(file.FileName.toUpperCase())) {
+            return "文件夹名称不能是保留名称";
+        }
+
+        // 4. 文件夹名称不能以空格或句点结尾
+        if (file.FileName.trim().endsWith('.') || file.FileName.endsWith(' ')) {
+            return "文件夹名称不能以空格或句点结尾";
+        }
+
+        const folderExists = folders.slice(1).some(existingFolder => existingFolder.name === file.FileName);
+        if (folderExists) {
+            msg='该文件夹名已存在！';
+            console.log('folders:', folders); // 查看所有文件夹数据
+
+            console.log(file.FileName.trim());
+        }
+    }
     // 1. 文件夹名称长度不能超过 255 个字符
-    if (file.name.length > 255) {
-        return "文件夹名称不能超过 255 个字符";
-    }
-    // 2. 文件夹名称不能包含保留字符
-    if (!file.name.trim() || /[\/\\:*?"<>|]/.test(file.name)) {
-        msg = '文件名不能为空或包含非法字符！';
-    }
 
-    // 3. 文件夹名称不能是保留名称
-    const reservedNames = [
-        "CON", "PRN", "AUX", "NUL",
-        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
-    ];
-    if (reservedNames.includes(file.name.toUpperCase())) {
-        return "文件夹名称不能是保留名称";
-    }
-
-    // 4. 文件夹名称不能以空格或句点结尾
-    if (file.name.trim().endsWith('.') || file.name.endsWith(' ')) {
-        return "文件夹名称不能以空格或句点结尾";
-    }
-
-    const folderExists = folders.slice(1).some(existingFolder => existingFolder.name === file.name);
-    if (folderExists) {
-        msg='该文件夹名已存在！';
-        console.log('folders:', folders); // 查看所有文件夹数据
-
-        console.log(file.name.trim());
-    }
     return msg;
 }
 export const labelShake=(inputEl)=>{
@@ -329,10 +423,8 @@ export const labelFocus=(inputEl)=>{
         inputEl.select();
     }
 }
-
 export const showLabelAlert = (msg) => {
     const container = document.getElementById('alert-container');
-
     // 创建提示框元素
     const alertLabel = document.createElement('div');
     alertLabel.className = 'alert-label';
@@ -344,9 +436,7 @@ export const showLabelAlert = (msg) => {
         container.removeChild(alertLabel);
     }, 1000);
 };
-
 export const fetchDelSubInfo = (Stack, token, account) => {
-    console.log("开始获取回收站信息");
     return new Promise((resolve, reject) => {
         // 初始化文件夹和文件的请求头
         const myHeaders = new Headers();
@@ -375,7 +465,6 @@ export const fetchDelSubInfo = (Stack, token, account) => {
         // 使用 Promise.all 同时处理两个请求
         Promise.all([folderRequest, fileRequest])
             .then(([folderResponse, fileResponse]) => {
-
                 // 处理文件夹数据
                 const foldersFromServer = folderResponse.data == null ? [] : folderResponse.data.map(folder => ({
                     id: folder.id,              // 文件夹 ID
@@ -389,18 +478,6 @@ export const fetchDelSubInfo = (Stack, token, account) => {
                 }));
                 // 处理文件数据
                 const filesFromServer = fileResponse.data == null ? [] : fileResponse.data;
-                Stack.push(filesFromServer);
-                filesFromServer.forEach(file => {
-                    //console.log(1);
-                    const existingFile = Stack[Stack.length - 1]?.find(f => f.ID === file.ID);
-                    //console.log("existingFile.isFavorite",existingFile.isFavorite);
-                    if (existingFile) {
-                        existingFile.isFavorite = file.Favorite;
-                    }
-                    else{
-                        console.log(222);
-                    }
-                });
 
                 // 将数据压入栈
                 Stack.push([foldersFromServer, filesFromServer]);
@@ -414,11 +491,10 @@ export const fetchDelSubInfo = (Stack, token, account) => {
             });
     });
 };
-
 export const isAllSelectedFilesFavorited = (selectedIds) =>{
     const folders=selectedIds.value.folders;
     const files=selectedIds.value.files;
-    console.log(folders);
+    console.log(folders,"fggghjjjkkkkk");
     const allSelectedFilesFavorited = files
         //.filter(file => file.selected)  // 过滤选中的文件
         .every(file => file.isFavorite);  // 检查是否所有选中的文件都已收藏
@@ -430,7 +506,6 @@ export const isAllSelectedFilesFavorited = (selectedIds) =>{
     // 返回是否文件和文件夹都已收藏
     return allSelectedFilesFavorited && allSelectedFoldersFavorited;
 };
-
 export const markAsFavorite = (selectedIds, account, token, isAllFavorited) => {
     const folders=selectedIds.value.folders;
     const files=selectedIds.value.files;
@@ -486,11 +561,9 @@ export const markAsFavorite = (selectedIds, account, token, isAllFavorited) => {
         //}
     }
 };
-
 export const favoriteButtonIcon = (isAllFavorited, favoriteIcon, unfavoriteIcon) => {
     return isAllFavorited ? favoriteIcon : unfavoriteIcon;
 };
-
 // 显示文件/文件夹信息
 export const showFileOrFolderInfo = async (id, type, token, account,event) => {
     //console.log("id",id);
@@ -514,7 +587,6 @@ export const showFileOrFolderInfo = async (id, type, token, account,event) => {
     popupLeft.value = `${event.clientX - 200}px`; // 10px 为偏移量
     console.log("fileOrFolderInfo.value.data",fileOrFolderInfo.value.data);
 };
-
 // 隐藏文件/文件夹信息
 export const hideFileOrFolderInfo = () => {
     fileOrFolderInfo.value = { type: '', data: null };  // 清空数据
@@ -541,8 +613,48 @@ export const fetchFileOrFolderInfo = async (id, type, token, account) => {
     console.log("data",data);
     return data.data;  // 返回相关的信息
 };
+export const recoverFile = async (fileId, token, account) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    myHeaders.append("Content-Type", "application/json");
 
+    var raw = JSON.stringify({
+        "account": account,
+        "file_id": fileId
+    });
 
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
 
+    return fetch("http://localhost:8080/api/recoverBinFile", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}
 
+export const recoverFolder = async (folderId, token, account) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    myHeaders.append("Content-Type", "application/json");
 
+    var raw = JSON.stringify({
+        "account": account,
+        "bin_id": folderId
+    });
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
+
+    return fetch("http://localhost:8080/api/recoverBinFolder", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}
