@@ -12,7 +12,7 @@ import {
   labelShake, labelFocus,
   creatIng, showLabelAlert, renameFolder, deleteItems,
   isAllSelectedFilesFavorited, markAsFavorite, favoriteButtonIcon,
-  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, deleteFile, renameFile
+  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, renameFile
 } from '../homepage/api.js'
 
 
@@ -21,7 +21,7 @@ import unfavoriteIcon from '../assets/收藏.svg';
 //用户信息加载,不要重复写
 //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
 const userData = JSON.parse(localStorage.getItem('userData'));
-const rootFolderID = JSON.parse(localStorage.getItem('rootFolderData'));
+const rootFolderID = JSON.parse(localStorage.getItem('rootFolderData')).folder_name;
 var userInfo = userData.data.userInfo;
 let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
 const eventBus = useEventBus("folder-update");
@@ -237,7 +237,7 @@ const reName = (selectedIds) => {
 
 const showDeleteModal = ref(false); // 控制模态框显示的状态
 
-const clickDel = (selectedIds) => {
+const clickDel = () => {
   // 显示模态框而不是直接删除
   showDeleteModal.value = true;
 };
@@ -338,7 +338,7 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
         <button><img src="../assets/下载.svg" alt="">下载</button>
         <button v-if="!isMultipleSelected" @click="reName(selectedIds)"><img src="../assets/重命名.svg" alt="">重命名</button>
         <button @click="share(selectedIds)"><img src="../assets/分享.svg" alt="">共享</button>
-        <button @click="clickDel(selectedIds)"><img src="../assets/回收站.svg" alt="">删除</button>
+        <button @click="clickDel"><img src="../assets/回收站.svg" alt="">删除</button>
         <button @click="handleMarkAsFavorite">
           <img :src="currentFavoriteButtonIcon" alt="收藏按钮">收藏
         </button>
@@ -347,10 +347,10 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
     <!-- 删除确认模态框 -->
     <div v-if="showDeleteModal" class="modal">
       <div class="modal-content">
-        <h3>确认删除</h3>
-        <p>您确定要删除选中的项目吗？</p>
-        <button @click="confirmDelete">确认</button>
-        <button @click="cancelDelete">取消</button>
+        <h3>确定将选中的项目移入回收站？</h3>
+        <p>回收站中的项目将保留30天，您可以随时恢复它们</p>
+        <button id="btn1" @click="confirmDelete">确 定</button>
+        <button id="btn2" @click="cancelDelete">取 消</button>
       </div>
     </div>
     <!-- 显示悬停的文件/文件夹信息 -->
@@ -601,5 +601,51 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
   border-radius: 5px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   text-align: center;
+}
+
+.modal-content h3{
+  margin-bottom: 10px;
+}
+.modal-content p{
+  color: gray;
+  margin-top: 0;
+  margin-bottom: 30px;
+}
+
+#btn1{
+  position: relative;
+  vertical-align: middle;
+  height: 40px;
+  width: 120px;
+  font-size: 15px;
+  background-color: #4095E5;
+  color: white;
+  border-radius: 5%;
+  border: 1px solid #4095E5;
+  transition-duration: 0.2s;
+  margin: auto 30px;
+}
+#btn2{
+  position: relative;
+  vertical-align: middle;
+  height: 40px;
+  width: 120px;
+  font-size: 15px;
+  background-color: white;
+  color: gray;
+  border-radius: 5%;
+  border: 1px solid gray;
+  transition-duration: 0.2s;
+  margin: auto 30px;
+}
+#btn1:hover{
+  background-color: white;
+  color: #4095E5;
+  border: 1px solid #4095E5;
+
+}
+#btn2:hover{
+  color: black;
+  border: 1px solid black;
 }
 </style>

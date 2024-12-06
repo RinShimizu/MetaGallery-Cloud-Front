@@ -258,25 +258,7 @@ export const renameFile =  (files, file, oldName, account, token, isEditing) => 
             console.log('error', error)
         });
 };
-export const deleteItems = async (selectedIds, token, account) => {
-    const folders = selectedIds.value.folders;
-    const files = selectedIds.value.files;
-    try {
-        for (const folder of folders) {
-            console.log(111);
-            await deleteFolder(folder, token, account);
-        }
-        for (const file of files) {
-            console.log(111);
-            await deleteFile(token, account, file.ID);
-        }
-        return '删除成功';
-    } catch (error) {
-        console.error('删除过程中发生错误:', error);
-        return `删除失败: ${error.message}`;
-    }
-};
-export const deleteFolder=(folder,token,account)=>{
+const deleteFolder=(folder,token,account)=>{
     return new Promise((resolve, reject) => {
         try {
             const myHeaders = new Headers();
@@ -316,7 +298,7 @@ export const deleteFolder=(folder,token,account)=>{
         }
     });
 }
-export const deleteFile =  (token, account, file_id) => {
+const deleteFile =  (token, account, file_id) => {
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
     myHeaders.append("Content-Type", "application/json");
@@ -339,6 +321,24 @@ export const deleteFile =  (token, account, file_id) => {
         .then(result => console.log(result))
         .catch(error => console.log('error', error));
 }
+export const deleteItems = async (selectedIds, token, account) => {
+    const folders = selectedIds.value.folders;
+    const files = selectedIds.value.files;
+    try {
+        for (const folder of folders) {
+            console.log(111);
+            await deleteFolder(folder, token, account);
+        }
+        for (const file of files) {
+            console.log(111);
+            await deleteFile(token, account, file.ID);
+        }
+        return '删除成功';
+    } catch (error) {
+        console.error('删除过程中发生错误:', error);
+        return `删除失败: ${error.message}`;
+    }
+};
 export const preJudge=(isFolder,folders,file)=>{
     let msg='';
     if(isFolder){
@@ -466,16 +466,7 @@ export const fetchDelSubInfo = (Stack, token, account) => {
         Promise.all([folderRequest, fileRequest])
             .then(([folderResponse, fileResponse]) => {
                 // 处理文件夹数据
-                const foldersFromServer = folderResponse.data == null ? [] : folderResponse.data.map(folder => ({
-                    id: folder.id,              // 文件夹 ID
-                    parent_id:folder.parent_id,
-                    name: folder.folder_name,   // 文件夹名称
-                    path: folder.path,          // 文件夹路径
-                    isFavorite: folder.is_favorite, // 是否收藏
-                    shared: folder.is_share,    // 是否分享
-                    selected: false,            // 默认未选中
-                    isEditing:false
-                }));
+                const foldersFromServer = folderResponse.data == null ? [] : folderResponse.data;
                 // 处理文件数据
                 const filesFromServer = fileResponse.data == null ? [] : fileResponse.data;
 
@@ -613,7 +604,7 @@ export const fetchFileOrFolderInfo = async (id, type, token, account) => {
     console.log("data",data);
     return data.data;  // 返回相关的信息
 };
-export const recoverFile = async (fileId, token, account) => {
+const recoverFile = (fileId, token, account) => {
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
     myHeaders.append("Content-Type", "application/json");
@@ -635,15 +626,14 @@ export const recoverFile = async (fileId, token, account) => {
         .then(result => console.log(result))
         .catch(error => console.log('error', error));
 }
-
-export const recoverFolder = async (folderId, token, account) => {
+const recoverFolder = (binID, token, account) => {
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
     myHeaders.append("Content-Type", "application/json");
 
     var raw = JSON.stringify({
         "account": account,
-        "bin_id": folderId
+        "bin_id": binID
     });
 
     var requestOptions = {
@@ -657,4 +647,78 @@ export const recoverFolder = async (folderId, token, account) => {
         .then(response => response.text())
         .then(result => console.log(result))
         .catch(error => console.log('error', error));
+}
+export const recoverItems = async (selectedIds, token, account) => {
+    const folders = selectedIds.value.folders;
+    const files = selectedIds.value.files;
+    try {
+        for (const folder of folders) {
+            await recoverFolder(folder.bin_id, token, account);
+        }
+        for (const file of files) {
+            await recoverFile(file.ID, token, account);
+        }
+        return '恢复成功';
+    } catch (error) {
+        console.error('删除过程中发生错误:', error);
+        return `恢复失败: ${error.message}`;
+    }
+};
+const completeDeleteFolder = (folderID, bin_id, token, account) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    myHeaders.append("Content-Type", "application/json");
+
+    var raw = JSON.stringify({
+        "account": account,
+        "bin_id": bin_id,
+        "folder_id": folderID
+    });
+
+    var requestOptions = {
+        method: 'DELETE',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
+
+    return fetch("http://localhost:8080/api/deleteFolder", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}
+const completeDeleteFile = (fileID, token, account) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    myHeaders.append("Content-Type", "application/json");
+
+    var raw = JSON.stringify({
+        "account": account,
+        "file_id": fileID
+    });
+
+    var requestOptions = {
+        method: 'DELETE',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
+
+    return fetch("http://localhost:8080/api/deleteFile", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}
+export const completeDeleteItems = async (selectedIds, token, account) => {
+    const folders = selectedIds.value.folders;
+    const files = selectedIds.value.files;
+    try {
+        for (const folder of folders) {
+            await completeDeleteFolder(folder.id, folder.bin_id, token, account);
+        }
+        for (const file of files) {
+            await completeDeleteFile(file.ID, token, account);
+        }
+        return '删除成功';
+    } catch(error) {}
 }

@@ -2,7 +2,7 @@
 import {ref, computed, onMounted} from 'vue';
 import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
-import { fetchDelSubInfo } from "@/homepage/api.js";
+import { fetchDelSubInfo, recoverItems, showLabelAlert, completeDeleteItems } from "@/homepage/api.js";
 import { useEventBus } from "@vueuse/core";
 
 //用户信息加载,不要重复写
@@ -19,10 +19,12 @@ const isAllSelected = ref(false);
 //获取当前页面文件夹和文件
 var folders = ref([]);
 var files = ref([]);
+const showRecoverModal = ref(false); // 控制模态框显示的状态
+const showDeleteModal = ref(false); // 控制模态框显示的状态
 
 onMounted(async () => {
   Stack.length = 0;
-  await fetchDelSubInfo(Stack,userData.data.token, userInfo.account);
+  await fetchDelSubInfo(Stack, token, userInfo.account);
   folders.value = Stack[Stack.length - 1][0];
   files.value = Stack[Stack.length - 1][1];
   console.log(Stack);
@@ -39,19 +41,57 @@ const isAnyFileSelected = computed(() => {
   return files.value.some(file => file.selected)||folders.value.some(folder => folder.selected);
 });
 
-  const showMessage = () => {
-    var message = document.getElementById("message");
-    message.style.display = "inline-flex";
-  }
-  const cancel = () => {
-    var message = document.getElementById("message");
-    message.style.display = "none";
-  }
-  const confirm = () => {
-    var message = document.getElementById("message");
-    message.style.display = "none";
-  }
+const selectAll = () => {
+  isAllSelected.value = !isAllSelected.value;
+  const newState = isAllSelected.value;
+  [...files.value, ...folders.value].forEach(item => (item.selected = newState));
+};
 
+const confirmRecover = () => {
+  console.log(selectedIds);
+  recoverItems(selectedIds, token, userInfo.account)
+      .then(result => {
+        showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
+      })
+      .catch(error => {
+        console.error('处理恢复结果时发生错误:', error);
+      });
+  folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
+  files.value = files.value.filter(folder => !selectedIds.value.files.includes(folder));
+  showRecoverModal.value = false; // 关闭模态框
+};
+
+const cancelRecover = () => {
+  showRecoverModal.value = false; // 关闭模态框
+};
+
+const clickRecover = () => {
+  // 显示模态框而不是直接删除
+  showRecoverModal.value = true;
+};
+
+const confirmDelete = () => {
+  console.log(selectedIds);
+  completeDeleteItems(selectedIds, token, userInfo.account)
+      .then(result => {
+        showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
+      })
+      .catch(error => {
+        console.error('处理删除结果时发生错误:', error);
+      });
+  folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
+  files.value = files.value.filter(folder => !selectedIds.value.files.includes(folder));
+  showDeleteModal.value = false; // 关闭模态框
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false; // 关闭模态框
+};
+
+const clickDelete = () => {
+  // 显示模态框而不是直接删除
+  showDeleteModal.value = true;
+};
 </script>
 
 <template>
@@ -64,28 +104,37 @@ const isAnyFileSelected = computed(() => {
     <div class="file_op">
       <div class="file-list">
         <!-- 文件夹列表 -->
-        <div class="folder-item" v-for="(folder, index) in folders" :key="folder.id">
+        <div class="folder-item" v-for="folder in folders" :key="folder.id">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
-            <span href="" class="file-name">{{ folder.name }}</span>
+            <span class="file-name">{{ folder.folder_name }}</span>
             <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
         </div>
         <div class="file-item" v-for="file in files" :key="file.ID">
           <img :src="fileURL" alt="文件图标" class="file-icon" />
-          <span href="" class="file-name">{{ file.FileName }}</span>
+          <span class="file-name">{{ file.FileName }}</span>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>
       <div class="file-operations" v-if="isAnyFileSelected">
-        <button><img src="../assets/恢复.svg" alt="">恢复</button>
-        <button @click="showMessage"><img src="../assets/回收站.svg" alt="">删除</button>
+        <button @click="clickRecover"><img src="../assets/恢复.svg" alt="">恢复</button>
+        <button @click="clickDelete"><img src="../assets/回收站.svg" alt="">删除</button>
       </div>
     </div>
   </div>
-  <div id="message">
-    <span>确认删除此文件（夹）吗</span>
-    <div class="con">
-      <button @click="confirm">确定</button>
-      <button @click="cancel">取消</button>
+  <div v-if="showRecoverModal" class="modal">
+    <div class="modal-content">
+      <h3>确定恢复选中的文件（夹）？</h3>
+      <p>您可以在文件列表中查看恢复的文件（夹）</p>
+      <button id="btn1" @click="confirmRecover">确 定</button>
+      <button id="btn2" @click="cancelRecover">取 消</button>
+    </div>
+  </div>
+  <div v-if="showDeleteModal" class="modal">
+    <div class="modal-content">
+      <h3>确定彻底删除选中的文件（夹）？</h3>
+      <p>彻底删除后，你将无法找回该文件（夹）</p>
+      <button id="btn3" @click="confirmDelete">确 定</button>
+      <button id="btn4" @click="cancelDelete">取 消</button>
     </div>
   </div>
 </template>
@@ -98,7 +147,7 @@ const isAnyFileSelected = computed(() => {
   left: 0;
   top: 0;
 }
-p{
+.file_header p{
   display: flex;
   align-items: center;
   gap: 10px;
@@ -106,7 +155,7 @@ p{
   font-family: 幼圆;
   margin: 15px 0 0 15px ;
 }
-p::before{
+.file_header p::before{
   content: "";
   background-image: url("../assets/回收站.svg");
   display: inline-block;
@@ -321,5 +370,105 @@ p::before{
   height: auto;
 }
 
+/* 模态框样式 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+.modal-content h3{
+  margin-bottom: 10px;
+}
+.modal-content p{
+  color: gray;
+  margin-top: 0;
+  margin-bottom: 30px;
+}
 
+#btn1{
+  position: relative;
+  vertical-align: middle;
+  height: 40px;
+  width: 120px;
+  font-size: 15px;
+  background-color: #4095E5;
+  color: white;
+  border-radius: 5%;
+  border: 1px solid #4095E5;
+  transition-duration: 0.2s;
+  margin: auto 30px;
+}
+#btn2{
+  position: relative;
+  vertical-align: middle;
+  height: 40px;
+  width: 120px;
+  font-size: 15px;
+  background-color: white;
+  color: gray;
+  border-radius: 5%;
+  border: 1px solid gray;
+  transition-duration: 0.2s;
+  margin: auto 30px;
+}
+#btn1:hover{
+  background-color: white;
+  color: #4095E5;
+  border: 1px solid #4095E5;
+
+}
+#btn2:hover{
+  color: black;
+  border: 1px solid black;
+}
+#btn3{
+  position: relative;
+  vertical-align: middle;
+  height: 40px;
+  width: 120px;
+  font-size: 15px;
+  background-color: red;
+  color: white;
+  border-radius: 5%;
+  border: 1px solid red;
+  transition-duration: 0.2s;
+  margin: auto 30px;
+}
+#btn4{
+  position: relative;
+  vertical-align: middle;
+  height: 40px;
+  width: 120px;
+  font-size: 15px;
+  background-color: white;
+  color: gray;
+  border-radius: 5%;
+  border: 1px solid gray;
+  transition-duration: 0.2s;
+  margin: auto 30px;
+}
+#btn3:hover{
+  background-color: white;
+  color: red;
+  border: 1px solid red;
+
+}
+#btn4:hover{
+  color: black;
+  border: 1px solid black;
+}
 </style>

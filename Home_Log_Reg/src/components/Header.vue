@@ -9,19 +9,19 @@
     h_case = document.getElementById("page2")?.offsetHeight;
   });
 
-  function Reg(){
+  const Reg = () => {
     window.open('register.html');//在当前页面直接打开，加_self
   }
-  function Log(){
+  const Log = () => {
     window.open('load.html');
   }
-  function toHome(){
+  const toHome = () => {
     window.scrollTo({top:0,behavior:'smooth'})
   }
-  function toCase(){
+  const toCase = () => {
     window.scrollTo({top:h_home,behavior:'smooth'})
   }
-  function toCont(){
+  const toCont = () => {
     window.scrollTo({top:h_home + h_case,behavior:'smooth'})
   }
 </script>
