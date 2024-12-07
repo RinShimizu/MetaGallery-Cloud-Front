@@ -12,7 +12,9 @@ import {
   labelShake, labelFocus,
   creatIng, showLabelAlert, renameFolder, deleteItems,
   isAllSelectedFilesFavorited, markAsFavorite, favoriteButtonIcon,
-  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, renameFile
+  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, renameFile,//悬停和重命名
+  downloadFile,//下载
+  //previewFile//预览
 } from '../homepage/api.js'
 
 
@@ -21,9 +23,10 @@ import unfavoriteIcon from '../assets/收藏.svg';
 //用户信息加载,不要重复写
 //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
 const userData = JSON.parse(localStorage.getItem('userData'));
-const rootFolderID = JSON.parse(localStorage.getItem('rootFolderData')).folder_name;
+const rootFolderID = JSON.parse(localStorage.getItem('rootFolderData')).id;
 var userInfo = userData.data.userInfo;
 let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
+
 const eventBus = useEventBus("folder-update");
 const token = localStorage.getItem('token');
 
@@ -267,8 +270,6 @@ const cancelDelete = () => {
 
 //收藏按钮
 // 判断是否所有选中的文件/文件夹已收藏
-//收藏按钮
-// 判断是否所有选中的文件/文件夹已收藏
 const isAllFavorited = computed(() => isAllSelectedFilesFavorited(selectedIds));
 var account = userInfo.account;
 
@@ -279,6 +280,15 @@ const handleMarkAsFavorite = () => {
 };
 
 const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorited.value, favoriteIcon, unfavoriteIcon));
+//下载函数
+const handleBatchDownload= () => {
+  downloadFile(account, selectedIds, token);
+}
+
+//预览函数
+// const handlepreviewFile=()=>{
+//   previewFile(account,fileID);
+// }
 </script>
 
 <template>
@@ -301,7 +311,7 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
         <!-- 文件夹列表 -->
         <div class="folder-item" v-for="(folder, index) in folders" :key="folder.id">
           <img src="../assets/已收藏文件.svg" alt="" v-if="folder.isFavorite" style="width: 20px;height: 20px;">
-          <img v-else src="../assets/未收藏文件.svg" alt="" style="width: 20px;height: 20px;">
+          <img src="../assets/未收藏文件.svg" alt="" v-if="!folder.isFavorite" style="width: 20px;height: 20px;">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
           <template v-if="folder.isEditing">
             <input v-model="folder.name" :id="`folder-input-${index}`" class="file-input"
@@ -317,8 +327,8 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
           </template>
         </div>
         <div class="file-item" v-for="(file, index) in files" :key="file.ID">
-          <img src="../assets/已收藏文件.svg" alt="" v-if="file.Favorite" style="width: 20px;height: 20px;">
-          <img v-else src="../assets/未收藏文件.svg" alt="" style="width: 20px;height: 20px;">
+          <img src="../assets/已收藏文件.svg" alt="" v-if="file.isFavorite" style="width: 20px;height: 20px;">
+          <img src="../assets/未收藏文件.svg" alt="" v-if="!file.isFavorite" style="width: 20px;height: 20px;">
           <img :src="fileURL" alt="文件图标" class="file-icon"/>
           <template v-if="file.isEditing">
             <input v-model="file.FileName" :id="`file-input-${index}`" class="file-input"
@@ -330,13 +340,16 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
             <a href="" class="file-name"
                @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
                @mouseout="hideFileOrFolderInfo">{{ file.FileName }}</a>
+<!--               @dblclick="handlepreviewFile(userInfo.account,file.ID)"-->
+
             <input type="checkbox" v-model="file.selected" class="file-checkbox" /> <!-- 文件夹复选框 -->
           </template>
         </div>
       </div>
       <div class="file-operations" v-if=isAnyFileSelected>
-        <button><img src="../assets/下载.svg" alt="">下载</button>
+        <button @click="handleBatchDownload"><img src="../assets/下载.svg" alt="">下载</button>
         <button v-if="!isMultipleSelected" @click="reName(selectedIds)"><img src="../assets/重命名.svg" alt="">重命名</button>
+<!--        <button v-if="!isMultipleSelected && files.length === 1"><img src="../assets/预览.svg" alt="">预览</button>-->
         <button @click="share(selectedIds)"><img src="../assets/分享.svg" alt="">共享</button>
         <button @click="clickDel"><img src="../assets/回收站.svg" alt="">删除</button>
         <button @click="handleMarkAsFavorite">
@@ -354,14 +367,14 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
       </div>
     </div>
     <!-- 显示悬停的文件/文件夹信息 -->
-    <div v-if="fileOrFolderInfo.type=='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+    <div v-if="fileOrFolderInfo.type==='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
       <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
       <p>名称: {{ fileOrFolderInfo.data.folder_name}}</p>
       <p>路径: {{ fileOrFolderInfo.data.path }}</p>
       <p>是否收藏: {{ fileOrFolderInfo.data.is_favorite ? '是' : '否' }}</p>
       <p>分享状态: {{ fileOrFolderInfo.data.is_share ? '已共享' : '未共享' }}</p>
     </div>
-    <div v-if="fileOrFolderInfo.type=='file'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+    <div v-if="fileOrFolderInfo.type==='file'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
       <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
       <p>名称: {{ fileOrFolderInfo.data.FileName }}</p>
       <p>路径: {{ fileOrFolderInfo.data.Path }}</p>
