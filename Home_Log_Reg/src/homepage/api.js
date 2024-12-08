@@ -692,6 +692,113 @@ const completeDeleteFolder = (folderID, bin_id, token, account) => {
         .then(result => console.log(result))
         .catch(error => console.log('error', error));
 }
+
+export const shareItems=async (selectedItems, token, account, shared_name, intro) => {
+
+    const folders = selectedItems.value.folders; // 选中的文件夹数组
+    // const files = selectedItems.value.files; // 选中的文件数组
+    try {
+        for (const folder of folders) {
+            console.log("shareFoldering");
+            await shareFolder(token,account,folder.id,folder.folder_name,intro);
+        }
+        // for (const file of files) {
+        //     console.log(111);
+        //     await deleteFile(token, account, file.ID);
+        // }
+        return '文件夹共享成功';
+    } catch (error) {
+        console.error('共享享过程中发生错误:', error);
+        return `共享失败: ${error.message}`;
+    }
+}
+
+export const shareFolder=(token,account,id,name,intro)=>{
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    var formdata = new FormData();
+    formdata.append("account", account);
+    formdata.append("folder_id", id);
+    formdata.append("shared_name", name);
+    formdata.append("intro", intro);
+
+    console.log("11",id);
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formdata,
+        redirect: 'follow'
+    };
+
+    return fetch("http://localhost:8080/api/shareFolder", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}
+
+export const fetchSharedInfo = async (token, account,curPage) => {
+
+    let url = '';
+    url = `http://localhost:8080/api/gallery/getUserGallery?account=${account}&page_num=${curPage}`;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': token,
+        }
+    });
+
+    const data = await response.json();
+    console.log("data",data);
+    return data.data;  // 返回相关的信息
+};
+
+export const unShareItems=async (shareItems, token, account) => {
+    const folders = shareItems.value.folders;
+    const files = shareItems.value.files;
+    try {
+        for (const folder of folders) {
+            console.log("unshareFoldering");
+            await unShareFolder(folder.folder_name, token, account);
+        }
+        // for (const file of files) {
+        //     console.log(111);
+        //     await deleteFile(token, account, file.ID);
+        // }
+        return '取消分享成功';
+    } catch (error) {
+        console.error('取消分享过程中发生错误:', error);
+        return `取消分享失败: ${error.message}`;
+    }
+}
+
+export const unShareFolder=(name,token,account)=>{
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    // myHeaders.append("Content-Type", "application/json");
+    // var raw = JSON.stringify({
+    //     "account": account,
+    //     "shared_name": name
+    // });
+
+    var formdata = new FormData();
+    formdata.append("account", account);
+    formdata.append("shared_name", name);
+
+    console.log("name:",name);
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formdata,
+        redirect: 'follow'
+    };
+
+    return fetch("http://localhost:8080/api/gallery/unshareFolder", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}
 const completeDeleteFile = (fileID, token, account) => {
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);

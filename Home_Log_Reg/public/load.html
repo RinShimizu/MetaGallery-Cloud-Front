@@ -138,59 +138,72 @@
         },
 
         methods: {
-            load: function() {
-                // 对密码进行 SHA256 加密
-                const encryptedPassword = CryptoJS.SHA256(this.password).toString(CryptoJS.enc.Base64);
+            load: async function () {
+                try {
+                    // 对密码进行 SHA256 加密
+                    const encryptedPassword = CryptoJS.SHA256(this.password).toString(CryptoJS.enc.Base64);
 
-                const formData = new FormData();
-                formData.append('account', this.account);
-                formData.append('password', encryptedPassword); // 发送加密后的密码
+                    const formData = new FormData();
+                    formData.append('account', this.account);
+                    formData.append('password', encryptedPassword); // 发送加密后的密码
 
-                fetch('http://localhost:8080/api/login', {
-                    method: 'POST',
-                    body: formData,
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('网络响应错误');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.status === "NOT EXIST" && data.msg === "用户不存在") {
-                            alert('登录失败: 用户不存在');
-                        } else if (data.status === "SUCCESS") {
-                            alert('登录成功！');
-                            localStorage.setItem('userData', JSON.stringify(data));
-                            localStorage.setItem('token', data.data.token);
-                            return fetch(`http://localhost:8080/api/getRootFolder?account=${encodeURIComponent(this.account)}`, {
-                                method: 'GET',
-                                headers: {
-                                    'Authorization': data.data.token,
-                                },
-                            });
-                        } else {
-                            alert('登录失败: '+data.msg);
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) throw new Error(`获取根目录路径失败: ${response.statusText}`);
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.status === "FAILED") {
-                            alert('获取根目录路径失败: ' + data.msg);
-                        } else {
-                            localStorage.setItem('rootFolderData', JSON.stringify(data.data));
-                            console.log('After set:', data.data.id);
-                            window.location.href = '../homepage.html';
-                        }
-                    })
-                    .catch(error => {
-                        console.error(error);
-                        alert(error.message || '登录过程中出现错误');
+                    const response = await fetch('http://localhost:8080/api/login', {
+                        method: 'POST',
+                        body: formData,
                     });
+
+                    if (!response.ok) {
+                        throw new Error('网络响应错误');
+                    }
+
+                    const data = await response.json();
+
+                    if (data.status === "NOT EXIST" && data.msg === "用户不存在") {
+                        alert('登录失败: 用户不存在');
+                    } else if (data.status === "SUCCESS") {
+                        alert('登录成功！');
+                        localStorage.setItem('userData', JSON.stringify(data));
+                        localStorage.setItem('token', data.data.token);
+
+                        // 获取根目录
+                        await this.fetchRootFolder(data.data.token);
+                    } else {
+                        alert('登录失败: ' + data.msg);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert(error.message || '登录过程中出现错误');
+                }
             },
+
+            fetchRootFolder: async function (token) {
+                try {
+                    const response = await fetch(`http://localhost:8080/api/getRootFolder?account=${encodeURIComponent(this.account)}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': token,
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`获取根目录路径失败: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.status === "FAILED") {
+                        alert('获取根目录路径失败: ' + data.msg);
+                    } else {
+                        localStorage.setItem('rootFolderData', JSON.stringify(data.data));
+                        console.log('After set:', data.data.id);
+                        window.location.href = '../homepage.html';
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert(error.message || '获取根目录路径时出现错误');
+                }
+            },
+
             togglePasswordVisibility() {
                 this.passwordVisible = !this.passwordVisible;
             }
