@@ -44,7 +44,6 @@ onMounted(async () => {
   await fetchSubInfo(Stack, userData.data.token, userInfo.account, rootFolderID);
   folders.value = Stack[Stack.length - 1][0];
   files.value = Stack[Stack.length - 1][1];
-  console.log(Stack,"tishi");
 })
 
 const selectedIds = computed(() => {
@@ -79,9 +78,10 @@ const getFolderFile = async (ID) => {
 }
 
 onMounted(() => {
-  eventBus.on((folderID) => {
+  eventBus.on((folderID, msg) => {
     Stack.pop();
     getFolderFile(folderID); // 响应事件
+    showLabelAlert(msg);
   });
 });
 

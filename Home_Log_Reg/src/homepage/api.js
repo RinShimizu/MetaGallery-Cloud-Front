@@ -1,8 +1,6 @@
-import {computed, nextTick} from 'vue';
+import {nextTick, ref} from 'vue';
 import folderURL from "@/assets/文件夹.svg";
-import favoriteIcon from "@/assets/已收藏.svg";
-import unfavoriteIcon from "@/assets/收藏.svg";
-import { ref } from 'vue';
+
 var CurrentFolderID = 1;
 export const fileOrFolderInfo =  ref({
     type: '',  // 'file' 或 'folder'
@@ -110,10 +108,18 @@ export const uploadFile = async (selectedFile, token, account, folder_id) => {
         redirect: 'follow'
     };
 
-    return fetch("http://localhost:8080/api/uploadFile", requestOptions)
-        .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
+    try {
+        const response = await fetch("http://localhost:8080/api/uploadFile", requestOptions);
+        const result = await response.json();
+        if (result.status === "SUCCESS") {
+            return "上传成功";
+        } else if (result.status === "FAILED") {
+            return `上传失败，${result.msg}`;
+        }
+    } catch (error) {
+        console.log('error', error);
+        return `上传过程中发生错误，请重试`;
+    }
 };
 export const creatIng=(folders,isCancel)=>{
     const newFolder = {
@@ -721,4 +727,24 @@ export const completeDeleteItems = async (selectedIds, token, account) => {
         }
         return '删除成功';
     } catch(error) {}
+}
+export const getAllSharedItems = async (page_num) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", "");
+
+    var requestOptions = {
+        method: 'GET',
+        headers: myHeaders,
+        redirect: 'follow'
+    };
+
+    fetch(`http://localhost:8080/api/gallery/getAllGallery?page_num=${page_num}`, requestOptions)
+        .then(response => response.json())
+        .then(result => {
+            return result.data == null ? [] : result.data;
+        })
+        .catch(error => console.log('error', error));
+}
+const getUserInfo = async (account) => {
+
 }
