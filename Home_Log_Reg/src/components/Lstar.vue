@@ -2,9 +2,12 @@
   import {ref, computed, onMounted} from 'vue';
   import fileURL from '../assets/文件.svg';
   import folderURL from '../assets/文件夹.svg';
-  import { fetchSubInfo } from "@/homepage/api.js";
+  import {
+    fetchSubInfo,
+    showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft
+  } from "@/homepage/api.js";
 
-
+  const token = localStorage.getItem('token');
   const userData = JSON.parse(localStorage.getItem('userData'));
   var userInfo = userData.data.userInfo;
   let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
@@ -89,12 +92,17 @@
       <div class="file-list">
         <div class="file-item" v-for="folder in favoriteFolders" :key="folder.id">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
-          <a href="" class="file-name" @click.prevent="getFolderFile(folder.id)">{{ folder.name }}</a>
+          <a href="" class="file-name"
+             @click.prevent="getFolderFile(folder.id)"
+             @mouseover="showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account,$event)"
+             @mouseout="hideFileOrFolderInfo">{{ folder.name }}</a>
           <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
         </div>
         <div class="file-item" v-for="file in favoriteFiles" :key="file.ID">
           <img :src=fileURL alt="文件图标" class="file-icon" />
-          <a href="" class="file-name">{{ file.FileName }}</a>
+          <a href="" class="file-name"
+             @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
+             @mouseout="hideFileOrFolderInfo">{{ file.FileName }}</a>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>
@@ -102,6 +110,22 @@
         <button><img src="../assets/下载.svg" alt="">下载</button>
         <button><img src="../assets/回收站.svg" alt="">删除</button>
       </div>
+    </div>
+    <!-- 显示悬停的文件/文件夹信息 -->
+    <div v-if="fileOrFolderInfo.type==='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+      <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
+      <p>名称: {{ fileOrFolderInfo.data.folder_name}}</p>
+      <p>路径: {{ fileOrFolderInfo.data.path }}</p>
+      <p>是否收藏: {{ fileOrFolderInfo.data.is_favorite ? '是' : '否' }}</p>
+      <p>分享状态: {{ fileOrFolderInfo.data.is_share ? '已共享' : '未共享' }}</p>
+    </div>
+    <div v-if="fileOrFolderInfo.type==='file'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+      <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
+      <p>名称: {{ fileOrFolderInfo.data.FileName }}</p>
+      <p>路径: {{ fileOrFolderInfo.data.Path }}</p>
+      <p>上传时间: {{ fileOrFolderInfo.data.CreatedAt }}</p>
+      <p>是否收藏: {{ fileOrFolderInfo.data.Favorite ? '是' : '否' }}</p>
+      <p>分享状态: {{ fileOrFolderInfo.data.Share ? '已共享' : '未共享' }}</p>
     </div>
   </div>
 </template>
@@ -138,6 +162,21 @@
     background-repeat: no-repeat;
     background-position: center;
   }
+  .info-popup {
+    position: absolute;
+    top: 50px; /* 距离父元素顶部50px */
+    left: 100px; /* 距离父元素左侧100px */
+    background: rgba(229, 241, 248, 0.73);
+    color: #0c0c0c;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: 幼圆;
+    z-index: 100; /* 确保它在前面 */
+    display: block; /* 确保它可以显示 */
+    font-weight: bold; /* 加粗字体 */
+  }
+
   .file_header button {
     background: none; /* 去掉按钮背景 */
     border: none; /* 去掉按钮边框 */

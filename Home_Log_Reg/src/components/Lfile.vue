@@ -12,7 +12,10 @@ import {
   labelShake, labelFocus,
   creatIng, showLabelAlert, renameFolder, deleteItems,
   isAllSelectedFilesFavorited, markAsFavorite, favoriteButtonIcon,
-  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, renameFile
+  shareItems,
+  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, renameFile,//悬停和重命名
+  downloadFile,//下载
+  //previewFile//预览
 } from '../homepage/api.js'
 
 
@@ -21,7 +24,7 @@ import unfavoriteIcon from '../assets/收藏.svg';
 //用户信息加载,不要重复写
 //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
 const userData = JSON.parse(localStorage.getItem('userData'));
-const rootFolderID = JSON.parse(localStorage.getItem('rootFolderData')).folder_name;
+const rootFolderID = JSON.parse(localStorage.getItem('rootFolderData')).id;
 var userInfo = userData.data.userInfo;
 let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
 const eventBus = useEventBus("folder-update");
@@ -87,6 +90,7 @@ onMounted(() => {
 
 // 新建文件夹函数
 const addNewFolder = async () => {
+  console.log('adding');
   if (isEd) return;
   isEd = true;
   let newFolder;
@@ -105,6 +109,7 @@ const handleCancel = (index) => {
   // 如果 isRe 为 false，则删除当前条目
   if(isFolder){
     if (!isRe) {
+      folders.value[index].isEditing = false;
       folders.value.splice(index, 1); // 删除当前条目
     }
     else {
@@ -134,6 +139,8 @@ const handleCancel = (index) => {
       console.log(123);
     }
   }
+  isCancel=false;
+  isEd=false;
 };
 
 const finishEditing = (item, index, isRename, isFolder) => {
@@ -237,7 +244,7 @@ const reName = (selectedIds) => {
 
 const showDeleteModal = ref(false); // 控制模态框显示的状态
 
-const clickDel = () => {
+const clickDel = (selectedIds) => {
   // 显示模态框而不是直接删除
   showDeleteModal.value = true;
 };
@@ -252,9 +259,6 @@ const confirmDelete = () => {
       .catch(error => {
         console.error('处理删除结果时发生错误:', error);
       });
-  // const ID = getCurrentFolderID();
-  // Stack.pop();
-  // getFolderFile(ID);
   folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
   files.value = files.value.filter(folder => !selectedIds.value.files.includes(folder));
   showDeleteModal.value = false; // 关闭模态框
@@ -263,6 +267,49 @@ const confirmDelete = () => {
 // 取消删除
 const cancelDelete = () => {
   showDeleteModal.value = false; // 关闭模态框
+};
+
+//share
+const isShare = ref(false); // 控制模态框显示的状态
+const clickShare=(selectedIds)=>{
+  isShare.value=true;
+}
+
+const confirmShare = () => {
+  const input1Value = document.getElementById("input1").value;
+  const input2Value = document.getElementById("input2").value;
+  // if(input1Value==='')showLabelAlert('共享文件未命名！');
+  if (input1Value.trim() === '') {
+    showLabelAlert('共享文件未命名！');
+    nextTick(() => {
+      labelShake(document.getElementById("input1"));
+    });
+    return;
+  }
+  if (input2Value.trim() === '') {
+    showLabelAlert('简介不能为空！');
+    nextTick(() => {
+      labelShake(document.getElementById("input2"));
+    });
+    return;
+  }
+  shareItems(selectedIds, token, userInfo.account,input1Value,input2Value)
+      .then(result => {
+        showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
+      })
+      .catch(error => {
+        console.error('共享时发生错误:', error);
+      });
+  document.getElementById("input1").value="";
+  document.getElementById("input2").value="";
+  isShare.value = false; // 关闭模态框
+};
+
+// 取消删除
+const cancelShare = () => {
+  document.getElementById("input1").value="";
+  document.getElementById("input2").value="";
+  isShare.value = false; // 关闭模态框
 };
 
 //收藏按钮
@@ -279,6 +326,15 @@ const handleMarkAsFavorite = () => {
 };
 
 const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorited.value, favoriteIcon, unfavoriteIcon));
+//下载函数
+const handleBatchDownload= () => {
+  downloadFile(account, selectedIds, token);
+}
+
+//预览函数
+// const handlepreviewFile=()=>{
+//   previewFile(account,fileID);
+// }
 </script>
 
 <template>
@@ -307,7 +363,7 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
             <input v-model="folder.name" :id="`folder-input-${index}`" class="file-input"
                    @blur="finishEditing(folder, index, isRe,isFolder)"
                    @keydown.enter="finishEditing(folder, index, isRe,isFolder)"/>
-            <button @mousedown.prevent="handleCancel(index)">取消</button> <!-- 添加取消按钮 -->
+            <button @mousedown.prevent="handleCancel(index)" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer;">>取消</button> <!-- 添加取消按钮 -->
           </template>
           <template v-else>
             <a href="" class="file-name" @click.prevent="getFolderFile(folder.id)"
@@ -317,28 +373,30 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
           </template>
         </div>
         <div class="file-item" v-for="(file, index) in files" :key="file.ID">
-          <img src="../assets/已收藏文件.svg" alt="" v-if="file.Favorite" style="width: 20px;height: 20px;">
-          <img v-else src="../assets/未收藏文件.svg" alt="" style="width: 20px;height: 20px;">
+          <img src="../assets/已收藏文件.svg" alt="" v-if="file.isFavorite" style="width: 20px;height: 20px;">
+          <img src="../assets/未收藏文件.svg" alt="" v-if="!file.isFavorite" style="width: 20px;height: 20px;">
           <img :src="fileURL" alt="文件图标" class="file-icon"/>
           <template v-if="file.isEditing">
             <input v-model="file.FileName" :id="`file-input-${index}`" class="file-input"
                    @blur="finishEditing(file, index, isRe,isFolder)"
                    @keydown.enter="finishEditing(file, index, isRe,isFolder)"/>
-            <button @mousedown.prevent="handleCancel(index)">取消</button> <!-- 添加取消按钮 -->
+            <button @mousedown.prevent="handleCancel(index)" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer;">>取消</button> <!-- 添加取消按钮 -->
           </template>
           <template v-else>
             <a href="" class="file-name"
                @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
                @mouseout="hideFileOrFolderInfo">{{ file.FileName }}</a>
+<!--               @dblclick="handlepreviewFile(userInfo.account,file.ID)"-->
+
             <input type="checkbox" v-model="file.selected" class="file-checkbox" /> <!-- 文件夹复选框 -->
           </template>
         </div>
       </div>
       <div class="file-operations" v-if=isAnyFileSelected>
-        <button><img src="../assets/下载.svg" alt="">下载</button>
+        <button @click="handleBatchDownload"><img src="../assets/下载.svg" alt="">下载</button>
         <button v-if="!isMultipleSelected" @click="reName(selectedIds)"><img src="../assets/重命名.svg" alt="">重命名</button>
-        <button @click="share(selectedIds)"><img src="../assets/分享.svg" alt="">共享</button>
-        <button @click="clickDel"><img src="../assets/回收站.svg" alt="">删除</button>
+        <button v-if="!isMultipleSelected" @click="clickShare(selectedIds)"><img src="../assets/分享.svg" alt="">共享</button>
+        <button @click="clickDel(selectedIds)"><img src="../assets/回收站.svg" alt="">删除</button>
         <button @click="handleMarkAsFavorite">
           <img :src="currentFavoriteButtonIcon" alt="收藏按钮">收藏
         </button>
@@ -353,15 +411,46 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
         <button id="btn2" @click="cancelDelete">取 消</button>
       </div>
     </div>
+    <!-- 分享确认模态框 -->
+    <div v-if="isShare" class="shareModal">
+      <div class="modal-content">
+        <!-- 左上角分享标题 -->
+        <h3 class="modal-title">共享</h3>
+
+        <!-- 主体内容区域 -->
+        <div class="content-container">
+          <!-- 左侧上传封面 -->
+          <div class="upload-section">
+            <button id="uploadCover" style="background: none; border: none; cursor: pointer;">
+              <img src="../assets/上传封面.svg" alt="上传封面" style="width: 50px; height: 50px;" />
+            </button>
+            <p>上传封面（可选）</p>
+          </div>
+
+          <!-- 右侧输入框区域 -->
+          <div class="input-group">
+            <input type="text" id="input1" placeholder="文件名" />
+            <textarea id="input2" placeholder="简介"></textarea>
+          </div>
+        </div>
+
+        <!-- 底部按钮，居中对齐 -->
+        <div class="button-group">
+          <button @click="confirmShare">确认</button>
+          <button @click="cancelShare">取消</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 显示悬停的文件/文件夹信息 -->
-    <div v-if="fileOrFolderInfo.type=='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+    <div v-if="fileOrFolderInfo.type==='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
       <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
       <p>名称: {{ fileOrFolderInfo.data.folder_name}}</p>
       <p>路径: {{ fileOrFolderInfo.data.path }}</p>
       <p>是否收藏: {{ fileOrFolderInfo.data.is_favorite ? '是' : '否' }}</p>
       <p>分享状态: {{ fileOrFolderInfo.data.is_share ? '已共享' : '未共享' }}</p>
     </div>
-    <div v-if="fileOrFolderInfo.type=='file'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+    <div v-if="fileOrFolderInfo.type==='file'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
       <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
       <p>名称: {{ fileOrFolderInfo.data.FileName }}</p>
       <p>路径: {{ fileOrFolderInfo.data.Path }}</p>
@@ -602,6 +691,121 @@ const currentFavoriteButtonIcon = computed(() => favoriteButtonIcon(isAllFavorit
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   text-align: center;
 }
+
+/* 模态框背景 */
+.shareModal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+/* 模态框内容 */
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 500px;
+  position: relative;
+}
+
+/* 标题 */
+.modal-title {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  margin-top: 5px; /* 让标题更靠上 */
+}
+
+/* 主体内容容器 */
+.content-container {
+  display: flex;
+  align-items: flex-start; /* 左侧靠上对齐 */
+}
+
+/* 左侧上传封面区域 */
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 20px;
+  margin-top: 40px; /* 调整上传封面更靠下 */
+}
+
+.upload-section img {
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+
+.upload-section p {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
+/* 输入框区域 */
+.input-group {
+  flex-grow: 1;
+  padding-right: 20px; /* 增加右侧内边距 */
+}
+
+.input-group input,
+.input-group textarea {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.input-group textarea {
+  height: 120px;
+}
+
+/* 文本框聚焦时的样式 */
+input[type="text"]:focus, textarea:focus {
+  border-color: #66afe9; /* 柔和的蓝色边框 */
+  box-shadow: 0 0 5px rgba(102, 175, 233, 0.5); /* 添加蓝色光晕效果 */
+}
+
+/* 底部按钮区域，居中对齐 */
+.button-group {
+  display: flex;
+  justify-content: center; /* 居中对齐 */
+  margin-top: 10px;
+}
+
+.button-group button {
+  margin: 0 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  transition: background-color 0.3s, color 0.3s; /* 增加平滑过渡效果 */
+}
+
+
+/* 鼠标悬浮时的样式 */
+.button-group button:hover {
+  background-color: #0056b3; /* 悬浮时更深的蓝色 */
+  color: #e0f7fa; /* 更亮的文字颜色 */
+}
+
+/* 鼠标按下时的样式 */
+.button-group button:active {
+  background-color: #003f7f; /* 按下时更深的蓝色 */
+  color: #ffffff; /* 保持白色文字 */
+}
+
 
 .modal-content h3{
   margin-bottom: 10px;

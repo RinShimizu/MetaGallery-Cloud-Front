@@ -2,6 +2,9 @@ import {nextTick, ref} from 'vue';
 import folderURL from "@/assets/文件夹.svg";
 
 var CurrentFolderID = 1;
+let Stackfa=[];
+let hoverTimer = null; // 计时器
+let isHovering = false; // 标记是否仍然悬停
 export const fileOrFolderInfo =  ref({
     type: '',  // 'file' 或 'folder'
     data: null  // 存储文件或文件夹的具体信息
@@ -65,8 +68,9 @@ export const fetchSubInfo = (Stack, token, account, folder_id) => {
                     selected: false,            // 默认未选中
                     isEditing:false
                 }));
+                Stackfa.push(filesFromServer);
                 filesFromServer.forEach(file => {
-                    const existingFile = Stack[Stack.length - 1]?.find(f => f.ID === file.ID);
+                    const existingFile = Stackfa[Stackfa.length - 1]?.find(f => f.ID === file.ID);
                     if (existingFile) {
                         existingFile.isFavorite = file.Favorite;
                     }
@@ -74,7 +78,7 @@ export const fetchSubInfo = (Stack, token, account, folder_id) => {
 
                 // 将数据压入栈
                 Stack.push([foldersFromServer, filesFromServer]);
-
+                Stackfa.push([foldersFromServer, filesFromServer]);
                 // 返回结果
                 resolve({ folders: foldersFromServer, files: filesFromServer });
             })
@@ -563,34 +567,35 @@ export const favoriteButtonIcon = (isAllFavorited, favoriteIcon, unfavoriteIcon)
 };
 // 显示文件/文件夹信息
 export const showFileOrFolderInfo = async (id, type, token, account,event) => {
-    //console.log("id",id);
-    //console.log("正在显示详细信息");
-    //console.log("type",type);
-    const info = await fetchFileOrFolderInfo(id, type, token, account);
-    console.log("fileOrFolderInfo.value",fileOrFolderInfo.value.data);
-    // 设置一个定时器，延迟 1 秒后显示悬浮框
-    // setTimeout(() => {
-    //     nextTick(() => {
+    isHovering = true; // 标记悬停开始
+    hoverTimer = setTimeout(async () => {
+        if (!isHovering) return; // 如果鼠标已经移出，不执行后续操作
 
+        const info = await fetchFileOrFolderInfo(id, type, token, account);
+        nextTick(() => {
             fileOrFolderInfo.value = {
-                type: type,  // 将 type 添加到 fileOrFolderInfo
-                data: info   // 存储具体的信息
+                type: type,
+                data: info,
             };
+        });
 
-    //     });
-    // }, 1000); // 延迟 1 秒（1000 毫秒）\
-    // 更新悬浮框的位置，使其跟随鼠标
-    popupTop.value = `${event.clientY - 70}px`; // 10px 为偏移量
-    popupLeft.value = `${event.clientX - 200}px`; // 10px 为偏移量
-    console.log("fileOrFolderInfo.value.data",fileOrFolderInfo.value.data);
+        // 更新悬浮框位置
+        popupTop.value = `${event.clientY - 70}px`;
+        popupLeft.value = `${event.clientX - 230}px`;
+    }, 1000); // 延迟 1 秒
 };
 // 隐藏文件/文件夹信息
 export const hideFileOrFolderInfo = () => {
+    isHovering = false; // 标记悬停结束
+    if (hoverTimer) {
+        clearTimeout(hoverTimer); // 清除计时器
+        hoverTimer = null;
+    }
     fileOrFolderInfo.value = { type: '', data: null };  // 清空数据
 };
 // 从服务器获取文件或文件夹信息
 export const fetchFileOrFolderInfo = async (id, type, token, account) => {
-    console.log("fetchFileOrFolderInfo id",id);
+    //console.log("fetchFileOrFolderInfo id",id);
     let url = '';
     if (type === 'file') {
         url = `http://localhost:8080/api/getFileData?account=${account}&file_id=${id}`;
@@ -607,7 +612,7 @@ export const fetchFileOrFolderInfo = async (id, type, token, account) => {
     });
 
     const data = await response.json();
-    console.log("data",data);
+    //console.log("data",data);
     return data.data;  // 返回相关的信息
 };
 const recoverFile = (fileId, token, account) => {
@@ -693,6 +698,113 @@ const completeDeleteFolder = (folderID, bin_id, token, account) => {
         .then(result => console.log(result))
         .catch(error => console.log('error', error));
 }
+
+export const shareItems=async (selectedItems, token, account, shared_name, intro) => {
+
+    const folders = selectedItems.value.folders; // 选中的文件夹数组
+    // const files = selectedItems.value.files; // 选中的文件数组
+    try {
+        for (const folder of folders) {
+            console.log("shareFoldering");
+            await shareFolder(token,account,folder.id,folder.folder_name,intro);
+        }
+        // for (const file of files) {
+        //     console.log(111);
+        //     await deleteFile(token, account, file.ID);
+        // }
+        return '文件夹共享成功';
+    } catch (error) {
+        console.error('共享享过程中发生错误:', error);
+        return `共享失败: ${error.message}`;
+    }
+}
+
+export const shareFolder=(token,account,id,name,intro)=>{
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    var formdata = new FormData();
+    formdata.append("account", account);
+    formdata.append("folder_id", id);
+    formdata.append("shared_name", name);
+    formdata.append("intro", intro);
+
+    console.log("11",id);
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formdata,
+        redirect: 'follow'
+    };
+
+    return fetch("http://localhost:8080/api/shareFolder", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}
+
+export const fetchSharedInfo = async (token, account,curPage) => {
+
+    let url = '';
+    url = `http://localhost:8080/api/gallery/getUserGallery?account=${account}&page_num=${curPage}`;
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': token,
+        }
+    });
+
+    const data = await response.json();
+    console.log("data",data);
+    return data.data;  // 返回相关的信息
+};
+
+export const unShareItems=async (shareItems, token, account) => {
+    const folders = shareItems.value.folders;
+    const files = shareItems.value.files;
+    try {
+        for (const folder of folders) {
+            console.log("unshareFoldering");
+            await unShareFolder(folder.folder_name, token, account);
+        }
+        // for (const file of files) {
+        //     console.log(111);
+        //     await deleteFile(token, account, file.ID);
+        // }
+        return '取消分享成功';
+    } catch (error) {
+        console.error('取消分享过程中发生错误:', error);
+        return `取消分享失败: ${error.message}`;
+    }
+}
+
+export const unShareFolder=(name,token,account)=>{
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    // myHeaders.append("Content-Type", "application/json");
+    // var raw = JSON.stringify({
+    //     "account": account,
+    //     "shared_name": name
+    // });
+
+    var formdata = new FormData();
+    formdata.append("account", account);
+    formdata.append("shared_name", name);
+
+    console.log("name:",name);
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formdata,
+        redirect: 'follow'
+    };
+
+    return fetch("http://localhost:8080/api/gallery/unshareFolder", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}
 const completeDeleteFile = (fileID, token, account) => {
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
@@ -728,6 +840,101 @@ export const completeDeleteItems = async (selectedIds, token, account) => {
         return '删除成功';
     } catch(error) {}
 }
+
+// 批量下载文件函数
+export const downloadFile = async (account, selectedIds, token) => {
+    const folders=selectedIds.value.folders;
+    const files=selectedIds.value.files;
+    console.log("folders",folders);
+    // 检查是否有选中的文件夹
+    if (folders.length>0) {
+        alert('不允许下载文件夹！');
+        return;  // 如果有文件夹，终止下载
+    }
+
+    // 如果没有文件夹，继续下载选中的文件
+    const downloadPromises = [];
+
+    // 下载选中的文件
+    files.forEach(file => {
+        const fileId = file.ID;
+        console.log(file.ID);
+        const url = `http://localhost:8080/api/downloadFile?account=${account}&file_id=${fileId}`;
+        downloadPromises.push(downloadSingleFile(url, token, file.FileName)); // 将文件名传入
+    });
+    // 等待所有文件下载完成
+    try {
+        await Promise.all(downloadPromises);
+        console.log('所有文件下载完成！');
+    } catch (error) {
+        console.error('批量下载时出现错误:', error);
+    }
+};
+
+// 下载单个文件的工具函数
+const downloadSingleFile = async (url, token, defaultName) => {
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                Authorization: token,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+
+        // 提取文件名
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let fileName = defaultName || 'downloaded_file';
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="?(.+)"?/);
+            if (match && match[1]) {
+                fileName = decodeURIComponent(match[1]);
+            }
+        }
+
+        // 创建下载链接
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+        console.error('下载单个文件时出错:', error);
+    }
+};
+
+//预览功能（只支持预览单个文件）,目前未完全实现
+export async function previewFile(account, fileID) {
+    if (!account || !fileID) {
+        throw new Error("账号或文件ID不能为空");
+    }
+
+    // const queryParams = new URLSearchParams({ account, file_id: fileID }).toString();
+    // const url = `/api/preview?${queryParams}`;
+    const url = `http://localhost:8080/api/previewFile?account=${account}&file_id=${fileID}`;
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "预览失败，请稍后再试");
+        }
+
+        const data = await response.json();
+        return data.previewUrl || "";
+    } catch (error) {
+        throw new Error(error.message || "预览失败，请稍后再试");
+    }
+}
+
 export const getAllSharedItems = async (page_num) => {
     var myHeaders = new Headers();
     myHeaders.append("Authorization", "");
