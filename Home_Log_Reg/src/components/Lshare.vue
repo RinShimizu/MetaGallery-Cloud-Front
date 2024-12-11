@@ -3,7 +3,11 @@ import {ref, computed, onMounted} from 'vue';
 import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
 import {useEventBus} from "@vueuse/core";
-import {deleteItems, fetchSharedInfo, showLabelAlert, unShareItems} from "@/homepage/api.js";
+import {
+  fetchSharedInfo, fetchShareSubInfo,
+  showLabelAlert,
+  unShareItems
+} from "@/homepage/api.js";
 
 
 const token = localStorage.getItem('token');
@@ -11,10 +15,12 @@ const userData = JSON.parse(localStorage.getItem('userData'));
 var userInfo = userData.data.userInfo;
 var account = userInfo.account;
 const isAllSelected = ref(false);
-
+let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
 //获取当前页面文件夹和文件
 var folders = ref([]);
 var files = ref([]);
+
+var currentFolderName='root';
 //页码
 const selectedIndex = ref(1); // 默认选中第一个按钮
 
@@ -46,6 +52,7 @@ const initPage = async () => {
 };
 
 onMounted(async () => {
+  Stack.length = 0;
   await initPage();
   console.log("folders_shared",folders.value);
 })
@@ -58,8 +65,12 @@ const selectedIds = computed(() => {
 });
 
 const isAnyFileSelected = computed(() => {
-  return files.value.some(file => file.selected)||folders.value.some(folder => folder.selected);
+  return (
+      (files.value && files.value.some(file => file.selected)) ||
+      (folders.value && folders.value.some(folder => folder.selected))
+  );
 });
+
 
 const isMultipleSelected = computed(() => {
   // 计算总选中数量
@@ -73,6 +84,29 @@ const selectAll = () => {
   [...files.value, ...folders.value].forEach(item => (item.selected = newState));
 };
 
+const enterFolder = async (folder) => {
+  currentFolderName=folder.folder_name;
+  console.log("curPathName:" + currentFolderName);
+  Stack.push([JSON.parse(JSON.stringify(folders.value)), JSON.parse(JSON.stringify(files.value))]);
+  // 调用 API 获取子文件夹和文件
+  const { subfolders, file } = await fetchShareSubInfo(Stack, userData.data.token, userInfo.account, currentFolderName, folder.ipfs_hash);
+
+  // 更新 folders 和 files 的值
+  folders.value = subfolders;
+  files.value = file;
+}
+
+const goBackToParentShareFolder=()=>{
+  if(Stack.length >= 1){
+    const [prevFolders, prevFiles] = Stack.pop();
+    folders.value = prevFolders;
+    files.value = prevFiles;
+    console.log("goback",folders.value);
+  }
+  else{
+    showLabelAlert('当前目录为系统默认目录');
+  }
+}
 
 
 const showUnshareModal = ref(false); // 控制模态框显示的状态
@@ -87,9 +121,6 @@ const confirmUnshare = () => {
       .catch(error => {
         console.error('取消共享时发生错误:', error);
       });
-  // const ID = getCurrentFolderID();
-  // Stack.pop();
-  // getFolderFile(ID);
   folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
   showUnshareModal.value = false; // 关闭模态框
 };
@@ -101,8 +132,6 @@ const cancelUnshare = () => {
 
 const cancelShare=()=>{
   showUnshareModal.value = true;
-  // unShareItems(selectedIds,token,account);
-  // folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
 }
 
 </script>
@@ -115,7 +144,7 @@ const cancelShare=()=>{
       <button id="allSelected" style="margin-right: 15px;" @click="selectAll">
         <img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;">
       </button>
-      <button id="back" @click="goBackToParentFolder">
+      <button id="back" @click="goBackToParentShareFolder">
         <img src="../assets/回退.svg" alt="" style="width: 30px; height: 30px;margin-right: -15px;">
       </button>
     </div>
@@ -124,7 +153,7 @@ const cancelShare=()=>{
         <!-- 文件夹列表 -->
         <div class="folder-item" v-for="(folder, index) in folders"  :key="'folder-' + index">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
-          <span href="" class="file-name">{{ folder.folder_name }}</span>
+          <span href="" class="file-name" @click.prevent="enterFolder(folder)">{{ folder.folder_name }}</span>
           <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
         </div>
         <div class="file-item" v-for="file in files" :key="file.ID">

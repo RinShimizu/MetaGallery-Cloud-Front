@@ -5,6 +5,8 @@ import unfavoriteIcon from "@/assets/收藏.svg";
 import { ref } from 'vue';
 var CurrentFolderID = 1;
 let Stackfa=[];
+var folders = ref([]);
+var files = ref([]);
 let hoverTimer = null; // 计时器
 let isHovering = false; // 标记是否仍然悬停
 export const fileOrFolderInfo =  ref({
@@ -752,6 +754,41 @@ export const fetchSharedInfo = async (token, account,curPage) => {
     console.log("data",data);
     return data.data;  // 返回相关的信息
 };
+
+export const fetchShareSubInfo = async (Stack, token, account, name, ipfs_hash) => {
+    const myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+
+    try {
+        const response = await fetch(
+            `http://localhost:8080/api/gallery/getFolderInfo?owner_account=${account}&folder_name=${name}&ipfs_hash=${ipfs_hash}`,
+            {
+                method: 'GET',
+                headers: myHeaders,
+                redirect: 'follow',
+            }
+        );
+
+        const data = await response.json();
+        if (data.data && data.data.folder_info) {
+            const folderInfo = data.data.folder_info;
+            const subfolders = folderInfo.subfolders
+                ? folderInfo.subfolders.map(folder => ({ ...folder, selected: false }))
+                : [];
+            const files = folderInfo.files
+                ? folderInfo.files.map(file => ({ ...file, selected: false }))
+                : [];
+            return { subfolders, files };
+        } else {
+            console.error("Invalid API response:", data);
+            return { subfolders: [], files: [] }; // 确保返回一个空结构而不是 undefined
+        }
+    } catch (err) {
+        console.error("Failed to load folder:", err);
+        return { subfolders: [], files: [] }; // 捕获错误并返回空值
+    }
+};
+
 
 export const unShareItems=async (shareItems, token, account) => {
     const folders = shareItems.value.folders;

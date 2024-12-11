@@ -67,6 +67,10 @@ const isMultipleSelected = computed(() => {
   return totalSelected > 1; // 如果总选中数量大于 1，返回 true
 });
 
+const isSingalFolderSelected=computed(()=>{
+  return selectedIds.value.folders.length === 1 && selectedIds.value.files.length === 0;
+});
+
 const selectAll = () => {
   isAllSelected.value = !isAllSelected.value;
   const newState = isAllSelected.value;
@@ -395,7 +399,7 @@ const handleBatchDownload= () => {
       <div class="file-operations" v-if=isAnyFileSelected>
         <button @click="handleBatchDownload"><img src="../assets/下载.svg" alt="">下载</button>
         <button v-if="!isMultipleSelected" @click="reName(selectedIds)"><img src="../assets/重命名.svg" alt="">重命名</button>
-        <button v-if="!isMultipleSelected" @click="clickShare(selectedIds)"><img src="../assets/分享.svg" alt="">共享</button>
+        <button v-if="isSingalFolderSelected" @click="clickShare(selectedIds)"><img src="../assets/分享.svg" alt="">共享</button>
         <button @click="clickDel(selectedIds)"><img src="../assets/回收站.svg" alt="">删除</button>
         <button @click="handleMarkAsFavorite">
           <img :src="currentFavoriteButtonIcon" alt="收藏按钮">收藏
