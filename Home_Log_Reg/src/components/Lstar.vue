@@ -4,19 +4,28 @@
   import folderURL from '../assets/文件夹.svg';
   import {
     fetchSubInfo,
-    showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft
+    showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft,
+    downloadFile,//下载
+    handlepreviewFile, isLoading, favoriteButtonIcon//预览
   } from "@/homepage/api.js";
+  import favoriteIcon from "@/assets/已收藏.svg";
+  import unfavoriteIcon from "@/assets/收藏.svg";
 
   const token = localStorage.getItem('token');
   const userData = JSON.parse(localStorage.getItem('userData'));
   var userInfo = userData.data.userInfo;
+  var account = userInfo.account;
   let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
   var files = ref([]);
   var folders = ref([]);
-  // onMounted(async () =>{
-  //   await fetchSubFileInfo(userData.data.token, userInfo.account,1);
-  //   files.value = getTopOfFileStack();
-  // })
+  const previewContentfa = ref('');
+  const selectedIds = computed(() => {
+    return {
+      files: files.value.filter(file => file.selected), // 选中的文件对象数组
+      folders: folders.value.filter(folder => folder.selected), // 选中的文件夹对象数组
+    };
+  });
+
   const isAnyFileSelected = computed(() => {
     return files.value.some(file => file.selected);
   });
@@ -77,6 +86,23 @@
       container.removeChild(alertLabel);
     }, 1000);
   };
+
+  //下载函数
+  const handleBatchDownload= () => {
+    downloadFile(account, selectedIds, token);
+  }
+
+  //预览函数
+  const showPreviewModal = ref(false);
+  const setPreviewContent = (url) => {
+    previewContentfa.value = url; // 更新 previewContent
+    //console.log("Updated previewContent:", previewContent.value);
+  };
+  const handlepreviewFile1=(account,fileID,token,event)=>{
+    previewContentfa.value ='';
+    showPreviewModal.value=true;
+    handlepreviewFile(account,fileID,token,setPreviewContent,event);
+  }
 </script>
 
 <template>
@@ -95,22 +121,41 @@
           <a href="" class="file-name"
              @click.prevent="getFolderFile(folder.id)"
              @mouseover="showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account,$event)"
-             @mouseout="hideFileOrFolderInfo">{{ folder.name }}</a>
+             @mouseout="hideFileOrFolderInfo"
+             @click="hideFileOrFolderInfo">{{ folder.name }}</a>
           <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
         </div>
         <div class="file-item" v-for="file in favoriteFiles" :key="file.ID">
           <img :src=fileURL alt="文件图标" class="file-icon" />
           <a href="" class="file-name"
              @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
-             @mouseout="hideFileOrFolderInfo">{{ file.FileName }}</a>
+             @mouseout="hideFileOrFolderInfo"
+             @click.prevent="handlepreviewFile1(userInfo.account,file.ID,token,$event)">{{ file.FileName }}</a>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>
       <div class="file-operations" v-if="isAnyFileSelected">
-        <button><img src="../assets/下载.svg" alt="">下载</button>
+        <button @click="handleBatchDownload"><img src="../assets/下载.svg" alt="">下载</button>
         <button><img src="../assets/回收站.svg" alt="">删除</button>
       </div>
     </div>
+
+    <!-- 预览模态框 -->
+    <div v-if="showPreviewModal" class="modalpre">
+      <div class="modal-precontent">
+        <button class="close-prebutton" @click="showPreviewModal = false">×</button>
+        <h3 class="modal-pretitle">正在预览文件中…</h3>
+        <div class="file-preview-area">
+          <div v-if="isLoading" class="loading-container">
+            <img src="@/assets/加载.svg" alt="Loading..." class="loading-image" />
+          </div>
+          <p v-if="!previewContentfa && !isLoading">该类型文件暂不支持预览</p>
+          <p v-else-if="isLoading">正在加载中，请稍候...</p>
+          <iframe v-else :src="previewContentfa"></iframe>
+        </div>
+      </div>
+    </div>
+
     <!-- 显示悬停的文件/文件夹信息 -->
     <div v-if="fileOrFolderInfo.type==='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
       <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
@@ -258,4 +303,86 @@
     width: 50%;
     height: auto;
   }
+
+  /* 预览模态框 */
+  .modalpre {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-precontent {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    min-width: 300px;
+    min-height: 200px;
+    width: 900px; /* 模态框固定宽度 */
+    height: 600px; /* 模态框固定高度 */
+    display: flex;
+    flex-direction: column; /* 让内容垂直排列 */
+    align-items: center;
+  }
+
+  .close-prebutton {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 30px;
+    cursor: pointer;
+  }
+
+  .close-prebutton:hover {
+    color: red;
+  }
+
+  .modal-pretitle {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .file-preview-area {
+    display: flex;
+    justify-content: center; /* 水平居中 */
+    align-items: center;    /* 垂直居中 */
+    width: 80%;
+    height: 80%;
+    margin: auto;           /* 如果需要内容居中，还可用 margin 调整 */
+    background-color: #f5f5f5; /* 可选，设置背景色以便预览更清晰 */
+    border: 1px solid #ccc;    /* 可选，添加边框样式 */
+    overflow: hidden;          /* 防止内容溢出 */
+  }
+
+  .loading-container {
+    position: absolute;
+    top: 240px; /* 将图片定位在顶部 */
+    left: 50%; /* 水平居中 */
+    transform: translateX(-50%); /* 让图片在水平方向上真正居中 */
+    margin-bottom: 10px;
+  }
+
+  .loading-image {
+    width: 40px; /* 设置图片大小 */
+    height: auto;
+  }
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    margin: 90px;
+    object-fit: contain; /* 确保内容适应容器 */
+  }
+
 </style>

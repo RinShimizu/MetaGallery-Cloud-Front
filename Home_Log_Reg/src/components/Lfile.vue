@@ -15,7 +15,7 @@ import {
   shareItems,
   showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, renameFile,//悬停和重命名
   downloadFile,//下载
-  //previewFile//预览
+  handlepreviewFile,isLoading//预览
 } from '../homepage/api.js'
 
 
@@ -40,6 +40,7 @@ const isAllSelected = ref(false);
 var folders = ref([]);
 var files = ref([]);
 var oldName = '';
+const previewContent = ref('');
 
 onMounted(async () => {
   Stack.length = 0;
@@ -318,8 +319,6 @@ const cancelShare = () => {
 
 //收藏按钮
 // 判断是否所有选中的文件/文件夹已收藏
-//收藏按钮
-// 判断是否所有选中的文件/文件夹已收藏
 const isAllFavorited = computed(() => isAllSelectedFilesFavorited(selectedIds));
 var account = userInfo.account;
 
@@ -336,9 +335,16 @@ const handleBatchDownload= () => {
 }
 
 //预览函数
-// const handlepreviewFile=()=>{
-//   previewFile(account,fileID);
-// }
+const showPreviewModal = ref(false);
+const setPreviewContent = (url) => {
+  previewContent.value = url; // 更新 previewContent
+  //console.log("Updated previewContent:", previewContent.value);
+};
+const handlepreviewFile1=(account,fileID,token,event)=>{
+  previewContent.value ='';
+  showPreviewModal.value=true;
+  handlepreviewFile(account,fileID,token,setPreviewContent,event);
+}
 </script>
 
 <template>
@@ -372,7 +378,8 @@ const handleBatchDownload= () => {
           <template v-else>
             <a href="" class="file-name" @click.prevent="getFolderFile(folder.id)"
                @mouseover="showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account,$event)"
-               @mouseout="hideFileOrFolderInfo">{{ folder.name }}</a>
+               @mouseout="hideFileOrFolderInfo"
+               @click="hideFileOrFolderInfo">{{ folder.name }}</a>
             <input type="checkbox" v-model="folder.selected" class="file-checkbox" /> <!-- 文件夹复选框 -->
           </template>
         </div>
@@ -389,8 +396,8 @@ const handleBatchDownload= () => {
           <template v-else>
             <a href="" class="file-name"
                @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
-               @mouseout="hideFileOrFolderInfo">{{ file.FileName }}</a>
-<!--               @dblclick="handlepreviewFile(userInfo.account,file.ID)"-->
+               @mouseout="hideFileOrFolderInfo"
+               @click.prevent="handlepreviewFile1(userInfo.account,file.ID,token,$event)">{{ file.FileName }}</a>
 
             <input type="checkbox" v-model="file.selected" class="file-checkbox" /> <!-- 文件夹复选框 -->
           </template>
@@ -442,6 +449,22 @@ const handleBatchDownload= () => {
         <div class="button-group">
           <button @click="confirmShare">确认</button>
           <button @click="cancelShare">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 预览模态框 -->
+    <div v-if="showPreviewModal" class="modalpre">
+      <div class="modal-precontent">
+        <button class="close-prebutton" @click="showPreviewModal = false">×</button>
+        <h3 class="modal-pretitle">正在预览文件中…</h3>
+        <div class="file-preview-area">
+          <div v-if="isLoading" class="loading-container">
+            <img src="@/assets/加载.svg" alt="Loading..." class="loading-image" />
+          </div>
+          <p v-if="!previewContent && !isLoading">该类型文件暂不支持预览</p>
+          <p v-else-if="isLoading">正在加载中，请稍候...</p>
+          <iframe v-else :src="previewContent"></iframe>
         </div>
       </div>
     </div>
@@ -554,6 +577,7 @@ const handleBatchDownload= () => {
   width: fit-content;
   display: block;
   text-decoration: none;
+  color: black;
 }
 
 .file-name:visited {
@@ -856,4 +880,85 @@ input[type="text"]:focus, textarea:focus {
   color: black;
   border: 1px solid black;
 }
+/* 预览模态框 */
+.modalpre {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-precontent {
+  position: relative;
+  background: #fff;
+  border-radius: 8px;
+  min-width: 300px;
+  min-height: 200px;
+  width: 900px; /* 模态框固定宽度 */
+  height: 600px; /* 模态框固定高度 */
+  display: flex;
+  flex-direction: column; /* 让内容垂直排列 */
+  align-items: center;
+}
+
+.close-prebutton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+.close-prebutton:hover {
+  color: red;
+}
+
+.modal-pretitle {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.file-preview-area {
+  display: flex;
+  justify-content: center; /* 水平居中 */
+  align-items: center;    /* 垂直居中 */
+  width: 80%;
+  height: 80%;
+  margin: auto;           /* 如果需要内容居中，还可用 margin 调整 */
+  background-color: #f5f5f5; /* 可选，设置背景色以便预览更清晰 */
+  border: 1px solid #ccc;    /* 可选，添加边框样式 */
+  overflow: hidden;          /* 防止内容溢出 */
+}
+
+.loading-container {
+  position: absolute;
+  top: 240px; /* 将图片定位在顶部 */
+  left: 50%; /* 水平居中 */
+  transform: translateX(-50%); /* 让图片在水平方向上真正居中 */
+  margin-bottom: 10px;
+}
+
+.loading-image {
+  width: 40px; /* 设置图片大小 */
+  height: auto;
+}
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  margin: 90px;
+  object-fit: contain; /* 确保内容适应容器 */
+}
+
 </style>
