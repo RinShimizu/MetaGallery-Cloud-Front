@@ -1,7 +1,7 @@
 <script setup>
   import { ref } from 'vue';
   import Userinfo from "@/components/userinfo.vue";
-  import { getCurrentFolderID, uploadFile } from "@/homepage/api.js";
+  import {getCurrentFolderID, showLabelAlert, uploadFile} from "@/homepage/api.js";
   import { useEventBus } from "@vueuse/core"; // VueUse 提供的事件总线
 
   //用户信息加载,不要重复写
@@ -11,19 +11,16 @@
   const folder_id = ref();
   const eventBus = useEventBus("folder-update");
 
-
   //切换界面
   const selectedIndex = ref(0); // 默认选中第一个按钮
   const selectButton = (index) => {
     selectedIndex.value = index;
   };
 
-  
   var imgURL = userInfo.avatar;
   function clear() {
     document.querySelector('.input').value = '';
   }
-
 
   //上传文件
   const fileInput = ref(null);
@@ -36,9 +33,10 @@
     if (file) {
       selectedFile.value = file;
       folder_id.value = getCurrentFolderID();
-      await uploadFile(selectedFile, userData.data.token, userInfo.account, folder_id.value)
-      console.log("Upload complete, now emitting the event");
-      eventBus.emit(folder_id.value); // 触发事件
+      uploadFile(selectedFile, userData.data.token, userInfo.account, folder_id.value)
+          .then(result => {
+            eventBus.emit(folder_id.value, result); // 触发事件
+          })
     }
   };
 
