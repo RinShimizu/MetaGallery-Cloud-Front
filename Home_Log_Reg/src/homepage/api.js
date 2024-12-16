@@ -11,6 +11,7 @@ export const fileOrFolderInfo =  ref({
 });// 用于存储当前文件或文件夹的信息
 export const popupTop = ref('0px');  // 存储悬浮框的 top 值
 export const popupLeft = ref('0px'); // 存储悬浮框的 left 值
+export const isLoading = ref(false);//用于预览的正在加载中状态
 export const changeCurrentFolderID = (ID) => {
     CurrentFolderID = ID;
 }
@@ -572,6 +573,12 @@ export const showFileOrFolderInfo = async (id, type, token, account,event) => {
         if (!isHovering) return; // 如果鼠标已经移出，不执行后续操作
 
         const info = await fetchFileOrFolderInfo(id, type, token, account);
+        console.log("info",info);
+        if (type === 'folder' && !info) {
+            // 如果是空文件夹，不显示或清除信息
+            fileOrFolderInfo.value = { type: '', data: null };
+            return;
+        }
         nextTick(() => {
             fileOrFolderInfo.value = {
                 type: type,
@@ -613,6 +620,10 @@ export const fetchFileOrFolderInfo = async (id, type, token, account) => {
 
     const data = await response.json();
     //console.log("data",data);
+    if (data.data && data.data.items && data.data.items.length === 0) {
+        // 处理空文件夹的情况，比如返回 null 或其他标识
+        return null;
+    }
     return data.data;  // 返回相关的信息
 };
 const recoverFile = (fileId, token, account) => {
@@ -958,26 +969,52 @@ const downloadSingleFile = async (url, token, defaultName) => {
 };
 
 //预览功能（只支持预览单个文件）,目前未完全实现
-export async function previewFile(account, fileID) {
+//预览函数
+
+export async function handlepreviewFile(account,fileID,token,setPreviewContent,event){
+    event.preventDefault();
+    const previewUrl = await previewFile(account,fileID,token);
+    //const previewPageUrl = `/preview?url=${encodeURIComponent(previewUrl)}`;
+    console.log("previewPageUrl",previewUrl);
+    //window.open(previewPageUrl, '_blank');
+    //window.open(previewUrl, '_blank');
+    setPreviewContent(previewUrl);
+}
+export async function previewFile(account, fileID,token) {
     if (!account || !fileID) {
         throw new Error("账号或文件ID不能为空");
     }
-
+    console.log("进入预览函数");
     // const queryParams = new URLSearchParams({ account, file_id: fileID }).toString();
     // const url = `/api/preview?${queryParams}`;
     const url = `http://localhost:8080/api/previewFile?account=${account}&file_id=${fileID}`;
     try {
-        const response = await fetch(url);
-
+        isLoading.value=true;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                Authorization: token,
+            },
+        });
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || "预览失败，请稍后再试");
         }
-
-        const data = await response.json();
-        return data.previewUrl || "";
+        // const data = await response.json();
+        // console.log("url:",data.url);
+        // return data.url || "";
+        const blob = await response.blob();
+        console.log("blob:",blob);
+        if(blob.type==="application/json"){
+            return null;
+        }
+        const previewUrl = URL.createObjectURL(blob); // 生成本地 URL
+        console.log("预览 URL:", previewUrl);
+        return previewUrl;
     } catch (error) {
         throw new Error(error.message || "预览失败，请稍后再试");
+    }finally {
+        isLoading.value=false;
     }
 }
 
