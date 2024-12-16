@@ -1,45 +1,78 @@
 <script setup>
-  import { ref } from 'vue';
-  import Userinfo from "@/components/userinfo.vue";
-  import {getCurrentFolderID, showLabelAlert, uploadFile} from "@/homepage/api.js";
-  import { useEventBus } from "@vueuse/core"; // VueUse 提供的事件总线
+import { computed, provide, ref, watch } from 'vue';
+import Userinfo from "@/components/userinfo.vue";
+import {getCurrentFolderID, showLabelAlert, uploadFile} from "@/homepage/api.js";
+import { useEventBus } from "@vueuse/core";
+import {onBeforeRouteLeave} from "vue-router";
 
-  //用户信息加载,不要重复写
-  //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
-  const userData = JSON.parse(localStorage.getItem('userData'));
-  var userInfo = userData.data.userInfo;
-  const folder_id = ref();
-  const eventBus = useEventBus("folder-update");
+// 用户信息加载
+const userData = JSON.parse(localStorage.getItem('userData'));
+const userInfo = userData.data.userInfo;
+const eventBus = useEventBus("folder-update");
+const eventBus1 = useEventBus("search-update");
 
-  //切换界面
-  const selectedIndex = ref(0); // 默认选中第一个按钮
-  const selectButton = (index) => {
-    selectedIndex.value = index;
-  };
 
-  var imgURL = userInfo.avatar;
-  function clear() {
-    document.querySelector('.input').value = '';
+// 界面切换逻辑
+const selectedIndex = ref(0);
+// 更新选中按钮并跳转路径
+const selectButton = (index) => {
+  selectedIndex.value = index;
+  searchQuery.value = ""; // 清空搜索框内容
+}
+
+const imgURL = userInfo.avatar;// 路由配置
+const configs = [
+  { path: "/", placeholder: "搜索我的文件" },
+  { path: "/share", placeholder: "搜索我的共享" },
+  { path: "/star", placeholder: "搜索我的收藏" },
+  { path: "/gallery", placeholder: "搜索画廊" },
+  { path: "/rubbish", placeholder: "搜索回收站文件" },
+];
+
+// 搜索逻辑
+const searchQuery = ref("");
+const currentPlaceholder = computed(() => {
+  const config = configs[selectedIndex.value];
+  return config ? config.placeholder : "搜索";
+});
+
+
+const handleSearch = () => {
+  if (!searchQuery.value.trim()) {
+    showLabelAlert("请输入搜索内容！");
+    return;
   }
+  console.log("query",searchQuery.value);
+  // 将 selectedIndex 和搜索内容一起传递
+  eventBus1.emit({ index: selectedIndex.value, query: searchQuery.value });
+  console.log("搜索内容：", searchQuery.value, "页面索引：", selectedIndex.value);
+};
 
-  //上传文件
-  const fileInput = ref(null);
-  const selectedFile = ref(null);
-  const handleFileUpload = async () => {
-    fileInput.value.click();
-  };
-  const handleFileChange = async (event) => {
-    const file = event.target;
-    if (file) {
-      selectedFile.value = file;
-      folder_id.value = getCurrentFolderID();
-      uploadFile(selectedFile, userData.data.token, userInfo.account, folder_id.value)
-          .then(result => {
-            eventBus.emit(folder_id.value, result); // 触发事件
-          })
-    }
-  };
+const clear = () => {
+  searchQuery.value = "";
+  eventBus1.emit({ index: selectedIndex.value, query: "" }); // 清空时也需要通知页面
+};
 
+// 文件上传逻辑
+const fileInput = ref(null);
+const selectedFile = ref(null);
+const handleFileUpload = async () => {
+  fileInput.value.click();
+};
+const handleFileChange = async (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    selectedFile.value = file;
+    folder_id.value = getCurrentFolderID();
+    uploadFile(selectedFile.value, userData.data.token, userInfo.account, folder_id.value)
+        .then((result) => {
+          eventBus.emit(folder_id.value, result);
+        })
+        .catch((err) => {
+          console.error("文件上传失败", err);
+        });
+  }
+};
 </script>
 
 <template>
@@ -48,39 +81,58 @@
       <span id="s1">Meta</span><span id="s2">Gallery </span><span id="s3">&ensp;Cloud</span>
     </div>
     <div class="searchbox">
-      <button class="button1"><img src="../assets/搜索.svg" alt=""></button>
-      <input type="text" class="input" placeholder="搜索">
-      <button class="button2" @click="clear"><img src="../assets/取消.svg" alt=""></button>
+      <button class="button1" @click="handleSearch">
+        <img src="../assets/搜索.svg" alt="搜索">
+      </button>
+      <input
+          type="text"
+          class="input"
+          @keyup.enter="handleSearch"
+          :placeholder="currentPlaceholder"
+          v-model="searchQuery"
+      />
+      <button class="button2" v-if="searchQuery" @click="clear">
+        <img src="../assets/取消.svg" alt="清除">
+      </button>
     </div>
     <button id="post" @click="handleFileUpload">
-      <img src="../assets/上传.svg" alt="" width="25" height="25"> 上传文件
+      <img src="../assets/上传.svg" alt="上传" width="25" height="25"> 上传文件
     </button>
     <input type="file" ref="fileInput" @change="handleFileChange" style="display: none;" />
     <div class="user">
-      <img id="pic" src="../assets/个人中心-我的.svg" alt=" ">
-      <button><img :src=imgURL alt=""></button>
+      <img id="pic" src="../assets/个人中心-我的.svg" alt="用户中心">
+      <button><img :src="imgURL" alt="用户头像"></button>
       <div class="info">
         <Userinfo />
       </div>
     </div>
-
   </div>
   <div class="sidebar">
     <div class="menu">
       <router-link to="/">
-        <button :class="{ active: selectedIndex === 0 }" @click="selectButton(0)"><img src="../assets/文件.svg" alt="">我的文件</button>
+        <button :class="{ active: selectedIndex === 0 }" @click="selectButton(0)">
+          <img src="../assets/文件.svg" alt="文件">我的文件
+        </button>
       </router-link>
       <router-link to="/share">
-        <button :class="{ active: selectedIndex === 1 }" @click="selectButton(1)"><img src="../assets/分享.svg" alt="">我的共享</button>
+        <button :class="{ active: selectedIndex === 1 }" @click="selectButton(1)">
+          <img src="../assets/分享.svg" alt="共享">我的共享
+        </button>
       </router-link>
       <router-link to="/star">
-        <button :class="{ active: selectedIndex === 2 }" @click="selectButton(2)"><img src="../assets/收藏.svg" alt="">我的收藏</button>
+        <button :class="{ active: selectedIndex === 2 }" @click="selectButton(2)">
+          <img src="../assets/收藏.svg" alt="收藏">我的收藏
+        </button>
       </router-link>
       <router-link to="/gallery">
-        <button :class="{ active: selectedIndex === 3 }" @click="selectButton(3)"><img src="../assets/图片.svg" alt="">画廊</button>
+        <button :class="{ active: selectedIndex === 3 }" @click="selectButton(3)">
+          <img src="../assets/图片.svg" alt="画廊">画廊
+        </button>
       </router-link>
       <router-link to="/rubbish">
-        <button :class="{ active: selectedIndex === 4 }" @click="selectButton(4)"><img src="../assets/回收站.svg" alt="">回收站</button>
+        <button :class="{ active: selectedIndex === 4 }" @click="selectButton(4)">
+          <img src="../assets/回收站.svg" alt="回收站">回收站
+        </button>
       </router-link>
     </div>
     <div class="bottom-image">

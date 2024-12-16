@@ -4,8 +4,9 @@
   import folderURL from '../assets/文件夹.svg';
   import {
     fetchSubInfo,
-    showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft
+    showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, getCurrentFolderID, searchInStar
   } from "@/homepage/api.js";
+  import {useEventBus} from "@vueuse/core";
 
   const token = localStorage.getItem('token');
   const userData = JSON.parse(localStorage.getItem('userData'));
@@ -17,6 +18,49 @@
   //   await fetchSubFileInfo(userData.data.token, userInfo.account,1);
   //   files.value = getTopOfFileStack();
   // })
+  const searchQuery = ref(""); // 当前搜索关键字
+  const eventBus1 = useEventBus("search-update");
+  const performSearch = (query) => {
+    console.log(query);
+    searchInStar(token, userInfo.account, query)
+        .then(({ folder, file }) => {
+          Stack.push([folder,file]);
+          // 将现有的收藏属性修改为 true
+          folder.forEach(folder => {
+            folder.isFavorite = true; // 修改已有的收藏属性为 true
+          });
+
+          file.forEach(file => {
+            file.Favorite = true; // 修改已有的收藏属性为 true
+          });
+          folders.value=folder;
+          files.value=file;
+          console.log("Folders:", folder);
+          console.log("Files:", file);
+        })
+        .catch((error) => {
+          console.error("Search failed:", error);
+        });
+  };
+
+
+  onMounted(() => {
+    // 监听搜索内容的变化
+    eventBus1.on(({ index, query }) => {
+      if (index === 2) {
+        searchQuery.value = query;
+        console.log(`页面索引 ${index} 接收到搜索内容：`, query);
+        if(query===''){
+          goBackToParentFolder();
+        }
+        else{
+          performSearch(query); // 根据新的搜索内容获取数据
+        }
+
+      }
+    });
+  });
+
   const isAnyFileSelected = computed(() => {
     return files.value.some(file => file.selected);
   });

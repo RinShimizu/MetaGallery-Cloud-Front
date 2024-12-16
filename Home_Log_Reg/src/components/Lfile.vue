@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick, onMounted } from 'vue';
+import {ref, computed, nextTick, onMounted, inject, onBeforeUnmount, watch} from 'vue';
 import { useEventBus } from "@vueuse/core";
 import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
@@ -14,13 +14,13 @@ import {
   isAllSelectedFilesFavorited, markAsFavorite, favoriteButtonIcon,
   shareItems,
   showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, renameFile,//悬停和重命名
-  downloadFile,//下载
+  downloadFile, searchInFile,//下载
   //previewFile//预览
 } from '../homepage/api.js'
 
-
 import favoriteIcon from '../assets/已收藏.svg';
 import unfavoriteIcon from '../assets/收藏.svg';
+import {useRoute} from "vue-router";
 //用户信息加载,不要重复写
 //包括name,account,avatar,intro,token(这个在userdata里，别的在userinfo里)
 const userData = JSON.parse(localStorage.getItem('userData'));
@@ -29,6 +29,7 @@ var userInfo = userData.data.userInfo;
 let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
 const eventBus = useEventBus("folder-update");
 const token = localStorage.getItem('token');
+const eventBus1 = useEventBus("search-update");
 
 var isCancel = false;
 var isEd = false;
@@ -40,6 +41,41 @@ const isAllSelected = ref(false);
 var folders = ref([]);
 var files = ref([]);
 var oldName = '';
+const searchQuery = ref(""); // 当前搜索关键字
+
+const performSearch = (query) => {
+  const id=getCurrentFolderID();
+  console.log(query);
+  searchInFile(token, userInfo.account, id, query)
+      .then(({ folder, file }) => {
+        Stack.push([folder,file]);
+        folders.value=folder;
+        files.value=file;
+        console.log("Folders:", folder);
+        console.log("Files:", file);
+      })
+      .catch((error) => {
+        console.error("Search failed:", error);
+      });
+};
+
+
+onMounted(() => {
+  // 监听搜索内容的变化
+  eventBus1.on(({ index, query }) => {
+    if (index === 0) {
+      searchQuery.value = query;
+      console.log(`页面索引 ${index} 接收到搜索内容：`, query);
+      if(query===''){
+        goBackToParentFolder();
+      }
+      else{
+        performSearch(query); // 根据新的搜索内容获取数据
+      }
+
+    }
+  });
+});
 
 onMounted(async () => {
   Stack.length = 0;
@@ -48,6 +84,7 @@ onMounted(async () => {
   folders.value = Stack[Stack.length - 1][0];
   files.value = Stack[Stack.length - 1][1];
 })
+
 
 const selectedIds = computed(() => {
   return {
@@ -66,7 +103,7 @@ const isMultipleSelected = computed(() => {
   return totalSelected > 1; // 如果总选中数量大于 1，返回 true
 });
 
-const isSingalFolderSelected=computed(()=>{
+const isSingleFolderSelected=computed(()=>{
   return selectedIds.value.folders.length === 1 && selectedIds.value.files.length === 0;
 });
 
@@ -78,7 +115,6 @@ const selectAll = () => {
 
 const getFolderFile = async (ID) => {
   changeCurrentFolderID(ID);
-  console.log("curPathID:" + ID);
   await fetchSubInfo(Stack, userData.data.token, userInfo.account, ID);
   folders.value = Stack[Stack.length - 1][0];
   files.value = Stack[Stack.length - 1][1];
@@ -275,42 +311,128 @@ const cancelDelete = () => {
 
 //share
 const isShare = ref(false); // 控制模态框显示的状态
-const clickShare=(selectedIds)=>{
-  isShare.value=true;
-}
+const uploadCoverInput = ref(null); // 文件上传控件的引用
+const coverPreview = ref(null); // 预览封面的引用
 
-const confirmShare = () => {
-  const input1Value = document.getElementById("input1").value;
-  const input2Value = document.getElementById("input2").value;
-  // if(input1Value==='')showLabelAlert('共享文件未命名！');
-  if (input1Value.trim() === '') {
-    showLabelAlert('共享文件未命名！');
-    nextTick(() => {
-      labelShake(document.getElementById("input1"));
-    });
+// 打开模态框
+const clickShare = (selectedIds) => {
+  isShare.value = true;
+};
+
+// 触发上传控件
+const triggerUpload = () => {
+  uploadCoverInput.value.click();
+};
+
+// 处理封面上传
+const handleCoverUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      coverPreview.value.src = e.target.result; // 更新预览图
+    };
+    reader.onerror = (error) => {
+      console.error("文件读取错误:", error);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    console.warn("没有选择文件。");
+  }
+};
+
+// 确认分享操作
+const confirmShare = async () => {
+  const input1 = document.getElementById("input1").value.trim();
+  const input2 = document.getElementById("input2").value.trim();
+  const coverFile = uploadCoverInput.value.files[0]; // 获取封面文件
+
+  // 验证输入
+  if (!input1) {
+    showLabelAlert("共享文件未命名！");
+    nextTick(() => labelShake(document.getElementById("input1")));
     return;
   }
-  if (input2Value.trim() === '') {
-    showLabelAlert('简介不能为空！');
-    nextTick(() => {
-      labelShake(document.getElementById("input2"));
-    });
+  if (!input2) {
+    showLabelAlert("简介不能为空！");
+    nextTick(() => labelShake(document.getElementById("input2")));
     return;
   }
-  shareItems(selectedIds, token, userInfo.account,input1Value,input2Value)
-      .then(result => {
-        showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
+
+  // 模拟调用分享 API
+  await shareItems(selectedIds, token, userInfo.account, input1, input2, coverFile)
+      .then((result) => {
+        showLabelAlert("共享成功！");
+        console.log(result);
       })
-      .catch(error => {
-        console.error('共享时发生错误:', error);
+      .catch((error) => {
+        console.error("共享失败:", error);
+        showLabelAlert("共享失败，请重试！");
       });
-  document.getElementById("input1").value="";
-  document.getElementById("input2").value="";
+
+  // 重置模态框状态
+  // 重置封面和输入框
+  coverPreview.value.src = "../assets/上传封面.svg";
+  document.getElementById("input1").value = "";
+  document.getElementById("input2").value = "";
+  uploadCoverInput.value.value = ""; // 清空文件选择器
   isShare.value = false; // 关闭模态框
 };
 
+
+// 重置预览封面和文件选择器
+watch(isShare, (newValue) => {
+  if (!newValue && uploadCoverInput.value) {
+    uploadCoverInput.value.value = ""; // 清空文件选择器
+    coverPreview.value.src = "../assets/上传封面.svg"; // 恢复默认封面
+  }
+});
+
+// 生命周期管理
+onMounted(() => {
+  console.log("组件挂载完成");
+});
+
+onBeforeUnmount(() => {
+  console.log("组件即将卸载");
+});
+
+
+
+// const confirmShare = () => {
+//   const input1Value = document.getElementById("input1").value;
+//   const input2Value = document.getElementById("input2").value;
+//   // if(input1Value==='')showLabelAlert('共享文件未命名！');
+//   if (input1Value.trim() === '') {
+//     showLabelAlert('共享文件未命名！');
+//     nextTick(() => {
+//       labelShake(document.getElementById("input1"));
+//     });
+//     return;
+//   }
+//   if (input2Value.trim() === '') {
+//     showLabelAlert('简介不能为空！');
+//     nextTick(() => {
+//       labelShake(document.getElementById("input2"));
+//     });
+//     return;
+//   }
+//   shareItems(selectedIds, token, userInfo.account,input1Value,input2Value)
+//       .then(result => {
+//         showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
+//       })
+//       .catch(error => {
+//         console.error('共享时发生错误:', error);
+//       });
+//   document.getElementById("input1").value="";
+//   document.getElementById("input2").value="";
+//   isShare.value = false; // 关闭模态框
+// };
+
 // 取消删除
 const cancelShare = () => {
+  // 重置封面和输入框
+  coverPreview.value.src = "../assets/上传封面.svg";
   document.getElementById("input1").value="";
   document.getElementById("input2").value="";
   isShare.value = false; // 关闭模态框
@@ -399,7 +521,7 @@ const handleBatchDownload= () => {
       <div class="file-operations" v-if=isAnyFileSelected>
         <button @click="handleBatchDownload"><img src="../assets/下载.svg" alt="">下载</button>
         <button v-if="!isMultipleSelected" @click="reName(selectedIds)"><img src="../assets/重命名.svg" alt="">重命名</button>
-        <button v-if="isSingalFolderSelected" @click="clickShare(selectedIds)"><img src="../assets/分享.svg" alt="">共享</button>
+        <button v-if="isSingleFolderSelected" @click="clickShare(selectedIds)"><img src="../assets/分享.svg" alt="">共享</button>
         <button @click="clickDel(selectedIds)"><img src="../assets/回收站.svg" alt="">删除</button>
         <button @click="handleMarkAsFavorite">
           <img :src="currentFavoriteButtonIcon" alt="收藏按钮">收藏
@@ -425,8 +547,19 @@ const handleBatchDownload= () => {
         <div class="content-container">
           <!-- 左侧上传封面 -->
           <div class="upload-section">
-            <button id="uploadCover" style="background: none; border: none; cursor: pointer;">
-              <img src="../assets/上传封面.svg" alt="上传封面" style="width: 50px; height: 50px;" />
+            <input
+                ref="uploadCoverInput"
+                type="file"
+                accept="image/*"
+                style="display: none;"
+                @change="handleCoverUpload"
+            />
+            <button
+                id="uploadCover"
+                style="background: none; border: none; cursor: pointer;"
+                @click="triggerUpload"
+            >
+              <img ref="coverPreview" src="../assets/上传封面.svg" alt="上传封面" style="width: 50px; height: 50px;" />
             </button>
             <p>上传封面（可选）</p>
           </div>

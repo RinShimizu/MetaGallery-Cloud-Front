@@ -1,32 +1,50 @@
 <script setup>
-  import { ref,computed } from 'vue';
-  import Content from "@/components/Content.vue";
-  const files = ref([
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'},
-    {img:'src/assets/case1.png',avatar:'',title:'标题'}
-  ])
+import {ref, computed, onMounted} from 'vue';
+import Content from "@/components/Content.vue";
+import {getAllSharedItems, searchInGallery, searchInStar} from "@/homepage/api.js";
+import {useEventBus} from "@vueuse/core";
 
-  const selectedIndex = ref(1); // 默认选中第一个按钮
+const files = ref([])
+const token = localStorage.getItem('token');
 
-  const selectButton = (index) => {
-    selectedIndex.value = index;
-  };
-  const selectIncrement = () => {
-    selectedIndex.value += 1;
-  }
-  const selectDecrement = () => {
-    selectedIndex.value -= 1;
-  }
+const selectedIndex = ref(1); // 默认选中第一个按钮
+
+const selectButton = (index) => {
+  selectedIndex.value = index;
+};
+const selectIncrement = () => {
+  selectedIndex.value += 1;
+}
+const selectDecrement = () => {
+  selectedIndex.value -= 1;
+}
+
+const searchQuery = ref(""); // 当前搜索关键字
+const eventBus1 = useEventBus("search-update");
+const performSearch = (query) => {
+  console.log(query);
+  searchInGallery(token, query, selectedIndex.value);
+  //处理结果并显示
+};
+
+
+onMounted(() => {
+  // 监听搜索内容的变化
+  eventBus1.on(({ index, query }) => {
+    if (index === 3) {
+      searchQuery.value = query;
+      console.log(`页面索引 ${index} 接收到搜索内容：`, query);
+      if(query===''){
+        //返回首页
+      }
+      else{
+        performSearch(query); // 根据新的搜索内容获取数据
+      }
+    }
+  });
+});
+
+
 </script>
 
 <template>
@@ -43,15 +61,14 @@
         </router-link>
       </div>
       <div class="pages">
-        <!--如果要使用动态加载的话，这里需要动态加载数据，然后根据数据长度来设置页码按钮的数量。
-        <button id="left" :class="{ disabled: selectedIndex === 1 }" @click="selectDecrement"><img src="../assets/向左箭头.svg" alt=""></button>
-        <button v-for="(item, index) in buttons" :key="index"
-                :class="{ active: selectedIndex === index }"
-                @click="selectButton(index)">
-          {{ index }}
-        </button>
+<!--        <button id="left" :class="{ disabled: selectedIndex === 1 }" @click="selectDecrement"><img src="../assets/向左箭头.svg" alt=""></button>-->
+<!--        <button v-for="(item, index) in buttons" :key="index"-->
+<!--                :class="{ active: selectedIndex === index }"-->
+<!--                @click="selectButton(index)">-->
+<!--          {{ index }}-->
+<!--        </button>-->
         <button id="right" :class="{ disabled: selectedIndex === 5 }" @click="selectIncrement"><img src="../assets/向右箭头.svg" alt=""></button>
-        -->
+
         <button id="left" :class="{ disabled: selectedIndex === 1 }" @click="selectDecrement"><img src="../assets/向左箭头.svg" alt=""></button>
         <button id="1" :class="{ active: selectedIndex === 1 }" @click="selectButton(1)">1</button>
         <button id="2" :class="{ active: selectedIndex === 2 }" @click="selectButton(2)">2</button>

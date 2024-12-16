@@ -1,10 +1,10 @@
 <script setup>
-import {ref, computed, onMounted} from 'vue';
+import {ref, computed, onMounted, toRaw} from 'vue';
 import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
 import {useEventBus} from "@vueuse/core";
 import {
-  fetchSharedInfo, fetchShareSubInfo,
+  fetchSharedInfo, fetchShareSubInfo, searchInShare,
   showLabelAlert,
   unShareItems
 } from "@/homepage/api.js";
@@ -21,39 +21,50 @@ var folders = ref([]);
 var files = ref([]);
 
 var currentFolderName='root';
-//页码
-const selectedIndex = ref(1); // 默认选中第一个按钮
 
-const selectButton = async (index) => {
-  selectedIndex.value = index;
-  await initPage();
+const searchQuery = ref(""); // 当前搜索关键字
+const eventBus1 = useEventBus("search-update");
+const performSearch = (query) => {
+  console.log(query);
+  searchInShare(token, userInfo.account, query)
+      .then(({ folder, file }) => {
+        folders.value=folder;
+        files.value=file;
+        Stack.push([toRaw(folders.value), toRaw(files.value)]);
+        console.log("Folders:", folder);
+        console.log("Files:", file);
+      })
+      .catch((error) => {
+        console.error("Search failed:", error);
+      });
 };
-const selectIncrement = async () => {
-  selectedIndex.value += 1;
-  await initPage();
-}
-const selectDecrement = async () => {
-  selectedIndex.value -= 1;
-  await initPage();
-}
-const totalPages = ref(1);
-const pageSize = 10; // 每页显示的文件/文件夹数量
 
-const initPage = async () => {
-  const folderData = await fetchSharedInfo(token, account, selectedIndex.value);
-  console.log(folderData);
-  if (folderData && folderData.length > 0) {
-    totalPages.value = folderData[0].total_page;
-    folders.value = folderData.map(folder => ({
-      ...folder,
-      selected: false, // 添加 `selected` 属性
-    }));
-  }
-};
+
+onMounted(() => {
+  // 监听搜索内容的变化
+  eventBus1.on(({ index, query }) => {
+    if (index === 1) {
+      searchQuery.value = query;
+      console.log(`页面索引 ${index} 接收到搜索内容：`, query);
+      if(query===''){
+        goBackToParentShareFolder();
+      }
+      else{
+        performSearch(query); // 根据新的搜索内容获取数据
+      }
+
+    }
+  });
+});
 
 onMounted(async () => {
   Stack.length = 0;
-  await initPage();
+  const folderData = await fetchSharedInfo(token, account);
+  folders.value = folderData.map(folder => ({
+    ...folder,
+    selected: false, // 添加 `selected` 属性
+  }));
+  Stack.push([toRaw(folders.value), toRaw(files.value)]);
   console.log("folders_shared",folders.value);
 })
 
@@ -87,20 +98,23 @@ const selectAll = () => {
 const enterFolder = async (folder) => {
   currentFolderName=folder.folder_name;
   console.log("curPathName:" + currentFolderName);
-  Stack.push([JSON.parse(JSON.stringify(folders.value)), JSON.parse(JSON.stringify(files.value))]);
+
   // 调用 API 获取子文件夹和文件
-  const { subfolders, file } = await fetchShareSubInfo(Stack, userData.data.token, userInfo.account, currentFolderName, folder.ipfs_hash);
+  const { subfolders, file } = await fetchShareSubInfo(userData.data.token, userInfo.account, currentFolderName, folder.ipfs_hash);
 
   // 更新 folders 和 files 的值
   folders.value = subfolders;
   files.value = file;
+  Stack.push([toRaw(folders.value), toRaw(files.value)]);
 }
 
 const goBackToParentShareFolder=()=>{
-  if(Stack.length >= 1){
-    const [prevFolders, prevFiles] = Stack.pop();
-    folders.value = prevFolders;
-    files.value = prevFiles;
+  if(Stack.length > 1){
+    console.log("Stack",Stack)
+    Stack.pop();
+    console.log("Stack",Stack)
+    folders.value = Stack[Stack.length - 1][0];
+    files.value = Stack[Stack.length - 1][1];
     console.log("goback",folders.value);
   }
   else{
@@ -162,37 +176,6 @@ const cancelShare=()=>{
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>
-      <div class="pages">
-        <button id="left" :class="{ disabled: selectedIndex === 1 }" @click="selectDecrement">
-          <img src="../assets/向左箭头.svg" alt="">
-        </button>
-        <button v-for="page in totalPages" :key="'page-' + page"
-                :class="{ active: selectedIndex === page }"
-                @click="selectButton(page)">
-          {{ page }}
-        </button>
-        <button id="right" :class="{ disabled: selectedIndex === totalPages }" @click="selectIncrement">
-          <img src="../assets/向右箭头.svg" alt="">
-        </button>
-      </div>
-<!--      <div class="pages">-->
-<!--        &lt;!&ndash;如果要使用动态加载的话，这里需要动态加载数据，然后根据数据长度来设置页码按钮的数量。-->
-<!--        <button id="left" :class="{ disabled: selectedIndex === 1 }" @click="selectDecrement"><img src="../assets/向左箭头.svg" alt=""></button>-->
-<!--        <button v-for="(item, index) in buttons" :key="index"-->
-<!--                :class="{ active: selectedIndex === index }"-->
-<!--                @click="selectButton(index)">-->
-<!--          {{ index }}-->
-<!--        </button>-->
-<!--        <button id="right" :class="{ disabled: selectedIndex === 5 }" @click="selectIncrement"><img src="../assets/向右箭头.svg" alt=""></button>-->
-<!--        &ndash;&gt;-->
-<!--        <button id="left" :class="{ disabled: selectedIndex === 1 }" @click="selectDecrement"><img src="../assets/向左箭头.svg" alt=""></button>-->
-<!--        <button id="1" :class="{ active: selectedIndex === 1 }" @click="selectButton(1)">1</button>-->
-<!--        <button id="2" :class="{ active: selectedIndex === 2 }" @click="selectButton(2)">2</button>-->
-<!--        <button id="3" :class="{ active: selectedIndex === 3 }" @click="selectButton(3)">3</button>-->
-<!--        <button id="4" :class="{ active: selectedIndex === 4 }" @click="selectButton(4)">4</button>-->
-<!--        <button id="5" :class="{ active: selectedIndex === 5 }" @click="selectButton(5)">5</button>-->
-<!--        <button id="right" :class="{ disabled: selectedIndex === 5 }" @click="selectIncrement"><img src="../assets/向右箭头.svg" alt=""></button>-->
-<!--      </div>-->
       <div class="file-operations" v-if="isAnyFileSelected">
         <button><img src="../assets/下载.svg" alt="">下载</button>
         <button @click="cancelShare"><img src="../assets/回收站.svg" alt="">取消共享</button>

@@ -3,8 +3,6 @@ import folderURL from "@/assets/文件夹.svg";
 
 var CurrentFolderID = 1;
 let Stackfa=[];
-var folders = ref([]);
-var files = ref([]);
 let hoverTimer = null; // 计时器
 let isHovering = false; // 标记是否仍然悬停
 export const fileOrFolderInfo =  ref({
@@ -701,14 +699,14 @@ const completeDeleteFolder = (folderID, bin_id, token, account) => {
         .catch(error => console.log('error', error));
 }
 
-export const shareItems=async (selectedItems, token, account, shared_name, intro) => {
+export const shareItems=async (selectedItems, token, account, shared_name, intro,coverFile) => {
 
     const folders = selectedItems.value.folders; // 选中的文件夹数组
     // const files = selectedItems.value.files; // 选中的文件数组
     try {
         for (const folder of folders) {
             console.log("shareFoldering");
-            await shareFolder(token,account,folder.id,folder.folder_name,intro);
+            await shareFolder(token,account,folder.id,shared_name,intro,coverFile);
         }
         // for (const file of files) {
         //     console.log(111);
@@ -721,7 +719,7 @@ export const shareItems=async (selectedItems, token, account, shared_name, intro
     }
 }
 
-export const shareFolder=(token,account,id,name,intro)=>{
+export const shareFolder=(token,account,id,name,intro, coverFile)=>{
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
     var formdata = new FormData();
@@ -729,6 +727,15 @@ export const shareFolder=(token,account,id,name,intro)=>{
     formdata.append("folder_id", id);
     formdata.append("shared_name", name);
     formdata.append("intro", intro);
+    formdata.append("cover_img", coverFile);
+
+
+    // 添加封面图片文件
+    // if (coverFile) {
+    //     formdata.append("cover_img", coverFile);
+    // } else {
+    //     console.warn("未上传封面图片");
+    // }
 
     console.log("11",id);
 
@@ -745,10 +752,11 @@ export const shareFolder=(token,account,id,name,intro)=>{
         .catch(error => console.log('error', error));
 }
 
-export const fetchSharedInfo = async (token, account,curPage) => {
+
+export const fetchSharedInfo = async (token, account) => {
 
     let url = '';
-    url = `http://localhost:8080/api/gallery/getUserGallery?account=${account}&page_num=${curPage}`;
+    url = `http://localhost:8080/api/gallery/getUserGallery?account=${account}`;
     const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -758,10 +766,10 @@ export const fetchSharedInfo = async (token, account,curPage) => {
 
     const data = await response.json();
     console.log("data",data);
-    return data.data;  // 返回相关的信息
+    return data.data.result;  // 返回相关的信息
 };
 
-export const fetchShareSubInfo = async (Stack, token, account, name, ipfs_hash) => {
+export const fetchShareSubInfo = async (token, account, name, ipfs_hash) => {
     const myHeaders = new Headers();
     myHeaders.append("Authorization", token);
 
@@ -777,6 +785,7 @@ export const fetchShareSubInfo = async (Stack, token, account, name, ipfs_hash) 
 
         const data = await response.json();
         if (data.data && data.data.folder_info) {
+            console.error(data);
             const folderInfo = data.data.folder_info;
             const subfolders = folderInfo.subfolders
                 ? folderInfo.subfolders.map(folder => ({ ...folder, selected: false }))
@@ -992,3 +1001,213 @@ export const getAllSharedItems = async (page_num) => {
 const getUserInfo = async (account) => {
 
 }
+
+export const searchInFile = async (token, account, folder_id, name) => {
+    const url = `http://localhost:8080/api/search/listFilesAndFolders?account=${account}&parent_folder=${folder_id}&keyword=${name}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': token,
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Raw data:", data);
+
+        // 使用 processSearchResult 函数处理结果
+        const { folder, file } = processSearchResult(data.data);
+
+        console.log("Processed Folders:", folder);
+        console.log("Processed Files:", file);
+
+        return { folder, file };
+    } catch (error) {
+        console.error("Error in searchInFile:", error);
+        return { folder: [], file: [] }; // 返回空结果以处理错误
+    }
+};
+
+export const searchInStar = async (token, account, name) => {
+    const url = `http://localhost:8080/api/search/listBinFilesAndFolders?account=${account}&keyword=${name}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': token,
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Raw data:", data);
+
+        // 使用 processSearchResult 函数处理结果
+        const { folder, file } = processSearchResult(data.data);
+
+        console.log("Processed Folders:", folder);
+        console.log("Processed Files:", file);
+
+        return { folder, file };
+    } catch (error) {
+        console.error("Error in searchInFile:", error);
+        return { folder: [], file: [] }; // 返回空结果以处理错误
+    }
+};
+
+export const searchInCan = async (token, account, name) => {
+    const url = `http://localhost:8080/api/search/favorFilesAndFolders?account=${account}&keyword=${name}&page_num=1`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': token,
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Raw data:", data);
+
+        // 使用 processSearchResult 函数处理结果
+        const { folder, file } = processSearchResult(data.data);
+
+        console.log("Processed Folders:", folder);
+        console.log("Processed Files:", file);
+
+        return { folder, file };
+    } catch (error) {
+        console.error("Error in searchInFile:", error);
+        return { folder: [], file: [] }; // 返回空结果以处理错误
+    }
+};
+
+export const searchInShare = async (token, account, name) => {
+    const url = `http://localhost:8080/api/search/sharedFolders?account=${account}&keyword=${name}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': token,
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Raw data:", data);
+
+        // 使用 processSearchResult 函数处理结果
+        const  folder = processSearchShareResult(data.data);
+        const file=[];
+        console.log("Processed Folders:", folder);
+        console.log("Processed Files:", file);
+
+        return { folder, file };
+    } catch (error) {
+        console.error("Error in searchInFile:", error);
+        return { folder: [], file: [] }; // 返回空结果以处理错误
+    }
+};
+
+export const processSearchShareResult = (data) => {
+    const folder = [];
+
+    data.result.forEach((item) => {
+        folder.push({
+            ...item,
+            selected: false,                   // 默认未选中
+        });
+    });
+    console.log(folder);
+    return folder;
+};
+
+
+export const processSearchResult = (data) => {
+    const folder = [];
+    const file = [];
+
+    data.result.forEach((item) => {
+        if (item.type === "FOLDER") {
+            folder.push({
+                id: item.id,                      // 文件夹 ID
+                parent_id: item.parent_id || null, // 父文件夹 ID，可能为空
+                name: item.name,                  // 文件夹名称
+                path: item.path,                  // 文件夹路径
+                isFavorite: item.is_favorite,     // 是否收藏
+                shared: item.is_shared,           // 是否分享
+                selected: false,                  // 默认未选中
+                isEditing: false                  // 默认不在编辑状态
+            });
+        } else if (item.type === "FILE") {
+            file.push({
+                ID: item.id,                      // 文件 ID
+                FileName: item.name,              // 文件名称
+                FileType: item.file_type || "",   // 文件类型，可能为空
+                Favorite: item.is_favorite,       // 是否收藏
+                Share: item.is_shared,            // 是否分享
+                InBin: item.in_bin || false,      // 是否在回收站，默认为 false
+                selected: false,                  // 默认未选中
+                isEditing: false                  // 默认不在编辑状态
+            });
+        }
+    });
+
+    return { folder, file };
+};
+
+export const searchInGallery = async (token, key, page_num) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", "");
+
+    var requestOptions = {
+        method: 'GET',
+        headers: myHeaders,
+        redirect: 'follow'
+    };
+
+    fetch(`http://localhost:8080/api/search/gallery?keyword=${key}&page_num=${page_num}`, requestOptions)
+        .then(response => response.json())
+        .then(result => {
+            return result.data == null ? [] : result.data;
+        })
+        .catch(error => console.log('error', error));
+};
+
+
+// export const processPageResult = (data) => {
+//     const folder = [];
+//
+//     data.result.forEach((item) => {
+//         folder.push({
+//             id: item.id,                      // 文件夹 ID
+//             parent_id: item.parent_id || null, // 父文件夹 ID，可能为空
+//             name: item.name,                  // 文件夹名称
+//             path: item.path,                  // 文件夹路径
+//             isFavorite: item.is_favorite,     // 是否收藏
+//             shared: item.is_shared,           // 是否分享
+//             selected: false,                  // 默认未选中
+//             isEditing: false                  // 默认不在编辑状态
+//         });
+//     });
+//
+//     return { folder};
+// };
+

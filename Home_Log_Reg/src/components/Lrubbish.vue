@@ -2,7 +2,12 @@
 import {ref, computed, onMounted} from 'vue';
 import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
-import { fetchDelSubInfo, recoverItems, showLabelAlert, completeDeleteItems } from "@/homepage/api.js";
+import {
+  fetchDelSubInfo,
+  recoverItems,
+  showLabelAlert,
+  completeDeleteItems,searchInCan
+} from "@/homepage/api.js";
 import { useEventBus } from "@vueuse/core";
 
 //用户信息加载,不要重复写
@@ -21,6 +26,43 @@ var folders = ref([]);
 var files = ref([]);
 const showRecoverModal = ref(false); // 控制模态框显示的状态
 const showDeleteModal = ref(false); // 控制模态框显示的状态
+
+const searchQuery = ref(""); // 当前搜索关键字
+const eventBus1 = useEventBus("search-update");
+const performSearch = (query) => {
+  console.log(query);
+  searchInCan(token, userInfo.account, query)
+      .then(({ folder, file }) => {
+        Stack.push([folder,file]);
+        folders.value=folder;
+        files.value=file;
+        console.log("Folders:", folder);
+        console.log("Files:", file);
+      })
+      .catch((error) => {
+        console.error("Search failed:", error);
+      });
+};
+
+
+onMounted(() => {
+  // 监听搜索内容的变化
+  eventBus1.on(({ index, query }) => {
+    if (index === 4) {
+      searchQuery.value = query;
+      console.log(`页面索引 ${index} 接收到搜索内容：`, query);
+      if(query===''){
+        Stack.pop();
+        folders.value = Stack[Stack.length - 1][0];
+        files.value = Stack[Stack.length - 1][1];
+      }
+      else{
+        performSearch(query); // 根据新的搜索内容获取数据
+      }
+
+    }
+  });
+});
 
 onMounted(async () => {
   Stack.length = 0;
