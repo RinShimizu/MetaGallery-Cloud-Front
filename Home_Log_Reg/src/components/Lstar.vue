@@ -1,14 +1,15 @@
 <script setup>
-  import {ref, computed, onMounted} from 'vue';
+import {ref, computed, onMounted, toRaw} from 'vue';
   import fileURL from '../assets/文件.svg';
   import folderURL from '../assets/文件夹.svg';
-  import {
-    fetchSubInfo,
-    showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, getCurrentFolderID, searchInStar
-    showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft,
-    downloadFile,//下载
-    handlepreviewFile, isLoading, favoriteButtonIcon//预览
-  } from "@/homepage/api.js";
+import {
+  fetchSubInfo,
+  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, getCurrentFolderID, searchInStar,
+  downloadFile,//下载
+  handlepreviewFile, isLoading, favoriteButtonIcon,//预览
+  favoriteFolders, favoriteFiles, fetchFavoriteFolders, fetchFavoriteFiles, Stackfa,//获取已收藏文件和文件夹
+  markAsFavorite, deleteItems//用于取消收藏
+} from "@/homepage/api.js";
   import {useEventBus} from "@vueuse/core";
   import favoriteIcon from "@/assets/已收藏.svg";
   import unfavoriteIcon from "@/assets/收藏.svg";
@@ -16,6 +17,7 @@
   const token = localStorage.getItem('token');
   const userData = JSON.parse(localStorage.getItem('userData'));
   var userInfo = userData.data.userInfo;
+  var account=userInfo.account;
   let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
   var files = ref([]);
   var folders = ref([]);
@@ -30,14 +32,6 @@
     searchInStar(token, userInfo.account, query)
         .then(({ folder, file }) => {
           Stack.push([folder,file]);
-          // 将现有的收藏属性修改为 true
-          folder.forEach(folder => {
-            folder.isFavorite = true; // 修改已有的收藏属性为 true
-          });
-
-          file.forEach(file => {
-            file.Favorite = true; // 修改已有的收藏属性为 true
-          });
           folders.value=folder;
           files.value=file;
           console.log("Folders:", folder);
@@ -69,27 +63,43 @@
   const previewContentfa = ref('');
   const selectedIds = computed(() => {
     return {
-      files: files.value.filter(file => file.selected), // 选中的文件对象数组
-      folders: folders.value.filter(folder => folder.selected), // 选中的文件夹对象数组
+      files: favoriteFiles.value.filter(file => file.selected), // 选中的文件对象数组
+      folders: favoriteFolders.value.filter(folder => folder.selected), // 选中的文件夹对象数组
     };
   });
 
   const isAnyFileSelected = computed(() => {
-    return files.value.some(file => file.selected);
+    console.log(favoriteFiles.value);
+
+    return favoriteFiles.value.some(file => file.selected)||favoriteFolders.value.some(folder => folder.selected);
   });
+
   // 过滤出已收藏的文件
-  const favoriteFiles = computed(() => {
-    return files.value.filter(file => file.Favorite);
-  });
-  const favoriteFolders = computed(() => {
-    return folders.value.filter(folder => folder.isFavorite);
-  });
+  // const favoriteFiles = computed(() => {
+  //   return files.value.filter(file => file.Favorite);
+  // });
+  // const favoriteFolders = computed(() => {
+  //   return folders.value.filter(folder => folder.isFavorite);
+  // });
   onMounted(async () => {
+    console.log(favoriteFiles.value);
+
     Stack.length = 0;
-    await fetchSubInfo(Stack,userData.data.token, userInfo.account,1);
-    folders.value = Stack[Stack.length - 1][0];
-    files.value = Stack[Stack.length - 1][1];
+    const folder=await fetchFavoriteFolders(account,userData.data.token);
+    const file=await fetchFavoriteFiles(account,userData.data.token);
+    // const {folder, file}=await Promise.all([fetchFavoriteFolders(account,userData.data.token), fetchFavoriteFiles(account,userData.data.token)]);
+    Stack.push([folder, file]);
+    console.log("12",folder)
+    folders.value=folder;
+    files.value=file;
+    console.log("enter",files.value);
+    // favoriteFolders.value = Stack[Stack.length - 1][0];
+    // favoriteFiles.value = Stack[Stack.length - 1][1];
   });
+  // 组件加载时获取数据
+  // onMounted(async () => {
+  //   await Promise.all([fetchFavoriteFolders(), fetchFavoriteFiles()]);
+  // });
   // 处理点击文件夹进入
   /*const handleFolderClick = (folder) => {
     // 更新当前路径
@@ -102,15 +112,16 @@
     await fetchSubInfo(Stack, userData.data.token, userInfo.account, ID);
     folders.value = Stack[Stack.length - 1][0];
     files.value = Stack[Stack.length - 1][1];
-    console.log("Stack:",Stack);
+    console.log('3',folders.value);
+    // console.log("Stackfa:",Stackfa);
   }
-
 
   const goBackToParentFolder = () => {
     if(Stack.length > 1){
       Stack.pop();
       folders.value = Stack[Stack.length - 1][0];
       files.value = Stack[Stack.length - 1][1];
+
     }
     else{
       showLabelAlert('当前目录为系统默认目录');
@@ -151,6 +162,19 @@
     showPreviewModal.value=true;
     handlepreviewFile(account,fileID,token,setPreviewContent,event);
   }
+const isAllSelected = ref(false);
+const selectAll = () => {
+  isAllSelected.value = !isAllSelected.value;
+  const newState = isAllSelected.value;
+  [...files.value, ...folders.value].forEach(item => (item.selected = newState));
+};
+//  folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
+// files.value = files.value.filter(folder => !selectedIds.value.files.includes(folder));
+const cancleFavorite = () => {
+  markAsFavorite(selectedIds, account, token, 1);
+  folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
+  files.value = files.value.filter(folder => !selectedIds.value.files.includes(folder));
+};
 </script>
 
 <template>
@@ -158,22 +182,25 @@
     <div class="file_header">
       <p>我的收藏</p>
       <div id="alert-container"></div> <!-- 中间的label容器 -->
+      <button id="allSelected" style="margin-right: 15px;" @click="selectAll">
+        <img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;">
+      </button>
       <button id="back" @click="goBackToParentFolder">
         <img src="../assets/回退.svg" alt="" style="width: 30px; height: 30px;">
       </button>
     </div>
     <div class="file_op">
       <div class="file-list">
-        <div class="file-item" v-for="folder in favoriteFolders" :key="folder.id">
+        <div class="file-item" v-for="folder in folders" :key="folder.id">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
           <a href="" class="file-name"
              @click.prevent="getFolderFile(folder.id)"
              @mouseover="showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account,$event)"
              @mouseout="hideFileOrFolderInfo"
-             @click="hideFileOrFolderInfo">{{ folder.name }}</a>
+             @click="hideFileOrFolderInfo">{{ folder.name }}</a> <!-- folder.FileName需要修改-->
           <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
         </div>
-        <div class="file-item" v-for="file in favoriteFiles" :key="file.ID">
+        <div class="file-item" v-for="file in files" :key="file.ID">
           <img :src=fileURL alt="文件图标" class="file-icon" />
           <a href="" class="file-name"
              @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
@@ -183,8 +210,9 @@
         </div>
       </div>
       <div class="file-operations" v-if="isAnyFileSelected">
-        <button><img src="../assets/下载.svg" alt="">下载</button>
-        <button><img src="../assets/回收站.svg" alt="">删除</button>
+        <button @click="handleBatchDownload"><img src="../assets/下载.svg" alt="">下载</button>
+        <button @click="cancleFavorite"><img src="../assets/回收站.svg" alt="">取消收藏</button>
+
       </div>
     </div>
 
@@ -259,15 +287,16 @@
     position: absolute;
     top: 50px; /* 距离父元素顶部50px */
     left: 100px; /* 距离父元素左侧100px */
-    background: rgba(229, 241, 248, 0.73);
-    color: #0c0c0c;
+    background: white;
+    color: #474343;
     padding: 10px;
-    border-radius: 5px;
+    border-radius: 15px;
     font-size: 14px;
-    font-family: 幼圆;
+    font-family: 宋体;
     z-index: 100; /* 确保它在前面 */
     display: block; /* 确保它可以显示 */
     font-weight: bold; /* 加粗字体 */
+    border: 2px solid #423f3f; /* 设置边界线，宽度为2px，颜色为黑色 */
   }
 
   .file_header button {

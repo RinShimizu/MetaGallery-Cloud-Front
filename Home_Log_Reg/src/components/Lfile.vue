@@ -16,7 +16,6 @@ import {
   showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, renameFile,//悬停和重命名
   downloadFile, searchInFile,//下载
   //previewFile//预览
-  downloadFile,//下载
   handlepreviewFile,isLoading//预览
 } from '../homepage/api.js'
 
@@ -402,37 +401,6 @@ onBeforeUnmount(() => {
 });
 
 
-
-// const confirmShare = () => {
-//   const input1Value = document.getElementById("input1").value;
-//   const input2Value = document.getElementById("input2").value;
-//   // if(input1Value==='')showLabelAlert('共享文件未命名！');
-//   if (input1Value.trim() === '') {
-//     showLabelAlert('共享文件未命名！');
-//     nextTick(() => {
-//       labelShake(document.getElementById("input1"));
-//     });
-//     return;
-//   }
-//   if (input2Value.trim() === '') {
-//     showLabelAlert('简介不能为空！');
-//     nextTick(() => {
-//       labelShake(document.getElementById("input2"));
-//     });
-//     return;
-//   }
-//   shareItems(selectedIds, token, userInfo.account,input1Value,input2Value)
-//       .then(result => {
-//         showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
-//       })
-//       .catch(error => {
-//         console.error('共享时发生错误:', error);
-//       });
-//   document.getElementById("input1").value="";
-//   document.getElementById("input2").value="";
-//   isShare.value = false; // 关闭模态框
-// };
-
 // 取消删除
 const cancelShare = () => {
   // 重置封面和输入框
@@ -571,7 +539,7 @@ const handlepreviewFile1=(account,fileID,token,event)=>{
             >
               <img ref="coverPreview" src="../assets/上传封面.svg" alt="上传封面" style="width: 50px; height: 50px;" />
             </button>
-            <p>上传封面（可选）</p>
+            <p>上传封面</p>
           </div>
 
           <!-- 右侧输入框区域 -->
@@ -759,15 +727,16 @@ const handlepreviewFile1=(account,fileID,token,event)=>{
   position: absolute;
   top: 50px; /* 距离父元素顶部50px */
   left: 100px; /* 距离父元素左侧100px */
-  background: rgba(229, 241, 248, 0.73);
-  color: #0c0c0c;
+  background: white;
+  color: #474343;
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 15px;
   font-size: 14px;
-  font-family: 幼圆;
+  font-family: 宋体;
   z-index: 100; /* 确保它在前面 */
   display: block; /* 确保它可以显示 */
   font-weight: bold; /* 加粗字体 */
+  border: 2px solid #423f3f; /* 设置边界线，宽度为2px，颜色为黑色 */
 }
 
 #addFolder {
@@ -1039,6 +1008,12 @@ input[type="text"]:focus, textarea:focus {
   display: flex;
   flex-direction: column; /* 让内容垂直排列 */
   align-items: center;
+  /*cursor: move;
+  resize: both;
+  overflow: auto;  使内容可滚动 */
+  cursor: move;
+  resize: vertical;
+  overflow: auto; /* 如果内容溢出，添加滚动条 */
 }
 
 .close-prebutton {

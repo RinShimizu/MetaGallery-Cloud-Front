@@ -10,7 +10,7 @@ const userData = JSON.parse(localStorage.getItem('userData'));
 const userInfo = userData.data.userInfo;
 const eventBus = useEventBus("folder-update");
 const eventBus1 = useEventBus("search-update");
-
+const folder_id=ref();
 
 // 界面切换逻辑
 const selectedIndex = ref(0);
@@ -60,17 +60,14 @@ const handleFileUpload = async () => {
   fileInput.value.click();
 };
 const handleFileChange = async (event) => {
-  const file = event.target.files[0];
+  const file = event.target;
   if (file) {
     selectedFile.value = file;
     folder_id.value = getCurrentFolderID();
-    uploadFile(selectedFile.value, userData.data.token, userInfo.account, folder_id.value)
-        .then((result) => {
-          eventBus.emit(folder_id.value, result);
+    uploadFile(selectedFile, userData.data.token, userInfo.account, folder_id.value)
+        .then(result => {
+          eventBus.emit(folder_id.value, result); // 触发事件
         })
-        .catch((err) => {
-          console.error("文件上传失败", err);
-        });
   }
 };
 </script>

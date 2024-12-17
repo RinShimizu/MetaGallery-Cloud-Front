@@ -6,7 +6,8 @@ import {useEventBus} from "@vueuse/core";
 import {
   fetchSharedInfo, fetchShareSubInfo, searchInShare,
   showLabelAlert,
-  unShareItems
+  unShareItems,
+  downloadSharedFile
 } from "@/homepage/api.js";
 
 
@@ -101,7 +102,7 @@ const enterFolder = async (folder) => {
 
   // 调用 API 获取子文件夹和文件
   const { subfolders, file } = await fetchShareSubInfo(userData.data.token, userInfo.account, currentFolderName, folder.ipfs_hash);
-
+  console.log('f',subfolders);
   // 更新 folders 和 files 的值
   folders.value = subfolders;
   files.value = file;
@@ -148,6 +149,23 @@ const cancelShare=()=>{
   showUnshareModal.value = true;
 }
 
+//下载函数
+const downloadSharedFiles=()=>{
+  const folders=selectedIds.value.folders;
+  const files=selectedIds.value.files;
+  // 检查是否有选中的文件夹
+  if (folders.length>0) {
+    alert('不允许下载文件夹！');
+    return;  // 如果有文件夹，终止下载
+  }
+  files.forEach(file => {
+    const filename=file.file_name;
+    // console.log("filename",filename);
+    // console.log("file.ipfs_hash",file.cid);
+    downloadSharedFile(account,filename,file.cid, token);
+  });
+}
+
 </script>
 
 <template>
@@ -172,16 +190,14 @@ const cancelShare=()=>{
         </div>
         <div class="file-item" v-for="file in files" :key="file.ID">
           <img :src="fileURL" alt="文件图标" class="file-icon" />
-          <span href="" class="file-name">{{ file.FileName }}</span>
+          <span href="" class="file-name">{{ file.file_name }}</span>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>
       <div class="file-operations" v-if="isAnyFileSelected">
-        <button><img src="../assets/下载.svg" alt="">下载</button>
+        <button @click="downloadSharedFiles"><img src="../assets/下载.svg" alt="">下载</button>
         <button @click="cancelShare"><img src="../assets/回收站.svg" alt="">取消共享</button>
-        <button @click="markAsFavorite">
-          <img src="../assets/收藏.svg" alt="">收藏
-        </button>
+
       </div>
     </div>
     <!-- 删除确认模态框 -->

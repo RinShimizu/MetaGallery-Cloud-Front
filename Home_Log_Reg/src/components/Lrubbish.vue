@@ -6,7 +6,8 @@ import {
   fetchDelSubInfo,
   recoverItems,
   showLabelAlert,
-  completeDeleteItems,searchInCan
+  completeDeleteItems,searchInCan,
+  showBinFileOrFolderInfo, hideBinFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft
 } from "@/homepage/api.js";
 import { useEventBus } from "@vueuse/core";
 
@@ -148,12 +149,16 @@ const clickDelete = () => {
         <!-- 文件夹列表 -->
         <div class="folder-item" v-for="folder in folders" :key="folder.id">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
-            <span class="file-name">{{ folder.folder_name }}</span>
+            <span class="file-name"
+                  @mouseover="showBinFileOrFolderInfo(folder.bin_id,folder.id, 'folder', token, userInfo.account,$event)"
+                  @mouseout="hideBinFileOrFolderInfo">{{ folder.folder_name }}</span>
             <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
         </div>
         <div class="file-item" v-for="file in files" :key="file.ID">
           <img :src="fileURL" alt="文件图标" class="file-icon" />
-          <span class="file-name">{{ file.FileName }}</span>
+          <span class="file-name"
+                @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
+                @mouseout="hideFileOrFolderInfo">{{ file.FileName }}</span>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>
@@ -178,6 +183,22 @@ const clickDelete = () => {
       <button id="btn3" @click="confirmDelete">确 定</button>
       <button id="btn4" @click="cancelDelete">取 消</button>
     </div>
+  </div>
+  <!-- 显示悬停的文件/文件夹信息 -->
+  <div v-if="fileOrFolderInfo.type==='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+    <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
+    <p>名称: {{ fileOrFolderInfo.data.folder_name}}</p>
+    <p>路径: {{ fileOrFolderInfo.data.path }}</p>
+    <p>是否收藏: {{ fileOrFolderInfo.data.is_favorite ? '是' : '否' }}</p>
+    <p>分享状态: {{ fileOrFolderInfo.data.is_share ? '已共享' : '未共享' }}</p>
+  </div>
+  <div v-if="fileOrFolderInfo.type==='file'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+    <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
+    <p>名称: {{ fileOrFolderInfo.data.FileName }}</p>
+    <p>路径: {{ fileOrFolderInfo.data.Path }}</p>
+    <p>上传时间: {{ fileOrFolderInfo.data.CreatedAt }}</p>
+    <p>是否收藏: {{ fileOrFolderInfo.data.Favorite ? '是' : '否' }}</p>
+    <p>分享状态: {{ fileOrFolderInfo.data.Share ? '已共享' : '未共享' }}</p>
   </div>
 </template>
 
@@ -307,12 +328,28 @@ const clickDelete = () => {
   border: #cccccc 1px solid;
   font-size: 15px;
 }
+.info-popup {
+  position: absolute;
+  top: 50px; /* 距离父元素顶部50px */
+  left: 100px; /* 距离父元素左侧100px */
+  background: white;
+  color: #474343;
+  padding: 10px;
+  border-radius: 15px;
+  font-size: 14px;
+  font-family: 宋体;
+  z-index: 100; /* 确保它在前面 */
+  display: block; /* 确保它可以显示 */
+  font-weight: bold; /* 加粗字体 */
+  border: 2px solid #423f3f; /* 设置边界线，宽度为2px，颜色为黑色 */
+}
 
 /* alert-container 样式 */
 #alert-container {
   flex: 1; /* 让其占据可用空间 */
   text-align: center; /* 文本居中 */
 }
+
 
 
 .file_header{

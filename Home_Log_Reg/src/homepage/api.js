@@ -2,9 +2,10 @@ import {nextTick, ref} from 'vue';
 import folderURL from "@/assets/文件夹.svg";
 
 var CurrentFolderID = 1;
-let Stackfa=[];
+export const Stackfa=[];
 let hoverTimer = null; // 计时器
 let isHovering = false; // 标记是否仍然悬停
+const errorMessage = ref('');
 export const fileOrFolderInfo =  ref({
     type: '',  // 'file' 或 'folder'
     data: null  // 存储文件或文件夹的具体信息
@@ -12,6 +13,8 @@ export const fileOrFolderInfo =  ref({
 export const popupTop = ref('0px');  // 存储悬浮框的 top 值
 export const popupLeft = ref('0px'); // 存储悬浮框的 left 值
 export const isLoading = ref(false);//用于预览的正在加载中状态
+export const favoriteFolders=ref([]);
+export const favoriteFiles=ref([]);
 export const changeCurrentFolderID = (ID) => {
     CurrentFolderID = ID;
 }
@@ -79,7 +82,7 @@ export const fetchSubInfo = (Stack, token, account, folder_id) => {
 
                 // 将数据压入栈
                 Stack.push([foldersFromServer, filesFromServer]);
-                Stackfa.push([foldersFromServer, filesFromServer]);
+
                 // 返回结果
                 resolve({ folders: foldersFromServer, files: filesFromServer });
             })
@@ -718,6 +721,7 @@ export const shareItems=async (selectedItems, token, account, shared_name, intro
         for (const folder of folders) {
             console.log("shareFoldering");
             await shareFolder(token,account,folder.id,shared_name,intro,coverFile);
+            await shareFolder(token,account,folder.id,shared_name,intro);
         }
         // for (const file of files) {
         //     console.log(111);
@@ -801,10 +805,11 @@ export const fetchShareSubInfo = async (token, account, name, ipfs_hash) => {
             const subfolders = folderInfo.subfolders
                 ? folderInfo.subfolders.map(folder => ({ ...folder, selected: false }))
                 : [];
-            const files = folderInfo.files
+            const file = folderInfo.files
                 ? folderInfo.files.map(file => ({ ...file, selected: false }))
                 : [];
-            return { subfolders, files };
+            console.error(file);
+            return { subfolders, file };
         } else {
             console.error("Invalid API response:", data);
             return { subfolders: [], files: [] }; // 确保返回一个空结构而不是 undefined
@@ -968,7 +973,7 @@ const downloadSingleFile = async (url, token, defaultName) => {
     }
 };
 
-//预览功能（只支持预览单个文件）,目前未完全实现
+//预览功能（只支持预览单个文件）,目前待测试
 //预览函数
 
 export async function handlepreviewFile(account,fileID,token,setPreviewContent,event){
@@ -1005,9 +1010,9 @@ export async function previewFile(account, fileID,token) {
         // return data.url || "";
         const blob = await response.blob();
         console.log("blob:",blob);
-        if(blob.type==="application/json"){
-            return null;
-        }
+        // if(blob.type==="application/json"){
+        //     return null;
+        // }
         const previewUrl = URL.createObjectURL(blob); // 生成本地 URL
         console.log("预览 URL:", previewUrl);
         return previewUrl;
@@ -1248,3 +1253,174 @@ export const searchInGallery = async (token, key, page_num) => {
 //     return { folder};
 // };
 
+
+
+// 定义获取收藏文件夹的函数
+export async function fetchFavoriteFolders(account,token) {
+    console.log("进入获取收藏结果的函数");
+    console.log('Token:', token);
+    try {
+        // console.log("1");
+        // console.log("Account:", account);
+        const response = await fetch(`http://localhost:8080/api/getFavoriteFolder?account=${account}`, {
+            method: 'POST',
+            headers: {
+                Authorization: token,
+            },
+        });
+        //console.log("11");
+        const data = await response.json();
+        console.log("data:",data);
+        const folder=[];
+        if (response.ok) {
+            data.data.forEach((item) => {
+                folder.push({
+                    id: item.ID,              // 文件夹 ID
+                    parent_id:item.BelongTo,
+                    name: item.FolderName,   // 文件夹名称
+                    path: folder.Path,          // 文件夹路径
+                    isFavorite: item.Favorite, // 是否收藏
+                    shared: item.Share,    // 是否分享
+                    selected: false,            // 默认未选中                  // 默认未选中
+                });
+
+            });
+            favoriteFolders.value = folder; // 假设后端返回的收藏夹数据在 data 属性中
+
+            console.log("fafolders",folder);
+            return folder;
+        } else {
+            errorMessage.value = data.message || '获取收藏文件夹失败';
+        }
+    } catch (error) {
+        errorMessage.value = `请求出错: ${error.message}`;
+    }
+}
+// 定义获取收藏文件的函数
+export async function fetchFavoriteFiles(account,token) {
+    try {
+        const response = await fetch(`http://localhost:8080/api/getFavoriteFile?account=${account}`, {
+            method: 'GET',
+            headers: {
+                Authorization: token,
+            },
+        });
+        const data = await response.json();
+        //console.log("data:",data);
+        if (response.ok) {
+            const file=[];
+            data.data.forEach((item) => {
+                file.push({
+                    ...item,
+                    selected: false,                   // 默认未选中
+                });
+
+            });
+            favoriteFiles.value = file; // 假设后端返回的文件数据在 data 属性中
+            return file;
+            //console.log("111",favoriteFiles.value);
+        } else {
+            errorMessage.value = data.message || '获取收藏文件失败';
+        }
+    } catch (error) {
+        errorMessage.value = `请求出错: ${error.message}`;
+    }
+}
+
+//共享界面的下载函数
+export async function downloadSharedFile(account, fileName, ipfsHash, token) {
+    try {
+        const url = `http://localhost:8080/api/gallery/downloadFile?account=${account}&file_name=${fileName}&ipfs_hash=${ipfsHash}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                Authorization: token,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('下载文件失败');
+        }
+
+        const fileBlob = await response.blob();
+        const contentType = response.headers.get('Content-Type') || 'application/octet-stream';
+
+        // 校正文件名
+        const downloadName = fileName || 'default_file_name';
+
+        // 创建下载链接
+        const fileURL = URL.createObjectURL(new Blob([fileBlob], { type: contentType }));
+        const a = document.createElement('a');
+        a.href = fileURL;
+        a.download = downloadName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        URL.revokeObjectURL(fileURL);
+    } catch (error) {
+        console.error("文件下载错误:", error.message);
+    }
+}
+
+// 显示回收站文件/文件夹信息
+export const showBinFileOrFolderInfo = async (binid,id, type, token, account,event) => {
+    isHovering = true; // 标记悬停开始
+    hoverTimer = setTimeout(async () => {
+        if (!isHovering) return; // 如果鼠标已经移出，不执行后续操作
+
+        const info = await fetchBinFileOrFolderInfo(binid,id, type, token, account);
+        console.log("info",info);
+        if (type === 'folder' && !info) {
+            // 如果是空文件夹，不显示或清除信息
+            fileOrFolderInfo.value = { type: '', data: null };
+            return;
+        }
+        nextTick(() => {
+            fileOrFolderInfo.value = {
+                type: type,
+                data: info,
+            };
+        });
+
+        // 更新悬浮框位置
+        popupTop.value = `${event.clientY - 70}px`;
+        popupLeft.value = `${event.clientX - 230}px`;
+    }, 1000); // 延迟 1 秒
+};
+// 隐藏回收站文件/文件夹信息
+export const hideBinFileOrFolderInfo = () => {
+    isHovering = false; // 标记悬停结束
+    if (hoverTimer) {
+        clearTimeout(hoverTimer); // 清除计时器
+        hoverTimer = null;
+    }
+    fileOrFolderInfo.value = { type: '', data: null };  // 清空数据
+};
+// 从服务器获取回收站文件或文件夹信息
+export const fetchBinFileOrFolderInfo = async (binid,id, type, token, account) => {
+    //console.log("fetchFileOrFolderInfo id",id);
+    let url = '';
+    if (type === 'file') {
+        url = `http://localhost:8080/api/getFileData?account=${account}`;
+    } else if (type === 'folder') {
+        console.log(123);
+        url = `http://localhost:8080/api/getBinFolderInfo?account=${account}&bin_id=${binid}&folder_id=${id}`;
+    }
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': token,
+        }
+    });
+
+    const data = await response.json();
+    //console.log("data",data);
+    if (data.data && data.data.items && data.data.items.length === 0) {
+        // 处理空文件夹的情况，比如返回 null 或其他标识
+        return null;
+    }
+    return data.data;  // 返回相关的信息
+};
