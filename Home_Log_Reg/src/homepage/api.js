@@ -712,7 +712,6 @@ const completeDeleteFolder = (folderID, bin_id, token, account) => {
         .then(result => console.log(result))
         .catch(error => console.log('error', error));
 }
-
 export const shareItems=async (selectedItems, token, account, shared_name, intro,coverFile) => {
 
     const folders = selectedItems.value.folders; // 选中的文件夹数组
@@ -733,7 +732,6 @@ export const shareItems=async (selectedItems, token, account, shared_name, intro
         return `共享失败: ${error.message}`;
     }
 }
-
 export const shareFolder=(token,account,id,name,intro, coverFile)=>{
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
@@ -766,8 +764,6 @@ export const shareFolder=(token,account,id,name,intro, coverFile)=>{
         .then(result => console.log(result))
         .catch(error => console.log('error', error));
 }
-
-
 export const fetchSharedInfo = async (token, account) => {
 
     let url = '';
@@ -783,7 +779,6 @@ export const fetchSharedInfo = async (token, account) => {
     console.log("data",data);
     return data.data.result;  // 返回相关的信息
 };
-
 export const fetchShareSubInfo = async (token, account, name, ipfs_hash) => {
     const myHeaders = new Headers();
     myHeaders.append("Authorization", token);
@@ -800,7 +795,6 @@ export const fetchShareSubInfo = async (token, account, name, ipfs_hash) => {
 
         const data = await response.json();
         if (data.data && data.data.folder_info) {
-            console.error(data);
             const folderInfo = data.data.folder_info;
             const subfolders = folderInfo.subfolders
                 ? folderInfo.subfolders.map(folder => ({ ...folder, selected: false }))
@@ -808,10 +802,9 @@ export const fetchShareSubInfo = async (token, account, name, ipfs_hash) => {
             const file = folderInfo.files
                 ? folderInfo.files.map(file => ({ ...file, selected: false }))
                 : [];
-            console.error(file);
+
             return { subfolders, file };
         } else {
-            console.error("Invalid API response:", data);
             return { subfolders: [], files: [] }; // 确保返回一个空结构而不是 undefined
         }
     } catch (err) {
@@ -819,8 +812,6 @@ export const fetchShareSubInfo = async (token, account, name, ipfs_hash) => {
         return { subfolders: [], files: [] }; // 捕获错误并返回空值
     }
 };
-
-
 export const unShareItems=async (shareItems, token, account) => {
     const folders = shareItems.value.folders;
     const files = shareItems.value.files;
@@ -839,7 +830,6 @@ export const unShareItems=async (shareItems, token, account) => {
         return `取消分享失败: ${error.message}`;
     }
 }
-
 export const unShareFolder=(name,token,account)=>{
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
@@ -902,7 +892,6 @@ export const completeDeleteItems = async (selectedIds, token, account) => {
         return '删除成功';
     } catch(error) {}
 }
-
 // 批量下载文件函数
 export const downloadFile = async (account, selectedIds, token) => {
     const folders=selectedIds.value.folders;
@@ -932,7 +921,6 @@ export const downloadFile = async (account, selectedIds, token) => {
         console.error('批量下载时出现错误:', error);
     }
 };
-
 // 下载单个文件的工具函数
 const downloadSingleFile = async (url, token, defaultName) => {
     try {
@@ -972,7 +960,6 @@ const downloadSingleFile = async (url, token, defaultName) => {
         console.error('下载单个文件时出错:', error);
     }
 };
-
 //预览功能（只支持预览单个文件）,目前待测试
 //预览函数
 
@@ -1022,10 +1009,9 @@ export async function previewFile(account, fileID,token) {
         isLoading.value=false;
     }
 }
-
-export const getAllSharedItems = async (page_num) => {
+export const getAllSharedItems = async (token, page_num) => {
     var myHeaders = new Headers();
-    myHeaders.append("Authorization", "");
+    myHeaders.append("Authorization", token);
 
     var requestOptions = {
         method: 'GET',
@@ -1033,17 +1019,32 @@ export const getAllSharedItems = async (page_num) => {
         redirect: 'follow'
     };
 
-    fetch(`http://localhost:8080/api/gallery/getAllGallery?page_num=${page_num}`, requestOptions)
+    return fetch(`http://localhost:8080/api/gallery/getAllGallery?page_num=${page_num}`, requestOptions)
         .then(response => response.json())
         .then(result => {
-            return result.data == null ? [] : result.data;
+            return result.data.result;
+        })
+        .catch(error => {
+            console.log('error', error);
+        });
+}
+export const searchInGallery = async (token, search_key, page_num) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+
+    var requestOptions = {
+        method: 'GET',
+        headers: myHeaders,
+        redirect: 'follow'
+    };
+
+    return fetch(`http://localhost:8080/api/search/gallery?keyword=${search_key}&page_num=${page_num}`, requestOptions)
+        .then(response => response.json())
+        .then(result => {
+            return result.data.result;
         })
         .catch(error => console.log('error', error));
 }
-const getUserInfo = async (account) => {
-
-}
-
 export const searchInFile = async (token, account, folder_id, name) => {
     const url = `http://localhost:8080/api/search/listFilesAndFolders?account=${account}&parent_folder=${folder_id}&keyword=${name}`;
 
@@ -1074,8 +1075,7 @@ export const searchInFile = async (token, account, folder_id, name) => {
         return { folder: [], file: [] }; // 返回空结果以处理错误
     }
 };
-
-export const searchInStar = async (token, account, name) => {
+export const searchInCan = async (token, account, name) => {
     const url = `http://localhost:8080/api/search/listBinFilesAndFolders?account=${account}&keyword=${name}`;
 
     try {
@@ -1105,8 +1105,7 @@ export const searchInStar = async (token, account, name) => {
         return { folder: [], file: [] }; // 返回空结果以处理错误
     }
 };
-
-export const searchInCan = async (token, account, name) => {
+export const searchInStar = async (token, account, name) => {
     const url = `http://localhost:8080/api/search/favorFilesAndFolders?account=${account}&keyword=${name}&page_num=1`;
 
     try {
@@ -1136,7 +1135,6 @@ export const searchInCan = async (token, account, name) => {
         return { folder: [], file: [] }; // 返回空结果以处理错误
     }
 };
-
 export const searchInShare = async (token, account, name) => {
     const url = `http://localhost:8080/api/search/sharedFolders?account=${account}&keyword=${name}`;
 
@@ -1167,7 +1165,6 @@ export const searchInShare = async (token, account, name) => {
         return { folder: [], file: [] }; // 返回空结果以处理错误
     }
 };
-
 export const processSearchShareResult = (data) => {
     const folder = [];
 
@@ -1180,8 +1177,6 @@ export const processSearchShareResult = (data) => {
     console.log(folder);
     return folder;
 };
-
-
 export const processSearchResult = (data) => {
     const folder = [];
     const file = [];
@@ -1214,25 +1209,6 @@ export const processSearchResult = (data) => {
 
     return { folder, file };
 };
-
-export const searchInGallery = async (token, key, page_num) => {
-    var myHeaders = new Headers();
-    myHeaders.append("Authorization", "");
-
-    var requestOptions = {
-        method: 'GET',
-        headers: myHeaders,
-        redirect: 'follow'
-    };
-
-    fetch(`http://localhost:8080/api/search/gallery?keyword=${key}&page_num=${page_num}`, requestOptions)
-        .then(response => response.json())
-        .then(result => {
-            return result.data == null ? [] : result.data;
-        })
-        .catch(error => console.log('error', error));
-};
-
 
 // export const processPageResult = (data) => {
 //     const folder = [];
@@ -1326,7 +1302,6 @@ export async function fetchFavoriteFiles(account,token) {
         errorMessage.value = `请求出错: ${error.message}`;
     }
 }
-
 //共享界面的下载函数
 export async function downloadSharedFile(account, fileName, ipfsHash, token) {
     try {
@@ -1363,7 +1338,6 @@ export async function downloadSharedFile(account, fileName, ipfsHash, token) {
         console.error("文件下载错误:", error.message);
     }
 }
-
 // 显示回收站文件/文件夹信息
 export const showBinFileOrFolderInfo = async (binid,id, type, token, account,event) => {
     isHovering = true; // 标记悬停开始

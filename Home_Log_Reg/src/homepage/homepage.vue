@@ -1,7 +1,7 @@
 <script setup>
 import { computed, provide, ref, watch } from 'vue';
 import Userinfo from "@/components/userinfo.vue";
-import {getCurrentFolderID, showLabelAlert, uploadFile} from "@/homepage/api.js";
+import { getCurrentFolderID, showLabelAlert, uploadFile} from "@/homepage/api.js";
 import { useEventBus } from "@vueuse/core";
 import {onBeforeRouteLeave} from "vue-router";
 
@@ -88,7 +88,7 @@ const handleFileChange = async (event) => {
           :placeholder="currentPlaceholder"
           v-model="searchQuery"
       />
-      <button class="button2" v-if="searchQuery" @click="clear">
+      <button class="button2" @click="clear">
         <img src="../assets/取消.svg" alt="清除">
       </button>
     </div>
@@ -253,7 +253,7 @@ const handleFileChange = async (event) => {
   #post:hover img{
     content:url("../assets/上传_hover.svg");
   }
-  
+
   .user{
     position: relative;
     display: inline-flex;

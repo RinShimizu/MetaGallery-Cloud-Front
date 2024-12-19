@@ -16,6 +16,7 @@ import {
   showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, renameFile,//悬停和重命名
   downloadFile, searchInFile,//下载
   //previewFile//预览
+
   handlepreviewFile,isLoading//预览
 } from '../homepage/api.js'
 
@@ -491,7 +492,6 @@ const handlepreviewFile1=(account,fileID,token,event)=>{
                @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
                @mouseout="hideFileOrFolderInfo"
                @click.prevent="handlepreviewFile1(userInfo.account,file.ID,token,$event)">{{ file.FileName }}</a>
-
             <input type="checkbox" v-model="file.selected" class="file-checkbox" /> <!-- 文件夹复选框 -->
           </template>
         </div>

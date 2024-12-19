@@ -194,6 +194,7 @@
                     if (data.status === "FAILED") {
                         alert('获取根目录路径失败: ' + data.msg);
                     } else {
+                        localStorage.removeItem('rootFolderData');
                         localStorage.setItem('rootFolderData', JSON.stringify(data.data));
                         console.log('After set:', data.data.id);
                         window.location.href = '../homepage.html';
