@@ -272,45 +272,27 @@ export const renameFile =  (files, file, oldName, account, token, isEditing) => 
             console.log('error', error)
         });
 };
-const deleteFolder=(folder,token,account)=>{
-    return new Promise((resolve, reject) => {
-        try {
-            const myHeaders = new Headers();
-            myHeaders.append("Authorization", token);
+const deleteFolder=(folder_id,token,account)=>{
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    myHeaders.append("Content-Type", "application/json");
 
-            fetch('http://localhost:8080/api/removeFolder', {
-                method: 'DELETE',
-                headers: myHeaders,
-                redirect: 'follow',
-                body: JSON.stringify({
-                    account: account,
-                    folder_id: folder.id,
-                }),
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(errorText => {
-                            throw new Error(`文件夹删除失败: ${response.status} ${response.statusText} - ${errorText}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.status === "FAILED") {
-                        console.log('文件夹删除失败，返回消息:', data.msg);
-                        reject(new Error(data.msg));
-                    } else {
-                        console.log('succ');
-                        resolve(data); // 或者 resolve(true)，根据你的需求决定返回什么
-                    }
-                })
-                .catch(error => {
-                    reject(`文件夹删除失败: ${error.message}`);
-                });
-        } catch (error) {
-            reject(`文件夹删除失败: ${error.message}`);
-        }
+    var raw = JSON.stringify({
+        "account": account,
+        "folder_id": folder_id
     });
+
+    var requestOptions = {
+        method: 'DELETE',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
+
+    return fetch("http://localhost:8080/api/removeFolder", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
 }
 const deleteFile =  (token, account, file_id) => {
     var myHeaders = new Headers();
@@ -341,7 +323,7 @@ export const deleteItems = async (selectedIds, token, account) => {
     try {
         for (const folder of folders) {
             console.log(111);
-            await deleteFolder(folder, token, account);
+            await deleteFolder(folder.id, token, account);
         }
         for (const file of files) {
             console.log(111);
