@@ -191,77 +191,84 @@ export const createFolder = (folderPath, file, token, account,index,isEditing,in
         });
 
 };
-export const renameFolder =  (folders, folder, oldName, account, token, isEditing) => {
+export const renameFolder = async (folders, folder, oldName, account, token, isEditing, result) => {
     console.log('renameAPI');
 
     // 如果名称未更改，直接返回成功
-    if (folder.name === oldName) return '文件夹重命名成功！';
+    if (folder.name === oldName) {
+        result = '文件夹重命名成功！';
+        return result;  // 在这里返回 result
+    }
 
     // 检查是否有重复名字
     const duplicateCount = folders.filter(existingFolder => existingFolder.name === folder.name).length;
     if (duplicateCount > 1) {
-        return `重命名失败：名称 "${folder.name}" 已经存在！`;
+        result = `重命名失败：名称 "${folder.name}" 已经存在！`;
+        return result;  // 在这里返回 result
     }
+
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    myHeaders.append("Content-Type", "application/json");
+
+    var raw = JSON.stringify({
+        "account": account,
+        "folder_id": folder.id,
+        "new_folder_name": folder.name
+    });
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
 
     try {
-        // 发起重命名请求
-        const response = fetch('http://localhost:8080/api/renameFolder', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token,  // 使用 token 进行授权
-            },
-            body: JSON.stringify({
-                account: account,
-                folder_id: folder.id,
-                new_folder_name: folder.name,
-            }),
-        });
+        const response = await fetch("http://localhost:8080/api/renameFolder", requestOptions);
+        const responseText = await response.text();
+        console.log(responseText);
 
-        // 检查 HTTP 状态码
-        if (!response.ok) {
-            const errorText =  response.text();
-            throw new Error(`文件夹重命名失败: ${response.status} ${response.statusText} - ${errorText}`);
-        }
-
-        // 解析返回数据
-        const data =  response.json();
-
-        // 根据返回数据状态判断是否成功
-        if (data.status === "FAILED") {
-            return `文件夹重命名失败，返回消息: ${data.msg}`;
-        }
-
-        return '文件夹重命名成功！';
+        // 假设返回成功信息
+        result = '文件夹重命名成功！';
+        return result;  // 返回结果
     } catch (error) {
-        // 捕获错误并返回信息
-        return `文件夹重命名失败: ${error.message}`;
+        console.log('error', error);
+        result = 'error';
+        return result;  // 返回错误结果
     }
 };
-export const renameFile =  (files, file, oldName, account, token, isEditing) => {
-    // 如果名称未更改，直接返回成功
+
+export const renameFile = async (files, file, oldName, account, token, isEditing) => {
     console.log('exist');
-    if (file.FileName === oldName){
-        console.log(1111,file.FileName,oldName);
+
+    // 如果名称未更改，直接返回成功
+    if (file.FileName === oldName) {
+        console.log(1111, file.FileName, oldName);
         return '文件重命名成功！';
     }
 
     // 检查是否有重复名字
     const duplicateCount = files.filter(existingFile => existingFile.FileName === file.FileName).length;
     if (duplicateCount > 1) {
-        console.log(2222,file.FileName,oldName);
+        console.log(2222, file.FileName, oldName);
         return `重命名失败：名称 "${file.FileName}" 已经存在！`;
     }
-    console.log(3333,file.FileName,oldName);
+
+    console.log(3333, file.FileName, oldName);
+
+    // 设置请求头
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
 
+    // 构造表单数据
     var formdata = new FormData();
     formdata.append("account", account);
     formdata.append("file_id", file.ID);
     formdata.append("new_file_name", file.FileName);
-    console.log("111",formdata);
+    console.log("111", formdata);
 
+    // 构造请求选项
     var requestOptions = {
         method: 'POST',
         headers: myHeaders,
@@ -269,15 +276,20 @@ export const renameFile =  (files, file, oldName, account, token, isEditing) => 
         redirect: 'follow'
     };
 
-    fetch("http://localhost:8080/api/renameFile", requestOptions)
-        .then(response => response.text())
-        .then(result => {
-            console.log(result);
-        })
-        .catch(error => {
-            console.log('error', error)
-        });
+    // 异步请求处理
+    try {
+        const response = await fetch("http://localhost:8080/api/renameFile", requestOptions);
+        const responseText = await response.text();
+        console.log(responseText);
+
+        // 假设返回成功信息
+        return '文件重命名成功！';
+    } catch (error) {
+        console.log('error', error);
+        return 'error';
+    }
 };
+
 const deleteFolder=(folder_id,token,account)=>{
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);

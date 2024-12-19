@@ -187,11 +187,11 @@ const handleCancel = (index) => {
   isEd=false;
 };
 
-const finishEditing = (item, index, isRename, isFolder) => {
+const finishEditing = async (item, index, isRename, isFolder) => {
   if (!item.isEditing || isCancel) return; // 防止重复处理
 
   // 文件名校验逻辑
-  const msg = preJudge(isFolder,(isFolder ? folders.value : files.value), item);
+  const msg = preJudge(isFolder, (isFolder ? folders.value : files.value), item);
   const inputEl = document.getElementById(`folder-input-${index}`);
   if (msg.trim() !== '') {
     showLabelAlert(msg);
@@ -204,7 +204,7 @@ const finishEditing = (item, index, isRename, isFolder) => {
   console.log(isRename);
   const account = userInfo.account; // 从 userData 获取 account
   const folderID = getCurrentFolderID();
-  console.log('1',folderID);
+  console.log('1', folderID);
   var result = '';
   //
   if (!isRename) {
@@ -212,19 +212,20 @@ const finishEditing = (item, index, isRename, isFolder) => {
     result = '文件夹创建成功!';
   } else {
     if (isFolder) {
-      result =renameFolder(folders.value, item, oldName, account, token, item.isEditing);
-      if(result!=='文件夹重命名成功！'){
+      result =await renameFolder(folders.value, item, oldName, account, token, item.isEditing, result);
+      console.log('result', result);
+      if (result !== '文件夹重命名成功！') {
         item.name = oldName;
       }
       isRe = false;
-    }
-    else{
-      result =renameFile(files.value, item, oldName, account, token, item.isEditing);
-      if(result!=='文件重命名成功！'){
+    } else {
+      result =await renameFile(files.value, item, oldName, account, token, item.isEditing);
+      console.log('result', result);
+      if (result !== '文件重命名成功！') {
         item.FileName = oldName;
       }
-      console.log("old",oldName);
-      console.log("item",item);
+      console.log("old", oldName);
+      console.log("item", item);
       isRe = false;
     }
   }
