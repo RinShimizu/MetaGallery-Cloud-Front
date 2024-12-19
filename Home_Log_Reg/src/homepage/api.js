@@ -240,14 +240,19 @@ export const renameFolder =  (folders, folder, oldName, account, token, isEditin
 };
 export const renameFile =  (files, file, oldName, account, token, isEditing) => {
     // 如果名称未更改，直接返回成功
-    if (file.FileName === oldName) return '文件夹重命名成功！';
+    console.log('exist');
+    if (file.FileName === oldName){
+        console.log(1111,file.FileName,oldName);
+        return '文件重命名成功！';
+    }
 
     // 检查是否有重复名字
     const duplicateCount = files.filter(existingFile => existingFile.FileName === file.FileName).length;
     if (duplicateCount > 1) {
+        console.log(2222,file.FileName,oldName);
         return `重命名失败：名称 "${file.FileName}" 已经存在！`;
     }
-
+    console.log(3333,file.FileName,oldName);
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
 
@@ -255,6 +260,7 @@ export const renameFile =  (files, file, oldName, account, token, isEditing) => 
     formdata.append("account", account);
     formdata.append("file_id", file.ID);
     formdata.append("new_file_name", file.FileName);
+    console.log("111",formdata);
 
     var requestOptions = {
         method: 'POST',
@@ -979,9 +985,58 @@ export async function previewFile(account, fileID,token) {
         // return data.url || "";
         const blob = await response.blob();
         console.log("blob:",blob);
-        // if(blob.type==="application/json"){
-        //     return null;
-        // }
+        if(blob.type===""||blob.type==="application/json"){
+            return null;
+        }
+        // 根据 MIME 类型判断文件类型
+        const fileType = blob.type;
+
+        if (fileType.startsWith("image/")) {
+            // 返回一个 Promise，确保图像压缩完成后再返回结果
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const imageUrl = URL.createObjectURL(blob);
+
+                img.onload = () => {
+                    // 创建 canvas 元素来压缩图片
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // 设置目标压缩后的尺寸
+                    const maxWidth = 800; // 最大宽度
+                    const maxHeight = 600; // 最大高度
+                    let width = img.width;
+                    let height = img.height;
+
+                    // 根据最大尺寸比例调整图片大小
+                    if (width > maxWidth || height > maxHeight) {
+                        const ratio = Math.min(maxWidth / width, maxHeight / height);
+                        width = 1.5*width * ratio;
+                        height = 1.5*height * ratio;
+                    }
+
+                    // 设置 canvas 的宽高
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // 在 canvas 上绘制压缩后的图片
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // 将 canvas 转换为 Blob 对象
+                    canvas.toBlob((compressedBlob) => {
+                        const previewUrl = URL.createObjectURL(compressedBlob);
+                        console.log("压缩后的预览 URL:", previewUrl);
+                        resolve(previewUrl); // 在这里返回压缩后的预览 URL
+                    }, 'image/jpeg', 0.7); // 压缩为 JPEG 格式，质量为 0.7
+                };
+
+                img.onerror = (error) => {
+                    reject(new Error("图像加载失败"));
+                };
+
+                img.src = imageUrl;
+            });
+        }
         const previewUrl = URL.createObjectURL(blob); // 生成本地 URL
         console.log("预览 URL:", previewUrl);
         return previewUrl;
@@ -1359,7 +1414,7 @@ export const fetchBinFileOrFolderInfo = async (binid,id, type, token, account) =
     //console.log("fetchFileOrFolderInfo id",id);
     let url = '';
     if (type === 'file') {
-        url = `http://localhost:8080/api/getFileData?account=${account}`;
+        url = `http://localhost:8080/api/getBinFileData?account=${account}&file_id=${id}`;
     } else if (type === 'folder') {
         console.log(123);
         url = `http://localhost:8080/api/getBinFolderInfo?account=${account}&bin_id=${binid}&folder_id=${id}`;

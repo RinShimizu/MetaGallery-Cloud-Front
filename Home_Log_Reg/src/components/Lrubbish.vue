@@ -157,8 +157,8 @@ const clickDelete = () => {
         <div class="file-item" v-for="file in files" :key="file.ID">
           <img :src="fileURL" alt="文件图标" class="file-icon" />
           <span class="file-name"
-                @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
-                @mouseout="hideFileOrFolderInfo">{{ file.FileName }}</span>
+                @mouseover="showBinFileOrFolderInfo(1,file.ID, 'file', token, userInfo.account,$event)"
+                @mouseout="hideBinFileOrFolderInfo">{{ file.FileName }}</span>
           <input type="checkbox" v-model="file.selected" class="file-checkbox" />
         </div>
       </div>

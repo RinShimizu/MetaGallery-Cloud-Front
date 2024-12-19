@@ -212,13 +212,19 @@ const finishEditing = (item, index, isRename, isFolder) => {
     result = '文件夹创建成功!';
   } else {
     if (isFolder) {
-      renameFolder(folders.value, item, oldName, account, token, item.isEditing);
-      result = '文件夹重命名成功！';
+      result =renameFolder(folders.value, item, oldName, account, token, item.isEditing);
+      if(result!=='文件夹重命名成功！'){
+        item.name = oldName;
+      }
       isRe = false;
     }
     else{
-      renameFile(files.value, item, oldName, account, token, item.isEditing);
-      result = '文件重命名成功！';
+      result =renameFile(files.value, item, oldName, account, token, item.isEditing);
+      if(result!=='文件重命名成功！'){
+        item.FileName = oldName;
+      }
+      console.log("old",oldName);
+      console.log("item",item);
       isRe = false;
     }
   }
@@ -561,7 +567,7 @@ const handlepreviewFile1=(account,fileID,token,event)=>{
     <div v-if="showPreviewModal" class="modalpre">
       <div class="modal-precontent">
         <button class="close-prebutton" @click="showPreviewModal = false">×</button>
-        <h3 class="modal-pretitle">正在预览文件中…</h3>
+        <h3 class="modal-pretitle">预览文件中…</h3>
         <div class="file-preview-area">
           <div v-if="isLoading" class="loading-container">
             <img src="@/assets/加载.svg" alt="Loading..." class="loading-image" />
@@ -986,6 +992,7 @@ input[type="text"]:focus, textarea:focus {
 }
 /* 预览模态框 */
 .modalpre {
+  z-index: 10;
   position: fixed;
   top: 0;
   left: 0;
@@ -1003,8 +1010,8 @@ input[type="text"]:focus, textarea:focus {
   border-radius: 8px;
   min-width: 300px;
   min-height: 200px;
-  width: 900px; /* 模态框固定宽度 */
-  height: 600px; /* 模态框固定高度 */
+  width: 1100px; /* 模态框固定宽度 */
+  height: 700px; /* 模态框固定高度 */
   display: flex;
   flex-direction: column; /* 让内容垂直排列 */
   align-items: center;
@@ -1012,7 +1019,7 @@ input[type="text"]:focus, textarea:focus {
   resize: both;
   overflow: auto;  使内容可滚动 */
   cursor: move;
-  resize: vertical;
+  resize: both;
   overflow: auto; /* 如果内容溢出，添加滚动条 */
 }
 
@@ -1053,21 +1060,25 @@ input[type="text"]:focus, textarea:focus {
 
 .loading-container {
   position: absolute;
-  top: 240px; /* 将图片定位在顶部 */
-  left: 50%; /* 水平居中 */
-  transform: translateX(-50%); /* 让图片在水平方向上真正居中 */
+  top: 240px;
+  left: 50%;
+  transform: translateX(-50%);
   margin-bottom: 10px;
+  width: 100%;
 }
 
 .loading-image {
   width: 40px; /* 设置图片大小 */
   height: auto;
+  position: absolute;
+  left: 50%;  /* 使图片水平居中 */
+  transform: translateX(-50%);  /* 平移图片，使其居中 */
 }
 iframe {
   width: 100%;
   height: 100%;
   border: none;
-  margin: 90px;
+  margin: 10px;
   object-fit: contain; /* 确保内容适应容器 */
 }
 

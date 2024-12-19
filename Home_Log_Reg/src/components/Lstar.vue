@@ -383,6 +383,7 @@ const cancleFavorite = () => {
 
   /* 预览模态框 */
   .modalpre {
+    z-index: 10;
     position: fixed;
     top: 0;
     left: 0;
@@ -400,11 +401,17 @@ const cancleFavorite = () => {
     border-radius: 8px;
     min-width: 300px;
     min-height: 200px;
-    width: 900px; /* 模态框固定宽度 */
-    height: 600px; /* 模态框固定高度 */
+    width: 1100px; /* 模态框固定宽度 */
+    height: 700px; /* 模态框固定高度 */
     display: flex;
     flex-direction: column; /* 让内容垂直排列 */
     align-items: center;
+    /*cursor: move;
+    resize: both;
+    overflow: auto;  使内容可滚动 */
+    cursor: move;
+    resize: both;
+    overflow: auto; /* 如果内容溢出，添加滚动条 */
   }
 
   .close-prebutton {
@@ -444,21 +451,25 @@ const cancleFavorite = () => {
 
   .loading-container {
     position: absolute;
-    top: 240px; /* 将图片定位在顶部 */
-    left: 50%; /* 水平居中 */
-    transform: translateX(-50%); /* 让图片在水平方向上真正居中 */
+    top: 240px;
+    left: 50%;
+    transform: translateX(-50%);
     margin-bottom: 10px;
+    width: 100%;
   }
 
   .loading-image {
     width: 40px; /* 设置图片大小 */
     height: auto;
+    position: absolute;
+    left: 50%;  /* 使图片水平居中 */
+    transform: translateX(-50%);  /* 平移图片，使其居中 */
   }
   iframe {
     width: 100%;
     height: 100%;
     border: none;
-    margin: 90px;
+    margin: 10px;
     object-fit: contain; /* 确保内容适应容器 */
   }
 
