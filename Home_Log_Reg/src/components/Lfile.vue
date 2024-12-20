@@ -206,10 +206,13 @@ const finishEditing = async (item, index, isRename, isFolder) => {
   const folderID = getCurrentFolderID();
   console.log('1', folderID);
   var result = '';
+  // var folder=[];
   //
   if (!isRename) {
-    createFolder(folderID, item, token, account, index, item.isEditing, inputEl);
+    await createFolder(Stack,folderID, item, token, account, index, item.isEditing, inputEl);
     result = '文件夹创建成功!';
+    folders.value = Stack[Stack.length - 1][0];
+    files.value = Stack[Stack.length - 1][1];
   } else {
     if (isFolder) {
       result =await renameFolder(folders.value, item, oldName, account, token, item.isEditing, result);

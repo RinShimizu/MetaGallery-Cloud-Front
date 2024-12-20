@@ -141,56 +141,57 @@ export const creatIng=(folders,isCancel)=>{
     folders.value.unshift(newFolder);
     return newFolder;
 }
-// 创建文件夹
-export const createFolder = (folderPath, file, token, account,index,isEditing,inputEl) => {
+export const createFolder = async (Stack, folderPath, file, token, account, index, isEditing, inputEl) => {
     console.log('index2:', index);
-    fetch('http://localhost:8080/api/createFolder', {
+    const myHeaders = new Headers();
+    myHeaders.append("Authorization", token);
+    myHeaders.append("Content-Type", "application/json");
+
+    const raw = JSON.stringify({
+        account: account,
+        parent_id: folderPath,
+        folder_name: file.name
+    });
+
+    const requestOptions = {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token,  // 使用 token 进行授权
-        },
-        body: JSON.stringify({
-            account: account,   // 使用存储在 localStorage 的用户数据
-            parent_id: folderPath,      // 使用根路径和文件夹名称拼接得到完整路径
-            folder_name: file.name,
-        }),
-    })
-        .then((response) => {
-            if (!response.ok) {
-                return response.text().then((errorText) => {
-                    throw new Error(`创建文件夹失败: ${response.status} ${response.statusText} - ${errorText}`);
-                });
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
+
+    try {
+        const response = await fetch('http://localhost:8080/api/createFolder', requestOptions);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`创建文件夹失败: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("返回的数据：", data); // 查看返回的数据内容
+
+        if (data.status === "FAILED") {
+            console.log('文件夹创建失败，返回消息:', data.msg);
+
+            // 重新聚焦输入框并全选
+            if (inputEl) {
+                inputEl.focus();
+                inputEl.select();
+                inputEl.classList.add('shake');
+                setTimeout(() => inputEl.classList.remove('shake'), 300); // 移除震动效果
             }
-            return response.json(); // 返回的数据为 JSON
-        })
-        .then((data) => {
-            console.log("返回的数据：", data); // 查看返回的数据内容
-
-            // 如果返回的状态是失败
-            if (data.status === "FAILED") {
-                console.log('文件夹创建失败，返回消息:', data.msg);
-                // 重新聚焦输入框并全选
-                nextTick(() => {
-
-                    console.log('inputEI2:', inputEl);
-                    if (inputEl) {
-                        inputEl.focus();
-                        inputEl.select();
-                        inputEl.classList.add('shake');
-                        setTimeout(() => inputEl.classList.remove('shake'), 300); // 移除震动效果
-                    }
-                });
-            } else {
-                console.log('文件夹创建成功');
-                isEditing=false;
-            }
-        })
-        .catch((error) => {
-            alert('文件夹创建失败: ' + error.message);
-        });
-
+        } else {
+            console.log('文件夹创建成功');
+            isEditing = false;
+            Stack.pop(); // 删除栈顶元素
+            await fetchSubInfo(Stack, token, account, folderPath); // 更新文件夹内容
+        }
+    } catch (error) {
+        alert('文件夹创建失败: ' + error.message);
+    }
 };
+
 export const renameFolder = async (folders, folder, oldName, account, token, isEditing, result) => {
     console.log('renameAPI');
 
@@ -797,7 +798,10 @@ export const fetchShareSubInfo = async (token, account, name, ipfs_hash) => {
         if (data.data && data.data.folder_info) {
             const folderInfo = data.data.folder_info;
             const subfolders = folderInfo.subfolders
-                ? folderInfo.subfolders.map(folder => ({ ...folder, selected: false }))
+                ? folderInfo.subfolders.map(folder => ({
+                    folder_name:folder.folder_name,
+                    ipfs_hash:folder.cid,
+                    selected: false }))
                 : [];
             const file = folderInfo.files
                 ? folderInfo.files.map(file => ({ ...file, selected: false }))

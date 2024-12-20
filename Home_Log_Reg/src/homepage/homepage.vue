@@ -20,6 +20,23 @@ const selectButton = (index) => {
   searchQuery.value = ""; // 清空搜索框内容
 }
 
+// 控制用户信息显示的状态
+const isInfoVisible = ref(false);
+let hoverTimer = null;
+
+// 鼠标进入头像区域
+const handleMouseEnter = () => {
+  hoverTimer = setTimeout(() => {
+    isInfoVisible.value = true;
+  }, 1000); // 延迟 1 秒显示用户信息
+};
+
+// 鼠标离开头像区域
+const handleMouseLeave = () => {
+  clearTimeout(hoverTimer);
+  isInfoVisible.value = false;
+};
+
 const imgURL = userInfo.avatar;// 路由配置
 const configs = [
   { path: "/", placeholder: "搜索我的文件" },
@@ -97,9 +114,15 @@ const handleFileChange = async (event) => {
     </button>
     <input type="file" ref="fileInput" @change="handleFileChange" style="display: none;" />
     <div class="user">
-      <img id="pic" src="../assets/个人中心-我的.svg" alt="用户中心">
-      <button><img :src="imgURL" alt="用户头像"></button>
-      <div class="info">
+      <img id="pic" src="../assets/个人中心-我的.svg" alt="用户中心" />
+      <button
+          @mouseenter="handleMouseEnter"
+          @mouseleave="handleMouseLeave"
+      >
+        <img :src="imgURL" alt="用户头像" />
+      </button>
+      <!-- 用户信息区域 -->
+      <div v-if="isInfoVisible" class="info">
         <Userinfo />
       </div>
     </div>
@@ -142,221 +165,221 @@ const handleFileChange = async (event) => {
 </template>
 
 <style scoped>
-  #block_home{
-    display: none;
-  }
-  /*头部*/
-  .header{
-    height: 60px;
-    width: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    background-color: white;
-    display: inline-flex;
-    box-shadow:0 3px 5px  rgba(0,0,0,0.18);
-    font-size: 30px;
-    z-index: 3;
-  }
+#block_home{
+  display: none;
+}
+/*头部*/
+.header{
+  height: 60px;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: white;
+  display: inline-flex;
+  box-shadow:0 3px 5px  rgba(0,0,0,0.18);
+  font-size: 30px;
+  z-index: 3;
+}
 
-  .logo{
-    display: inline-flex;
-    position: relative;
-    width: max-content;
-    margin: auto 30px auto 20px;
-  }
-  #s1{
-    width: max-content;
-    font-size: 70%;
-    color: #EE6363;
-    font-family: Verdana;
-    font-weight: bold;
-  }
-  #s2{
-    width: max-content;
-    font-size: 70%;
-    color: #FFA54F;
-    font-family: Verdana;
-    font-weight: bold;
-  }
-  #s3{
-    width: max-content;
-    font-size: 70%;
-    color: #63B8FF;
-    font-family: Verdana;
-    font-weight: bold;
-  }
+.logo{
+  display: inline-flex;
+  position: relative;
+  width: max-content;
+  margin: auto 30px auto 20px;
+}
+#s1{
+  width: max-content;
+  font-size: 70%;
+  color: #EE6363;
+  font-family: Verdana;
+  font-weight: bold;
+}
+#s2{
+  width: max-content;
+  font-size: 70%;
+  color: #FFA54F;
+  font-family: Verdana;
+  font-weight: bold;
+}
+#s3{
+  width: max-content;
+  font-size: 70%;
+  color: #63B8FF;
+  font-family: Verdana;
+  font-weight: bold;
+}
 
-  .searchbox{
-    position: relative;
-    margin: auto 10% auto 15%;
-    border-radius: 2px;
-    border: #eee9e966 solid 1px;
-    width: max-content;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px rgba(0, 0, 0, 0.2);
-    background-color: #eee9e933;
-  }
-  .button1{
-    background-color: transparent;
-    border: none;
-    margin: 0 15px 0 10px;
-  }
-  .button1 img{
-    width: 20px;
-    height: 20px;
-  }
-  .button2{
-    background-color: transparent;
-    border: none;
-    margin: 0 10px 0 15px;
-  }
-  .button2 img{
-    width: 20px;
-    height: 20px;
-  }
-  .input{
-    border: none;
-    text-align: center;
-    font-size: 60%;
-    width: 350px;
-    outline: none;
-    background-color: transparent;
-  }
-  input:focus::placeholder{
-    opacity: 0;
-  }
+.searchbox{
+  position: relative;
+  margin: auto 10% auto 15%;
+  border-radius: 2px;
+  border: #eee9e966 solid 1px;
+  width: max-content;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px rgba(0, 0, 0, 0.2);
+  background-color: #eee9e933;
+}
+.button1{
+  background-color: transparent;
+  border: none;
+  margin: 0 15px 0 10px;
+}
+.button1 img{
+  width: 20px;
+  height: 20px;
+}
+.button2{
+  background-color: transparent;
+  border: none;
+  margin: 0 10px 0 15px;
+}
+.button2 img{
+  width: 20px;
+  height: 20px;
+}
+.input{
+  border: none;
+  text-align: center;
+  font-size: 60%;
+  width: 350px;
+  outline: none;
+  background-color: transparent;
+}
+input:focus::placeholder{
+  opacity: 0;
+}
 
-  #post{
-    position: relative;
-    margin: auto 5%;
-    height: 40px;
-    width: 160px;
-    font-size: 20px;
-    background-color: #4095E5;
-    color: white;
-    border-radius: 25px;
-    border: 2px solid #4095E5;
-    transition-duration: 0.2s;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-  }
-  #post:hover{
-    background-color: white;
-    color: #4095E5;
-    border: 1px solid #4095E5;
-  }
-  #post:hover img{
-    content:url("../assets/上传_hover.svg");
-  }
+#post{
+  position: relative;
+  margin: auto 5%;
+  height: 40px;
+  width: 160px;
+  font-size: 20px;
+  background-color: #4095E5;
+  color: white;
+  border-radius: 25px;
+  border: 2px solid #4095E5;
+  transition-duration: 0.2s;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+#post:hover{
+  background-color: white;
+  color: #4095E5;
+  border: 1px solid #4095E5;
+}
+#post:hover img{
+  content:url("../assets/上传_hover.svg");
+}
 
-  .user{
-    position: relative;
-    display: inline-flex;
-    width: 15%;
-    height: 100%;
-    margin: auto 0 auto 10px;
-  }
-  #pic{
-    position: relative;
-    margin: auto 10px auto auto;
-    width: 40px;
-    height: 40px;
-  }
-  .user button{
-    position: relative;
-    margin: auto auto auto 10px;
-    background-color: transparent;
-    border: none;
-    width: 50px;
-    height: 50px;
-  }
-  .user button img{
-    width: 100%;
-    height: auto;
-  }
-  .info{
-    position: absolute;
-    top: 50px;
-    right: 0;
-    display: none;
-    z-index: 99;
-  }
-  .user button:hover +.info{
-    display: block;
-  }
-  .info:hover {
-    display: block;
-  }
+.user{
+  position: relative;
+  display: inline-flex;
+  width: 15%;
+  height: 100%;
+  margin: auto 0 auto 10px;
+}
+#pic{
+  position: relative;
+  margin: auto 10px auto auto;
+  width: 40px;
+  height: 40px;
+}
+.user button{
+  position: relative;
+  margin: auto auto auto 10px;
+  background-color: transparent;
+  border: none;
+  width: 50px;
+  height: 50px;
+}
+.user button img{
+  width: 100%;
+  height: auto;
+}
+.info {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  z-index: 99;
+  padding: 10px;
+}
+.user button:hover +.info{
+  display: block;
+}
+.info:hover {
+  display: block;
+}
 
-  /*侧边栏*/
-  .sidebar {
-    position: absolute;
-    left: 0;
-    top: 60px;
-    width: 15%; /* 侧边栏宽度 */
-    height: calc(100vh - 60px); /* 全屏高度 */
-    background-color: white; /* 背景颜色 */
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    z-index: 2;
-    box-shadow: 0 5px 5px rgba(0, 0, 0, 0.2);
-  }
+/*侧边栏*/
+.sidebar {
+  position: absolute;
+  left: 0;
+  top: 60px;
+  width: 15%; /* 侧边栏宽度 */
+  height: calc(100vh - 60px); /* 全屏高度 */
+  background-color: white; /* 背景颜色 */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 2;
+  box-shadow: 0 5px 5px rgba(0, 0, 0, 0.2);
+}
 
-  .menu {
-    display: inline-flex;
-    flex-direction: column;
-    padding: 0;
-    margin:10px 0 0 0;
-    font-size: 16px;
-    height: max-content;
-    width: 100%;
-    border: none;
-  }
-  .menu button{
-    width: 100%;
-    height: 50px;
-    border: none;
-    border-radius: 22px;
-    display: inline-flex;
-    justify-content: left;
-    align-items: center;
-    gap: 15px;
-    background-color: white;
-    font-size: 15px;
-    font-family: 幼圆;
-    transition-duration: 0.2s;
-  }
-  .menu button.active{
-    background-color: #93d2f377;
-  }
-  .menu button img {
-    margin-left: 15px;
-    width: 20px;
-    height: auto;
-  }
+.menu {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 0;
+  margin:10px 0 0 0;
+  font-size: 16px;
+  height: max-content;
+  width: 100%;
+  border: none;
+}
+.menu button{
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: 22px;
+  display: inline-flex;
+  justify-content: left;
+  align-items: center;
+  gap: 15px;
+  background-color: white;
+  font-size: 15px;
+  font-family: 幼圆;
+  transition-duration: 0.2s;
+}
+.menu button.active{
+  background-color: #93d2f377;
+}
+.menu button img {
+  margin-left: 15px;
+  width: 20px;
+  height: auto;
+}
 
-  .bottom-image {
-    margin: 28px;
-    text-align: center;
-  }
+.bottom-image {
+  margin: 28px;
+  text-align: center;
+}
 
-  .bottom-image img {
-    width: 80%;
-    height: auto;
-    border-radius: 8px; /* 可选：圆角样式 */
-  }
+.bottom-image img {
+  width: 80%;
+  height: auto;
+  border-radius: 8px; /* 可选：圆角样式 */
+}
 
-  .content {
-    position: relative;
-    top: 60px; /* 距离头部高度 */
-    left: 15%; /* 距离侧边栏宽度 */
-    height: calc(100vh - 60px);
-    width: 90%;
-  }
+.content {
+  position: relative;
+  top: 60px; /* 距离头部高度 */
+  left: 15%; /* 距离侧边栏宽度 */
+  height: calc(100vh - 60px);
+  width: 90%;
+}
 </style>
