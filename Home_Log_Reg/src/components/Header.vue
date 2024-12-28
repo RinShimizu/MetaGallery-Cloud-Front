@@ -42,95 +42,151 @@
 </template>
 
 <style scoped>
-  .Navi{
-    height: 90px;
-    width: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    background-color: white;
-    display: inline-flex;
-    box-shadow:0 5px 5px  rgba(0,0,0,0.18);
-    font-size: 30px;
-  }
+.Navi {
+  height: 80px;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  animation: fadeIn 0.5s ease-out;
+}
 
-  .Logo{
-    position: relative;
-    left: 3%;
-    color: #4095E5;
-    font-family: 微软雅黑;
-    font-size: 100%;
-    margin:auto 0;
-  }
+.Logo {
+  color: #4095E5;
+  font-family: 微软雅黑;
+  font-size: 28px;
+  font-weight: 600;
+  white-space: nowrap;
+  margin-left: 60px;
+}
 
-  .link{
-    display: inline-flex;
-    position: relative;
-    left: 10%;
-  }
-  .link button{
-    position: relative;
-    height: 65px;
-    width: 150px;
-    font-size: 70%;
-    background-color: white;
-    color: #4095E5;
-    border-radius: 5%;
-    border: 2px solid white;
-    transition-duration: 0.2s;
-    vertical-align: middle;
-    margin:auto 30px;
-  }
-  .link button:hover{
-    background-color: white;
-    color: #4095E5;
-    border: 2px solid white;
-    box-shadow: 0 5px 10px 0 rgba(0,0,0,0.15), 0 10px 25px 0 rgba(0,0,0,0.1);
-    border-radius: 10%;
-    padding: 10px 20px 20px 20px;
-  }
+.link {
+  width: 40%;
+  display: flex;
+  margin-left: 60px;
+}
 
-  .user{
-    display: inline-flex;
-    position: relative;
-    left: 20%;
+.link button {
+  height: 50px;
+  width: 120px;
+  margin: auto;
+  font-size: 22px;
+  background-color: transparent;
+  color: #4095E5;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.link button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background-color: #4095E5;
+  transition: width 0.3s ease;
+}
+
+.link button:hover::after {
+  width: 80%;
+}
+
+.link button:hover {
+  transform: translateY(-2px);
+  background-color: rgba(64, 149, 229, 0.05);
+}
+
+.user {
+  display: flex;
+  gap: 15px;
+  margin-right: 60px;
+}
+
+#btn1, #btn2 {
+  height: 40px;
+  width: 90px;
+  font-size: 16px;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+#btn1 {
+  background-color: transparent;
+  color: #4095E5;
+  border: 2px solid #4095E5;
+}
+
+#btn2 {
+  background-color: #4095E5;
+  color: white;
+  border: none;
+}
+
+#btn1:hover {
+  background-color: rgba(64, 149, 229, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 149, 229, 0.2);
+}
+
+#btn2:hover {
+  background-color: #3084d4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 149, 229, 0.2);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-  #btn1{
-    position: relative;
-    vertical-align: middle;
-    height: 55px;
-    width: 120px;
-    font-size: 70%;
-    background-color: #4095E5;
-    color: white;
-    border-radius: 5%;
-    border: 2px solid #4095E5;
-    transition-duration: 0.2s;
-    margin: auto 30px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  #btn2{
-    position: relative;
-    vertical-align: middle;
-    height: 55px;
-    width: 120px;
-    font-size: 70%;
-    background-color: #4095E5;
-    color: white;
-    border-radius: 5%;
-    border: 2px solid #4095E5;
-    transition-duration: 0.2s;
-    margin: auto 30px;
+}
+
+/* 添加响应式设计 */
+@media screen and (max-width: 768px) {
+  .Navi {
+    padding: 0 20px;
   }
-  #btn1:hover{
-    background-color: white;
-    color: #4095E5;
-    border: 2px solid #4095E5;
-    box-shadow: 0 5px 10px 0 rgba(0,0,0,0.15), 0 10px 25px 0 rgba(0,0,0,0.1);
+  
+  .Logo {
+    font-size: 24px;
   }
-  #btn2:hover{
-    background-color: white;
-    color: #4095E5;
-    border: 2px solid #4095E5;
-    box-shadow: 0 5px 10px 0 rgba(0,0,0,0.15), 0 10px 25px 0 rgba(0,0,0,0.1);
+  
+  .link {
+    margin-left: 30px;
+    gap: 10px;
   }
+  
+  .link button {
+    width: 80px;
+    font-size: 14px;
+  }
+  
+  .user {
+    margin-left: 20px;
+    gap: 10px;
+  }
+  
+  #btn1, #btn2 {
+    width: 70px;
+    font-size: 14px;
+  }
+}
 </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, provide, ref, watch } from 'vue';
+import { computed, provide, ref, watch, onUnmounted } from 'vue';
 import Userinfo from "@/components/userinfo.vue";
 import { getCurrentFolderID, showLabelAlert, uploadFile} from "@/homepage/api.js";
 import { useEventBus } from "@vueuse/core";
@@ -21,21 +21,40 @@ const selectButton = (index) => {
 }
 
 // 控制用户信息显示的状态
-const isInfoVisible = ref(false);
+const showUserInfo = ref(false);
 let hoverTimer = null;
+let leaveTimer = null;
 
 // 鼠标进入头像区域
 const handleMouseEnter = () => {
-  hoverTimer = setTimeout(() => {
-    isInfoVisible.value = true;
-  }, 1000); // 延迟 1 秒显示用户信息
+  clearTimeout(leaveTimer); // 清除离开定时器
+  showUserInfo.value = true;
 };
 
 // 鼠标离开头像区域
 const handleMouseLeave = () => {
-  clearTimeout(hoverTimer);
-  isInfoVisible.value = false;
+  // 添加延迟，给用户足够时间移动到卡片上
+  leaveTimer = setTimeout(() => {
+    showUserInfo.value = false;
+  }, 300);
 };
+
+// 清理定时器
+const clearTimers = () => {
+  if (hoverTimer) {
+    clearTimeout(hoverTimer);
+    hoverTimer = null;
+  }
+  if (leaveTimer) {
+    clearTimeout(leaveTimer);
+    leaveTimer = null;
+  }
+};
+
+// 在组件卸载时清除定时器
+onUnmounted(() => {
+  clearTimers();
+});
 
 const imgURL = userInfo.avatar;// 路由配置
 const configs = [
@@ -114,16 +133,14 @@ const handleFileChange = async (event) => {
     </button>
     <input type="file" ref="fileInput" @change="handleFileChange" style="display: none;" />
     <div class="user">
-      <img id="pic" src="../assets/个人中心-我的.svg" alt="用户中心" />
-      <button
-          @mouseenter="handleMouseEnter"
-          @mouseleave="handleMouseLeave"
-      >
-        <img :src="imgURL" alt="用户头像" />
-      </button>
-      <!-- 用户信息区域 -->
-      <div v-if="isInfoVisible" class="info">
-        <Userinfo />
+      <div class="user-profile" 
+           @mouseenter="handleMouseEnter"
+           @mouseleave="handleMouseLeave">
+        <img :src="userInfo.avatar" alt="用户头像" class="user-avatar">
+        <userinfo v-if="showUserInfo" 
+                  class="user-info-popup"
+                  @mouseenter="handleMouseEnter"
+                  @mouseleave="handleMouseLeave"/>
       </div>
     </div>
   </div>
@@ -156,7 +173,7 @@ const handleFileChange = async (event) => {
       </router-link>
     </div>
     <div class="bottom-image">
-      <img src="../assets/图片6.png" alt="底部图片" />
+      <img src="../assets/MBE风格多色图标-云盘.svg" alt="底部图片" />
     </div>
   </div>
   <div class="content">
@@ -165,221 +182,281 @@ const handleFileChange = async (event) => {
 </template>
 
 <style scoped>
-#block_home{
-  display: none;
+/* 全局样式重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
-/*头部*/
-.header{
-  height: 60px;
+
+/* 头部导航栏 */
+.header {
+  height: 70px;
   width: 100%;
   position: fixed;
   top: 0;
   left: 0;
-  background-color: white;
-  display: inline-flex;
-  box-shadow:0 3px 5px  rgba(0,0,0,0.18);
-  font-size: 30px;
-  z-index: 3;
-}
-
-.logo{
-  display: inline-flex;
-  position: relative;
-  width: max-content;
-  margin: auto 30px auto 20px;
-}
-#s1{
-  width: max-content;
-  font-size: 70%;
-  color: #EE6363;
-  font-family: Verdana;
-  font-weight: bold;
-}
-#s2{
-  width: max-content;
-  font-size: 70%;
-  color: #FFA54F;
-  font-family: Verdana;
-  font-weight: bold;
-}
-#s3{
-  width: max-content;
-  font-size: 70%;
-  color: #63B8FF;
-  font-family: Verdana;
-  font-weight: bold;
-}
-
-.searchbox{
-  position: relative;
-  margin: auto 10% auto 15%;
-  border-radius: 2px;
-  border: #eee9e966 solid 1px;
-  width: max-content;
-  height: 40px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
-  box-shadow: 0 2px rgba(0, 0, 0, 0.2);
-  background-color: #eee9e933;
-}
-.button1{
-  background-color: transparent;
-  border: none;
-  margin: 0 15px 0 10px;
-}
-.button1 img{
-  width: 20px;
-  height: 20px;
-}
-.button2{
-  background-color: transparent;
-  border: none;
-  margin: 0 10px 0 15px;
-}
-.button2 img{
-  width: 20px;
-  height: 20px;
-}
-.input{
-  border: none;
-  text-align: center;
-  font-size: 60%;
-  width: 350px;
-  outline: none;
-  background-color: transparent;
-}
-input:focus::placeholder{
-  opacity: 0;
+  justify-content: space-between;
+  padding: 0 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 100;
 }
 
-#post{
-  position: relative;
-  margin: auto 5%;
-  height: 40px;
-  width: 160px;
-  font-size: 20px;
-  background-color: #4095E5;
-  color: white;
-  border-radius: 25px;
-  border: 2px solid #4095E5;
-  transition-duration: 0.2s;
-  display: inline-flex;
-  justify-content: center;
+/* Logo样式 */
+.logo {
+  display: flex;
   align-items: center;
-  gap: 10px;
-}
-#post:hover{
-  background-color: white;
-  color: #4095E5;
-  border: 1px solid #4095E5;
-}
-#post:hover img{
-  content:url("../assets/上传_hover.svg");
+  gap: 2px;
+  min-width: 200px;
 }
 
-.user{
-  position: relative;
-  display: inline-flex;
-  width: 15%;
-  height: 100%;
-  margin: auto 0 auto 10px;
+#s1, #s2, #s3 {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-#pic{
-  position: relative;
-  margin: auto 10px auto auto;
-  width: 40px;
-  height: 40px;
+
+#s1 { color: #EE6363; }
+#s2 { color: #FFA54F; }
+#s3 { color: #4095E5; }
+
+/* 搜索框 */
+.searchbox {
+  flex: 1;
+  max-width: 500px;
+  height: 42px;
+  background: #f0f2f5;
+  border-radius: 21px;
+  display: flex;
+  align-items: center;
+  margin: 0 20px;
+  transition: all 0.3s ease;
 }
-.user button{
-  position: relative;
-  margin: auto auto auto 10px;
-  background-color: transparent;
+
+.searchbox:focus-within {
+  background: white;
+  box-shadow: 0 0 0 2px rgba(64, 149, 229, 0.2);
+}
+
+.button1, .button2 {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
   border: none;
-  width: 50px;
-  height: 50px;
-}
-.user button img{
-  width: 100%;
-  height: auto;
-}
-.info {
-  position: absolute;
-  top: 50px;
-  right: 0;
-  z-index: 99;
-  padding: 10px;
-}
-.user button:hover +.info{
-  display: block;
-}
-.info:hover {
-  display: block;
+  cursor: pointer;
 }
 
-/*侧边栏*/
+.button1 img, .button2 img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+}
+
+.button1:hover img, .button2:hover img {
+  opacity: 1;
+}
+
+.input {
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 0 10px;
+  font-size: 15px;
+  color: #333;
+}
+
+.input:focus {
+  outline: none;
+}
+
+/* 上传按钮 */
+#post {
+  height: 42px;
+  padding: 0 25px;
+  background: #4095E5;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 21px;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#post:hover {
+  background: #3084d4;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(64, 149, 229, 0.2);
+}
+
+/* 用户区域 */
+.user {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-left: 20px;
+  min-width: 120px;
+}
+
+#pic {
+  width: 24px;
+  height: 24px;
+  opacity: 0.7;
+}
+
+.user button {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  padding: 0;
+}
+
+.user button img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user button:hover {
+  border-color: #4095E5;
+  transform: scale(1.05);
+}
+
+/* 侧边栏 */
 .sidebar {
-  position: absolute;
+  position: fixed;
   left: 0;
-  top: 60px;
-  width: 15%; /* 侧边栏宽度 */
-  height: calc(100vh - 60px); /* 全屏高度 */
-  background-color: white; /* 背景颜色 */
+  top: 70px;
+  width: 220px;
+  height: calc(100vh - 70px);
+  background: white;
+  border-right: 1px solid #eee;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  z-index: 2;
-  box-shadow: 0 5px 5px rgba(0, 0, 0, 0.2);
+  z-index: 90;
 }
 
 .menu {
-  display: inline-flex;
+  flex: 1;
+  display: flex;
   flex-direction: column;
-  padding: 0;
-  margin:10px 0 0 0;
-  font-size: 16px;
-  height: max-content;
-  width: 100%;
-  border: none;
-}
-.menu button{
-  width: 100%;
-  height: 50px;
-  border: none;
-  border-radius: 22px;
-  display: inline-flex;
-  justify-content: left;
-  align-items: center;
-  gap: 15px;
-  background-color: white;
-  font-size: 15px;
-  font-family: 幼圆;
-  transition-duration: 0.2s;
-}
-.menu button.active{
-  background-color: #93d2f377;
-}
-.menu button img {
-  margin-left: 15px;
-  width: 20px;
-  height: auto;
+  padding: 20px 10px;
+  gap: 5px;
 }
 
+.menu a {
+  text-decoration: none;
+}
+
+.menu button {
+  width: 100%;
+  height: 45px;
+  padding: 0 15px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 15px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menu button img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+}
+
+.menu button.active {
+  background: rgba(64, 149, 229, 0.08);
+  color: #4095E5;
+  font-weight: 500;
+}
+
+.menu button.active img {
+  opacity: 1;
+}
+
+.menu button:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* 底部图片 */
 .bottom-image {
-  margin: 28px;
-  text-align: center;
+  padding: 15px;
+  margin-top: auto;
 }
 
 .bottom-image img {
-  width: 80%;
-  height: auto;
-  border-radius: 8px; /* 可选：圆角样式 */
+  width: 100%;
+  border-radius: 10px;
+  opacity: 0.9;
 }
 
+/* 主内容区域 */
 .content {
+  margin-left: 220px;
+  margin-top: 70px;
+  min-height: calc(100vh - 70px);
+  background: #f8f9fa;
+}
+
+/* 用户信息弹出框 */
+.info {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 110;
+}
+
+.user-profile {
   position: relative;
-  top: 60px; /* 距离头部高度 */
-  left: 15%; /* 距离侧边栏宽度 */
-  height: calc(100vh - 60px);
-  width: 90%;
+  cursor: pointer;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-info-popup {
+  position: absolute;
+  top: 100%;
+  right: 0;
+}
+
+/* 创建一个连接区域 */
+.user-profile::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: transparent;
 }
 </style>

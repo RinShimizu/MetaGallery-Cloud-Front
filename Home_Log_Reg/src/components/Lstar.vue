@@ -4,15 +4,13 @@ import {ref, computed, onMounted, toRaw} from 'vue';
   import folderURL from '../assets/文件夹.svg';
 import {
   fetchSubInfo,
-  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, getCurrentFolderID, searchInStar,
+  showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, searchInStar,
   downloadFile,//下载
   handlepreviewFile, isLoading, favoriteButtonIcon,//预览
   favoriteFolders, favoriteFiles, fetchFavoriteFolders, fetchFavoriteFiles, Stackfa,//获取已收藏文件和文件夹
   markAsFavorite, deleteItems//用于取消收藏
 } from "@/homepage/api.js";
   import {useEventBus} from "@vueuse/core";
-  import favoriteIcon from "@/assets/已收藏.svg";
-  import unfavoriteIcon from "@/assets/收藏.svg";
 
   const token = localStorage.getItem('token');
   const userData = JSON.parse(localStorage.getItem('userData'));
@@ -21,10 +19,7 @@ import {
   let Stack = []; // 定义一个栈来存储，栈元素是一个二元组，第一个元素为文件夹，第二个元素为文件
   var files = ref([]);
   var folders = ref([]);
-  // onMounted(async () =>{
-  //   await fetchSubFileInfo(userData.data.token, userInfo.account,1);
-  //   files.value = getTopOfFileStack();
-  // })
+
   const searchQuery = ref(""); // 当前搜索关键字
   const eventBus1 = useEventBus("search-update");
   const performSearch = (query) => {
@@ -74,13 +69,7 @@ import {
     return favoriteFiles.value.some(file => file.selected)||favoriteFolders.value.some(folder => folder.selected);
   });
 
-  // 过滤出已收藏的文件
-  // const favoriteFiles = computed(() => {
-  //   return files.value.filter(file => file.Favorite);
-  // });
-  // const favoriteFolders = computed(() => {
-  //   return folders.value.filter(folder => folder.isFavorite);
-  // });
+
   onMounted(async () => {
     console.log(favoriteFiles.value);
 
@@ -96,17 +85,7 @@ import {
     // favoriteFolders.value = Stack[Stack.length - 1][0];
     // favoriteFiles.value = Stack[Stack.length - 1][1];
   });
-  // 组件加载时获取数据
-  // onMounted(async () => {
-  //   await Promise.all([fetchFavoriteFolders(), fetchFavoriteFiles()]);
-  // });
-  // 处理点击文件夹进入
-  /*const handleFolderClick = (folder) => {
-    // 更新当前路径
-    curPath = folder;
-    // 假设你有一个方法来获取文件夹下的文件
-    loadFilesInFolder(folder.id);
-  };*/
+
   const getFolderFile = async (ID) => {
     console.log("curPathID:"+ID);
     await fetchSubInfo(Stack, userData.data.token, userInfo.account, ID);
@@ -127,7 +106,6 @@ import {
       showLabelAlert('当前目录为系统默认目录');
     }
   };
-
 
   const showLabelAlert = (msg) => {
     const container = document.getElementById('alert-container');
@@ -166,10 +144,12 @@ const isAllSelected = ref(false);
 const selectAll = () => {
   isAllSelected.value = !isAllSelected.value;
   const newState = isAllSelected.value;
-  [...files.value, ...folders.value].forEach(item => (item.selected = newState));
+  if(files.value)
+    files.value.forEach(item => (item.selected = newState));
+  if(folders.value)
+    folders.value.forEach(item => (item.selected = newState));
 };
-//  folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
-// files.value = files.value.filter(folder => !selectedIds.value.files.includes(folder));
+
 const cancleFavorite = () => {
   markAsFavorite(selectedIds, account, token, 1);
   folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
@@ -182,52 +162,66 @@ const cancleFavorite = () => {
     <div class="file_header">
       <p>我的收藏</p>
       <div id="alert-container"></div> <!-- 中间的label容器 -->
-      <button id="allSelected" style="margin-right: 15px;" @click="selectAll">
-        <img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;">
-      </button>
-      <button id="back" @click="goBackToParentFolder">
-        <img src="../assets/回退.svg" alt="" style="width: 30px; height: 30px;">
-      </button>
+      <div class="header-buttons">
+        <button id="allSelected" @click="selectAll">
+          <img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;">
+        </button>
+        <button id="back" @click="goBackToParentFolder">
+          <img src="../assets/回退.svg" alt="" style="width: 30px; height: 30px;">
+        </button>
+      </div>
     </div>
     <div class="file_op">
       <div class="file-list">
-        <div class="file-item" v-for="folder in folders" :key="folder.id">
+        <div class="file-item" v-for="folder in folders" :key="folder.id"
+             @click="getFolderFile(folder.id);hideFileOrFolderInfo()"
+             @mouseover="(e) => {
+                  showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account, {
+                    clientX: e.clientX + 260,
+                    clientY: e.clientY + 70
+                  });
+                }"
+             @mouseout="hideFileOrFolderInfo">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
-          <a href="" class="file-name"
-             @click.prevent="getFolderFile(folder.id)"
-             @mouseover="showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account,$event)"
-             @mouseout="hideFileOrFolderInfo"
-             @click="hideFileOrFolderInfo">{{ folder.name }}</a> <!-- folder.FileName需要修改-->
+          <span class="file-name">{{ folder.name }}</span> <!-- folder.FileName需要修改-->
           <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
         </div>
-        <div class="file-item" v-for="file in files" :key="file.ID">
-          <img :src=fileURL alt="文件图标" class="file-icon" />
-          <a href="" class="file-name"
-             @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
+        <div class="file-item" v-for="file in files" :key="file.ID"
+             @mouseover="(e) => {
+                  showFileOrFolderInfo(file.ID, 'file', token, userInfo.account, {
+                    clientX: e.clientX + 260,
+                    clientY: e.clientY + 70
+                  });
+                }"
              @mouseout="hideFileOrFolderInfo"
-             @click.prevent="handlepreviewFile1(userInfo.account,file.ID,token,$event)">{{ file.FileName }}</a>
-          <input type="checkbox" v-model="file.selected" class="file-checkbox" />
+             @click="handlepreviewFile1(userInfo.account,file.ID,token,$event);hideFileOrFolderInfo()">
+          <img :src=fileURL alt="文件图标" class="file-icon" />
+          <span class="file-name">{{ file.FileName }}</span>
+          <input type="checkbox" v-model="file.selected" class="file-checkbox" @click.stop/>
         </div>
       </div>
       <div class="file-operations" v-if="isAnyFileSelected">
         <button @click="handleBatchDownload"><img src="../assets/下载.svg" alt="">下载</button>
-        <button @click="cancleFavorite"><img src="../assets/回收站.svg" alt="">取消收藏</button>
-
+        <button @click="cancleFavorite"><img src="../assets/取消.svg" alt="">取消收藏</button>
       </div>
     </div>
 
     <!-- 预览模态框 -->
     <div v-if="showPreviewModal" class="modalpre">
       <div class="modal-precontent">
-        <button class="close-prebutton" @click="showPreviewModal = false">×</button>
-        <h3 class="modal-pretitle">正在预览文件中…</h3>
-        <div class="file-preview-area">
+        <div class="modal-header">
+          <h3>文件预览</h3>
+          <button class="close-prebutton" @click="showPreviewModal = false">×</button>
+        </div>
+        <div class="preview-container">
           <div v-if="isLoading" class="loading-container">
             <img src="@/assets/加载.svg" alt="Loading..." class="loading-image" />
+            <span>正在加载中，请稍候...</span>
           </div>
-          <p v-if="!previewContentfa && !isLoading">该类型文件暂不支持预览</p>
-          <p v-else-if="isLoading">正在加载中，请稍候...</p>
-          <iframe v-else :src="previewContentfa"></iframe>
+          <div v-else-if="!previewContentfa" class="no-preview">
+            <p>该类型文件暂不支持预览</p>
+          </div>
+          <iframe v-else :src="previewContentfa" class="preview-iframe"></iframe>
         </div>
       </div>
     </div>
@@ -252,225 +246,332 @@ const cancleFavorite = () => {
 </template>
 
 <style scoped>
-  #filebox{
-    position: relative;
-    height: calc(100vh - 60px);
-    width: 90%;
-    left: 0;
-    top: 0;
-  }
-  .file_header{
-    position: relative;
-    display: flex;
-    height: 20px;
-    margin: 15px 0 20px 15px;
-  }
-  .file_header p{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 16px;
-    font-family: 幼圆;
-    margin: 0;
-  }
-  .file_header p::before{
-    content: "";
-    background-image: url("../assets/收藏.svg");
-    display: inline-block;
-    width: 20px; /* 控制宽度 */
-    height: 20px; /* 控制高度 */
-    background-size: contain; /* 图片自适应大小 */
-    background-repeat: no-repeat;
-    background-position: center;
-  }
-  .info-popup {
-    position: absolute;
-    top: 50px; /* 距离父元素顶部50px */
-    left: 100px; /* 距离父元素左侧100px */
-    background: white;
-    color: #474343;
-    padding: 10px;
-    border-radius: 15px;
-    font-size: 14px;
-    font-family: 宋体;
-    z-index: 100; /* 确保它在前面 */
-    display: block; /* 确保它可以显示 */
-    font-weight: bold; /* 加粗字体 */
-    border: 2px solid #423f3f; /* 设置边界线，宽度为2px，颜色为黑色 */
-  }
+/* 整体容器样式优化 */
+#filebox {
+  padding: 20px;
+  height: calc(100vh - 90px);
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+}
 
-  .file_header button {
-    background: none; /* 去掉按钮背景 */
-    border: none; /* 去掉按钮边框 */
-    padding: 0; /* 去掉内边距 */
-    cursor: pointer; /* 设置鼠标指针 */
-  }
-  /* alert-container 样式 */
-  #alert-container {
-    flex: 1; /* 让其占据可用空间 */
-    text-align: center; /* 文本居中 */
-  }
+/* 头部区域美化 */
+.file_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  margin-bottom: 15px;
+}
 
-  .file_op{
-    position: relative;
-    margin: 0 30px 20px 30px;
-    width: 100%; /* 列表宽度 */
-    height: 90%;
-    border: #cccccc 1px solid;
-    border-radius: 20px;
-  }
-  .file-list {
-    display: flex;
-    flex-direction: column; /* 单列显示 */
-    width: 100%; /* 列表宽度 */
-    height: 90%;
-    overflow-y: auto;
-    z-index: -1;
-  }
-  .file-item {
-    min-height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between; /* 左右对齐 */
-    padding: 8px;
-    border-bottom: 1px solid #ddd; /* 分隔线 */
-  }
-  .file-icon {
-    width: 20px;
-    height: 20px;
-    margin: 0 8px 0 12px; /* 图标和文件名之间的间距 */
-  }
-  .file-name {
-    font-size: 16px;
-    flex: 1; /* 文件名占用剩余空间 */
-    text-decoration:none;
-  }
-  .file-name:visited {
-    color: black;
-  }
-  .file-name:hover{
-    color: #007bff;
-  }
-  .file-checkbox {
-    margin-left: 8px; /* 文件名和复选框之间的间距 */
-  }
+.file_header p {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
 
-  .file-operations{
-    position: absolute;
-    bottom: 0;
-    display: inline-flex;
-    width: 100%;
-    z-index: 2;
-    background-color: white;
-    border-radius: 20px;
-  }
-  .file-operations button{
-    display: inline-flex;
-    position: relative;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 5%;
-    aspect-ratio: 1 / 1;
-    margin: auto;
-    border: none;
-    background-color: transparent;
-  }
-  .file-operations button img{
-    width: 50%;
-    height: auto;
-  }
+/* 头部按钮组 */
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;  /* 按钮之间的间距 */
+}
 
-  /* 预览模态框 */
-  .modalpre {
-    z-index: 10;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+/* 按钮样式美化 */
+#allSelected, #back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;  /* 统一按钮大小 */
+  height: 36px;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
 
-  .modal-precontent {
-    position: relative;
-    background: #fff;
-    border-radius: 8px;
-    min-width: 300px;
-    min-height: 200px;
-    width: 1100px; /* 模态框固定宽度 */
-    height: 700px; /* 模态框固定高度 */
-    display: flex;
-    flex-direction: column; /* 让内容垂直排列 */
-    align-items: center;
-    /*cursor: move;
-    resize: both;
-    overflow: auto;  使内容可滚动 */
-    cursor: move;
-    resize: both;
-    overflow: auto; /* 如果内容溢出，添加滚动条 */
-  }
+#allSelected img, #back img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
 
-  .close-prebutton {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    font-size: 30px;
-    cursor: pointer;
-  }
+#allSelected:hover, #back:hover {
+  background: rgba(64, 149, 229, 0.1);
+}
 
-  .close-prebutton:hover {
-    color: red;
-  }
+#allSelected:hover img, #back:hover img {
+  opacity: 1;
+}
 
-  .modal-pretitle {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    font-size: 20px;
-    font-weight: bold;
-    margin: 0;
-  }
+/* 文件操作区域美化 */
+.file_op {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
 
-  .file-preview-area {
-    display: flex;
-    justify-content: center; /* 水平居中 */
-    align-items: center;    /* 垂直居中 */
-    width: 80%;
-    height: 80%;
-    margin: auto;           /* 如果需要内容居中，还可用 margin 调整 */
-    background-color: #f5f5f5; /* 可选，设置背景色以便预览更清晰 */
-    border: 1px solid #ccc;    /* 可选，添加边框样式 */
-    overflow: hidden;          /* 防止内容溢出 */
-  }
+/* 文件列表美化 */
+.file-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 5px;
+}
 
-  .loading-container {
-    position: absolute;
-    top: 240px;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 10px;
-    width: 100%;
-  }
+/* 滚动条美化 */
+.file-list::-webkit-scrollbar {
+  width: 8px;
+}
 
-  .loading-image {
-    width: 40px; /* 设置图片大小 */
-    height: auto;
-    position: absolute;
-    left: 50%;  /* 使图片水平居中 */
-    transform: translateX(-50%);  /* 平移图片，使其居中 */
-  }
-  iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    margin: 10px;
-    object-fit: contain; /* 确保内容适应容器 */
-  }
+.file-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
 
+.file-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.file-list::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+/* 文件项样式美化 */
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;  /* 增加内边距 */
+  margin: 8px 0;  /* 增加项目间距 */
+  border-radius: 8px;
+  background: #f8f9fa;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  height: 35px;  /* 增加高度 */
+  gap: 16px;  /* 统一设置元素间距 */
+}
+
+.file-item:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.file-icon {
+  width: 24px;  /* 加大文件图标 */
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+  margin-right: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+/* 文件操作按钮组 */
+.file-operations {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px 0;
+  margin-top: auto;
+  border-top: 1px solid #eee;
+}
+
+.file-operations button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 8px;
+  background: #f5f7fa;
+  color: #333;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-operations button img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.8;
+}
+
+/* 悬浮框样式 */
+.info-popup {
+  position: fixed;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 250px;
+  font-size: 14px;
+  line-height: 1.6;
+  pointer-events: none;
+}
+
+/* 预览模态框样式 */
+.modalpre {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-precontent {
+  width: 90vw;
+  height: 90vh;
+  background: #fff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.close-prebutton {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-prebutton:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.preview-container {
+  flex: 1;
+  position: relative;
+  background: #f8f9fa;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* 移除外层滚动条 */
+}
+
+.preview-iframe {
+  width: 95%; /* 稍微缩小一点，留出边距 */
+  height: 95%;
+  border: none;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: auto; /* 只在 iframe 内部显示滚动条 */
+}
+
+/* 美化 iframe 的滚动条 */
+.preview-iframe::-webkit-scrollbar {
+  width: 8px;
+  height: 8px; /* 添加水平滚动条的高度 */
+}
+
+.preview-iframe::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.preview-iframe::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.preview-iframe::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+.loading-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.loading-image {
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+.loading-container span {
+  color: #666;
+  font-size: 14px;
+}
+
+.no-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+  font-size: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 </style>

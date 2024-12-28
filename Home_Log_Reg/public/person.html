@@ -6,271 +6,395 @@
     <link rel="icon" href="云盘.svg" type="image/x-icon">
     <title>个人主页</title>
     <style>
-        /* 设置页面背景颜色为白色 */
+        :root {
+            --primary-color: #4095E5;
+            --primary-hover: #3084d4;
+            --text-color: #333;
+            --text-light: #666;
+            --border-color: #eee;
+            --bg-light: #f8f9fa;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
         body {
-            background-color: #ffffff; /* 白色 */
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
-            height: 100vh; /* 让 body 占满整个视窗高度 */
-            display: flex;
-            flex-direction: column; /* 使内容垂直排列 */
-            align-items: center; /* 内容水平居中 */
-            position: relative; /* 使子元素可以绝对定位 */
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-light);
         }
 
-        /* 悬浮框样式 */
-        .floating-box {
-            display: none; /* 初始不显示 */
-            position: absolute; /* 绝对定位 */
-            top: 100px; /* 悬浮框顶部距离 */
-            right: 30px; /* 悬浮框右侧距离 */
-            width: 150px; /* 悬浮框宽度 */
-            padding: 10px; /* 内边距 */
-            background-color: white; /* 背景颜色 */
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* 阴影效果 */
-            border-radius: 10px; /* 圆角 */
-            z-index: 1000; /* 确保在最上层 */
-        }
-
-        .floating-box button {
-            width: 100%; /* 按钮宽度 */
-            padding: 10px; /* 按钮内边距 */
-            border: none; /* 无边框 */
-            border-radius: 5px; /* 圆角 */
-            background-color: #007bff; /* 按钮背景颜色 */
-            color: white; /* 按钮文字颜色 */
-            cursor: pointer; /* 鼠标样式 */
-        }
-
-        /* 顶部空白框样式 */
+        /* 顶部导航 */
         .top-box {
-            width: 100%; /* 与页面一样宽 */
-            height: 80px; /* 高度 */
-            background-color: #ffffff; /* 背景色 */
-            display: flex; /* 使内容可居中 */
-            align-items: center; /* 内容垂直居中 */
-            justify-content: space-between; /* 内容两端对齐 */
-            padding: 0 20px; /* 左右内边距 */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+            height: 60px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
         }
 
-        /* 顶部图标样式 */
-        .top-icon {
-            width: 200px; /* 图标宽度 */
-            height: 50px; /* 图标高度 */
+        /* Logo样式 */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            min-width: 200px;
         }
 
-        input[type="password"]::-ms-reveal,
-        input[type="password"]::-ms-clear {
-            display: none;
-        }
-        /* 右侧小图标容器样式 */
-        .small-icons {
-            display: flex; /* 使小图标水平排列 */
-            align-items: center; /* 垂直居中 */
-            margin-right: 50px; /* 距离右边界10px */
+        #s1, #s2, #s3 {
+            font-size: 22px;
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        /* 小图标样式 */
-        .small-icon {
-            width: 50px; /* 小图标宽度 */
-            height: 50px; /* 小图标高度 */
-            margin-left: 100px; /* 小图标间距 */
+        #s1 { color: #EE6363; }
+        #s2 { color: #FFA54F; }
+        #s3 { color: #4095E5; }
+
+        .highlight {
+            color: var(--primary-color);
+            margin: 0 4px;
         }
 
-        /* 空白框样式 */
-        .box {
-            width: 900px; /* 框宽度 */
-            height: 550px; /* 框高度 */
-            background-color: #f3fbfe; /* 框背景色 */
-            border-radius: 20px; /* 圆角半径 */
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* 阴影效果 */
-            display: flex; /* 使内容可居中 */
-            justify-content: flex-start; /* 内容左对齐 */
-            align-items: flex-start; /* 内容顶部对齐 */
-            position: relative; /* 使图标和文本相对于框定位 */
-            margin-top: 80px; /* 与顶部框的间距 */
-            padding: 20px; /* 内边距 */
+        #avatarImage {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border: 2px solid transparent;
         }
 
-        /* 图标样式 */
-        .icon {
-            position: absolute; /* 绝对定位 */
-            top: -40px; /* 距离框顶部20像素 */
-            left: 20px; /* 距离左边20像素 */
-            width: 40px; /* 图标宽度 */
-            height: 40px; /* 图标高度 */
+        #avatarImage:hover {
+            transform: scale(1.05);
+            border-color: var(--primary-color);
         }
 
-        /* 文本样式 */
-        .text {
-            position: absolute; /* 绝对定位 */
-            top: -40px; /* 距离框顶部，保持与图标对齐 */
-            left: 70px; /* 距离左边70像素，保证与图标有间距 */
-            font-size: 23px; /* 字体大小 */
-            color: #7e7b7b; /* 字体颜色 */
+        /* 主容器 */
+        .container {
+            height: calc(100vh - 60px);
+            margin: 50px auto 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* 输入框容器样式 */
-        .input-container {
-            margin-left: 500px; /* 调整输入框的左侧位置 */
-            margin-top: 50px; /* 输入框与顶部的间距 */
-            display: flex; /* 使输入框和标签在同一行 */
-            flex-direction: column; /* 竖排 */
-            align-items: flex-end; /* 右对齐 */
+        /* 个人信息卡片 */
+        .profile-card {
+            width: 900px;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
         }
 
-        /* 输入框样式 */
-        .input {
-            width: 300px; /* 输入框宽度 */
-            height: 30px; /* 输入框高度 */
-            border-radius: 15px; /* 圆角半径 */
-            border: 1px solid #ccc; /* 边框 */
-            margin-bottom: 30px; /* 输入框之间的间距 */
-            padding: 5px; /* 内边距 */
+        .card-header {
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-shrink: 0;
         }
 
-        /* 标签样式 */
-        .label {
-            display: flex; /* 使标签和输入框并排 */
-            align-items: center; /* 垂直居中 */
-            margin-bottom: 10px; /* 标签与输入框之间的间距 */
+        .header-icon {
+            font-size: 24px;
         }
 
-        /* 账号部分样式 */
-        .account-label {
-            position: absolute; /* 绝对定位 */
-            top: 320px; /* 距离框顶部 */
-            left: 150px; /* 距离框左侧 */
-            font-size: 18px; /* 字体大小 */
-            color: #7e7b7b; /* 字体颜色 */
+        .card-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
         }
 
-        /* 修改 accountAvatarImage 的样式 */
-        //#accountAvatarImage {
-        //    position: absolute; /* 绝对定位 */
-        //    top: 200px; /* 调整顶部位置 */
-        //    left: 170px; /* 调整左侧位置 */
-        //    width: 700px; /* 修改为所需宽度 */
-        //    height: 700px; /* 修改为所需高度 */
-        //    border-radius: 50%; /* 圆形头像 */
-        //    //margin-bottom: 10px; /* 与下面元素的间距 */
-        //}
+        /* 个人信息区域 */
+        .profile-info {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: auto;
+            overflow: hidden;
+        }
+
+        /* 左侧边栏样式 */
+        .profile-sidebar {
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .avatar-section {
+            margin-bottom: 0;
+            text-align: center;
+        }
 
         .avatar-image {
-            position: absolute; /* 绝对定位 */
-            top: 130px; /* 调整顶部位置 */
-            left: 150px; /* 调整左侧位置 */
-            width: 150px; /* 需要的宽度 */
-            height: 150px; /* 需要的高度 */
-            border-radius: 50%; /* 圆形头像 */
-            margin-bottom: 10px; /* 与下面元素的间距 */
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
 
-        .account-value {
-            position: absolute; /* 绝对定位 */
-            top: 360px; /* 距离框顶部 */
-            left: 100px; /* 距离框左侧 */
-            width: 250px; /* 宽度 */
-            height: 50px; /* 高度 */
-            border-radius: 15px; /* 圆角半径 */
-            border: 1px solid #ccc; /* 边框 */
-            display: flex; /* 使内容可居中 */
-            justify-content: center; /* 内容水平居中 */
-            align-items: center; /* 内容垂直居中 */
-            background-color: #ffffff; /* 背景色 */
+        .account-section {
+            width: 100%;
+        }
+
+        .info-group {
+            text-align: center;
+        }
+
+        /* 右侧主要内容区域 */
+        .profile-main {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-form {
+            display: grid;
+            gap: 15px;
+            height: 100%;
+        }
+
+        /* 美化滚动条 */
+        .profile-main::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .profile-main::-webkit-scrollbar-track {
+            background: var(--bg-light);
+            border-radius: 3px;
+        }
+
+        .profile-main::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        .profile-main::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        /* 响应式布局 */
+        @media (max-height: 700px) {
+            .profile-info {
+                height: calc(100vh - 180px);
+            }
+
+            .avatar-image {
+                width: 140px;
+                height: 140px;
+                margin-bottom: 20px;
+            }
+
+            .profile-sidebar {
+                padding: 20px;
+                gap: 15px;
+            }
+        }
+
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        input {
+            width: 80%;
+            height: 36px;
+            padding: 0 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(64, 149, 229, 0.1);
+        }
+
+        .password-input {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 0;
+            font-size: 16px;
         }
 
         /* 按钮样式 */
-        .button {
-            width: 100px; /* 按钮宽度 */
-            height: 40px; /* 按钮高度 */
-            border-radius: 15px; /* 圆角半径 */
-            border: none; /* 无边框 */
-            color: white; /* 字体颜色 */
-            background-color: #007bff; /* 背景颜色 */
-            margin-right: 40px; /* 按钮间距 */
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 10px;
         }
 
-        /* 按钮容器样式 */
-        .button-container {
-            display: flex; /* 使按钮水平排列 */
-            margin-top: 20px; /* 按钮与输入框的间距 */
-        }
-
-        /* 眼睛图标样式 */
-        .toggle-password-btn {
-            position: absolute;
-            right: 10px; /* 调整到输入框的右边 */
-            top: 5px; /* 调整图标的垂直位置 */
+        .btn {
+            padding: 0 20px;
+            height: 36px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
             cursor: pointer;
-            font-size: 16px; /* 图标大小 */
-            color: #aaa; /* 图标颜色 */
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-light);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-light);
+        }
+
+        /* 账号显示 */
+        .account-value {
+            padding: 12px 20px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-size: 15px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 移除所有滚动条 */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        * {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
 <body>
 <div class="top-box">
-    <img src="img1.png" alt="顶部图标" class="top-icon" />
-    <div class="small-icons">
-        <img src="small-icon1.svg" alt="小图标1" class="small-icon" />
-
-        <img id="avatarImage" src="small-icon2.png" alt="Avatar" style="width: 60px; height: 60px; border-radius: 50%; cursor: pointer;">
+    <div class="logo">
+        <span id="s1">Meta</span><span id="s2">Gallery </span><span id="s3">&ensp;Cloud</span>
     </div>
-</div>
-<div class="box">
-    <img src="img.png" alt="图标" class="icon" />
-    <span class="text">个人中心</span> <!-- 添加的文本 -->
-
-    <!-- 账号部分 -->
-    <img id="accountAvatarImage" src="small-icon2.png" alt="Avatar" class="avatar-image"> <!-- 新增头像 -->
-    <span class="account-label">账号：（不可修改）</span>
-    <div class="account-value" id="accountValue">不可修改</div>
-
-    <!-- 输入框部分 -->
-    <div class="input-container">
-        <div class="label">
-            <span>昵称：</span>
-            <input type="text" class="input" id="nickname" placeholder="如不修改昵称，此框可不写" />
-        </div>
-        <div class="label">
-            <span>个性签名：</span>
-            <input type="text" class="input" id="signature" placeholder="这个人很懒，什么都没有写~" />
-        </div>
-        <div class="label">
-            <span>原密码：</span>
-            <div style="position: relative;">
-                <input type="password" class="input" id="oldpwd" placeholder="如不修改密码，此框可不写" />
-                <span class="toggle-password-btn" onclick="togglePasswordVisibility('oldpwd', this)">👁️</span>
-            </div>
-        </div>
-        <div class="label">
-            <span>修改密码：</span>
-            <div style="position: relative;">
-                <input type="password" class="input" id="newpwd" placeholder="如不修改密码，此框可不写" />
-                <span class="toggle-password-btn" onclick="togglePasswordVisibility('newpwd', this)">👁️</span>
-            </div>
-        </div>
-        <div class="label">
-            <span>确认密码：</span>
-            <div style="position: relative;">
-                <input type="password" class="input" id="confirmnewpwd" placeholder="如不修改密码，此框可不写" />
-                <span class="toggle-password-btn" onclick="togglePasswordVisibility('confirmnewpwd', this)">👁️</span>
-            </div>
-        </div>
-
-        <!-- 按钮部分 -->
-        <div class="button-container">
-            <button class="button" id="confirmButton">确认</button>
-            <button class="button" id="cancelButton">取消</button>
-        </div>
+    <div class="user-area">
+        <img id="avatarImage" :src="userInfo.avatar" alt="Avatar">
     </div>
 </div>
 
-<!-- 悬浮框 -->
-<div class="floating-box" id="floatingBox">
-    <button id="logoutButton">退出</button>
+<div class="container">
+    <div class="profile-card">
+        <div class="card-header">
+            <i class="header-icon">👤</i>
+            <h2>个人中心</h2>
+        </div>
+
+        <div class="profile-info">
+            <!-- 左侧个人信息 -->
+            <div class="profile-sidebar">
+                <div class="avatar-section">
+                    <img id="accountAvatarImage" :src="userInfo.avatar" alt="Avatar" class="avatar-image">
+                </div>
+                <div class="account-section">
+                    <div class="info-group">
+                        <label>账号</label>
+                        <div class="account-value" id="accountValue">不可修改</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧表单 -->
+            <div class="profile-main">
+                <form class="profile-form">
+                    <div class="form-group">
+                        <label>昵称</label>
+                        <input type="text" id="nickname" placeholder="如不修改昵称，此框可不写">
+                    </div>
+
+                    <div class="form-group">
+                        <label>个性签名</label>
+                        <input type="text" id="signature" placeholder="这个人很懒，什么都没有写~">
+                    </div>
+
+                    <div class="form-group">
+                        <label>原密码</label>
+                        <div class="password-input">
+                            <input type="password" id="oldpwd" placeholder="如不修改密码，此框可不写">
+                            <span class="toggle-password-btn" onclick="togglePasswordVisibility('oldpwd', this)">👁️</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>修改密码</label>
+                        <div class="password-input">
+                            <input type="password" id="newpwd" placeholder="如不修改密码，此框可不写">
+                            <span class="toggle-password-btn" onclick="togglePasswordVisibility('newpwd', this)">👁️</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>确认密码</label>
+                        <div class="password-input">
+                            <input type="password" id="confirmnewpwd" placeholder="如不修改密码，此框可不写">
+                            <span class="toggle-password-btn" onclick="togglePasswordVisibility('confirmnewpwd', this)">👁️</span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="confirmButton" class="btn btn-primary">确认修改</button>
+                        <button type="button" id="cancelButton" class="btn btn-secondary">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -313,13 +437,7 @@
             }
         });
 
-        // 退出按钮事件
-        const logoutButton = document.getElementById('logoutButton');
-        logoutButton.addEventListener('click', function () {
-            // 这里可以执行退出逻辑，比如清除 token 等
-            localStorage.removeItem('token'); // 示例：清除 token
-            window.location.href = '../homepage.html'; // 跳转到上一个页面（替换为实际页面）
-        });
+
 
         // 点击其他地方隐藏悬浮框
         document.addEventListener('click', function (event) {
@@ -398,7 +516,7 @@
                     formData1.append('new_password', encryptednewPassword); // 修改密码
                     formData1.append('confirm_password', encryptedconPassword);//确认密码
 
-                    fetch('http://127.0.0.1:8080/api/updatePassword', {
+                    fetch('https://metagallerycloud.online:8443/api/updatePassword', {
                         method: 'POST', // 根据你的后端接口要求使用相应的 HTTP 方法
                         headers: {
                             //'Content-Type': 'application/json', // 发送 JSON 数据
@@ -431,7 +549,7 @@
                 const signature = document.getElementById('signature').value;
                 if(nickname!==userInfo.name||signature!==userInfo.intro){
                     // 使用 fetch 发送 POST 请求到 UpdateUserInfo 接口
-                    fetch('http://127.0.0.1:8080/api/updateProfile', {
+                    fetch('https://metagallerycloud.online:8443/api/updateProfile', {
                         method: 'POST', // 根据你的后端接口要求使用相应的 HTTP 方法
                         headers: {
                             //'Content-Type': 'application/json', // 发送 JSON 数据

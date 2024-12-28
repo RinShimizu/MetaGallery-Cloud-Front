@@ -28,169 +28,179 @@
 </template>
 
 <style scoped>
-  .Home{
-    position: absolute;
-    height: 800px;
-    width: 100%;
-    margin-top: 85px;
-    left: 0;
-    z-index: -1;
-  }
-  h1{
-    position: relative;
-    top: 50px;
-    font-size: 60px;
-    text-align: center;
-  }
-  #p1{
-    font-size: 40px;
-    text-align: center;
-    padding-top: 30px;
-    font-family: 幼圆;
-    opacity: 70%;
-  }
-  .induct{
-    display: inline-flex;
-    position: relative;
-    top: 50px;
-    width: 100%;
-    height: 400px;
-  }
-  .in1{
-    position: relative;
-    margin: auto;
-    aspect-ratio: 1 / 1;
-    width: 20%;
-    padding: 0 10px;
-    border-radius: 50px; /* 使 div 呈圆形 */
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
-    animation: position 8s linear infinite;
-  }
-  .in1::after{
-    content: '';
-    position: absolute;
-    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.5), transparent);
-    border-radius: 50%;
-    animation: bubble 5s linear alternate infinite;
-  }
-  .in2{
-    position: relative;
-    margin: auto;
-    aspect-ratio: 1 / 1;
-    width: 20%;
-    padding: 0 10px;
-    border-radius: 50px; /* 使 div 呈圆形 */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
-    animation: position 8s linear infinite;
-    animation-delay: 0.5s;
-  }
-  .in2::after{
-    content: '';
-    position: absolute;
-    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.5), transparent);
-    border-radius: 50%;
-    animation: bubble 5s linear alternate infinite;
-  }
-  .in3{
-    position: relative;
-    margin: auto;
-    aspect-ratio: 1 / 1;
-    width: 20%;
-    padding: 0 10px;
-    border-radius: 50px; /* 使 div 呈圆形 */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
-    animation: position 8s linear infinite;
-    animation-delay: 0.8s;
-  }
-  .in3::after{
-    content: '';
-    position: absolute;
-    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.5), transparent);
-    border-radius: 50%;
-    animation: bubble 5s linear alternate infinite;
-  }
-  .in4{
-    position: relative;
-    margin: auto;
-    aspect-ratio: 1 / 1;
-    width: 20%;
-    padding: 0 10px;
-    border-radius: 50px; /* 使 div 呈圆形 */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
-    animation: position 8s linear infinite;
-    animation-delay: 1.3s;
-  }
-  .in4::after{
-    content: '';
-    position: absolute;
-    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.5), transparent);
-    border-radius: 50%;
-    animation: bubble 5s linear alternate infinite;
-  }
-  .in1:hover,.in2:hover,.in3:hover,.in4:hover{
-    animation-play-state: paused;
-    padding: 15px 25px;
-    width: 22%;
-    font-size: 26px;
-    transition-duration: 0.2s;
-  }
-  h2{
-    margin: 17% auto 0 auto;
-    text-align: center;
-    vertical-align: middle;
-  }
-  #p2,#p3,#p4,#p5{
-    font-family: 幼圆;
-    font-size: 25px;
-  }
+.Home {
+  position: absolute;
+  height: 1000px;
+  width: 100%;
+  left: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
 
+h1 {
+  margin-top: 180px;
+  font-size: 60px;
+  text-align: center;
+  color: #2c3e50;
+  animation: fadeIn 1s ease-out;
+}
 
-  @keyframes backcolor {
-    0% {
-      background-position: 0 100%;
-    }
-    50% {
-      background-position: 0 50%;
-    }
-    100% {
-      background-position: 0 0;
-    }
+#p1 {
+  font-size: 40px;
+  text-align: center;
+  padding-top: 10px;
+  font-family: 幼圆;
+  color: #666;
+  animation: fadeIn 1s ease-out 0.3s backwards;
+}
+
+.induct {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 90%;
+  max-width: 1400px;
+  margin: 80px auto 0;
+  gap: 40px;
+}
+
+.in1, .in2, .in3, .in4 {
+  position: relative;
+  width: calc(25% - 30px);
+  min-width: 280px;
+  height: 320px;
+  padding: 30px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.5s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 添加图标 */
+.in1::before, .in2::before, .in3::before, .in4::before {
+  content: '';
+  width: 60px;
+  height: 60px;
+  margin-bottom: 20px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.8;
+}
+
+.in1::before { background-image: url('../assets/个人中心-我的.svg'); }
+.in2::before { background-image: url('../assets/文件夹.svg'); }
+.in3::before { background-image: url('../assets/图片.svg'); }
+.in4::before { background-image: url('../assets/云存储.svg'); }
+
+/* 添加装饰背景 */
+.in1::after, .in2::after, .in3::after, .in4::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(64, 149, 229, 0.1), transparent 60%);
+  z-index: -1;
+  border-radius: 30px;
+}
+
+.in1:hover, .in2:hover, .in3:hover, .in4:hover {
+  transform: translateY(-15px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(64, 149, 229, 0.15);
+}
+
+h2 {
+  margin: 0 0 20px 0;
+  text-align: center;
+  color: #2c3e50;
+  font-size: 26px;
+  font-weight: 600;
+  position: relative;
+}
+
+h2::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 3px;
+  background: #4095E5;
+  border-radius: 2px;
+}
+
+#p2, #p3, #p4, #p5 {
+  font-family: 幼圆;
+  font-size: 16px;
+  color: #666;
+  line-height: 1.8;
+  text-align: center;
+  margin: 0;
+  padding: 0 10px;
+}
+
+/* 修改浮动动画 */
+@keyframes float {
+  0% {
+    transform: translateY(0) rotate(0deg);
   }
-  @keyframes bubble {
-    0%{
-      top: 0;
-      left: 0;
-      width: 30%;
-      height: 30%;
-    }
-    50%{
-      top: 35%;
-      left: 50%;
-      width: 40%;
-      height: 40%;
-    }
-    100%{
-      top: 75%;
-      left: 25%;
-      width: 20%;
-      height: 20%;
-    }
+  25% {
+    transform: translateY(-8px) rotate(0.5deg);
   }
-  @keyframes position {
-    0%{
-      transform: translateY(0);
-    }
-    25%{
-      transform: translateY(10px);
-    }
-    50%{
-      transform: translateY(-10px);
-    }
-    75%{
-      transform: translateY(10px);
-    }
-    100%{
-      transform: translateY(0);
-    }
+  75% {
+    transform: translateY(8px) rotate(-0.5deg);
   }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+.in1 { animation: float 6s ease-in-out infinite; }
+.in2 { animation: float 6s ease-in-out infinite 1.5s; }
+.in3 { animation: float 6s ease-in-out infinite 3s; }
+.in4 { animation: float 6s ease-in-out infinite 4.5s; }
+
+/* 添加响应式设计 */
+@media screen and (max-width: 1200px) {
+  .induct {
+    width: 95%;
+    gap: 30px;
+  }
+  
+  .in1, .in2, .in3, .in4 {
+    width: calc(50% - 30px);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .induct {
+    width: 100%;
+    gap: 20px;
+  }
+  
+  .in1, .in2, .in3, .in4 {
+    width: calc(100% - 40px);
+    height: 300px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 </style>

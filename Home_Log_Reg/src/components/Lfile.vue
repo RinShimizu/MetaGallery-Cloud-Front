@@ -3,6 +3,7 @@ import {ref, computed, nextTick, onMounted, inject, onBeforeUnmount, watch} from
 import { useEventBus } from "@vueuse/core";
 import fileURL from '../assets/文件.svg';
 import folderURL from '../assets/文件夹.svg';
+import cover from '../assets/上传封面.svg';
 import {
   changeCurrentFolderID,
   fetchSubInfo,
@@ -113,7 +114,10 @@ const isSingleFolderSelected=computed(()=>{
 const selectAll = () => {
   isAllSelected.value = !isAllSelected.value;
   const newState = isAllSelected.value;
-  [...files.value, ...folders.value].forEach(item => (item.selected = newState));
+  if(files.value)
+    files.value.forEach(item => (item.selected = newState));
+  if(folders.value)
+    folders.value.forEach(item => (item.selected = newState));
 };
 
 const getFolderFile = async (ID) => {
@@ -157,7 +161,7 @@ const handleCancel = (index) => {
       folders.value.splice(index, 1); // 删除当前条目
     }
     else {
-      // 如果是重命名取消，不做任何修改，只关闭输入框
+      // 如果是重命名取消，不做任何修改，闭输入框
       const item = folders.value[index];
       if (item) {
         item.isEditing = false; // 设置为非编辑状态
@@ -209,8 +213,8 @@ const finishEditing = async (item, index, isRename, isFolder) => {
   // var folder=[];
   //
   if (!isRename) {
-    await createFolder(Stack,folderID, item, token, account, index, item.isEditing, inputEl);
-    result = '文件夹创建成功!';
+    result = await createFolder(Stack,folderID, item, token, account, index, item.isEditing, inputEl);
+    // result = '文件夹创建成功!';
     folders.value = Stack[Stack.length - 1][0];
     files.value = Stack[Stack.length - 1][1];
   } else {
@@ -394,7 +398,7 @@ const confirmShare = async () => {
 };
 
 
-// 重置预览封面和文件选择器
+// 重置预览封面和文件选择
 watch(isShare, (newValue) => {
   if (!newValue && uploadCoverInput.value) {
     uploadCoverInput.value.value = ""; // 清空文件选择器
@@ -442,7 +446,6 @@ const handleBatchDownload= () => {
 const showPreviewModal = ref(false);
 const setPreviewContent = (url) => {
   previewContent.value = url; // 更新 previewContent
-  //console.log("Updated previewContent:", previewContent.value);
 };
 const handlepreviewFile1=(account,fileID,token,event)=>{
   previewContent.value ='';
@@ -456,20 +459,30 @@ const handlepreviewFile1=(account,fileID,token,event)=>{
     <div class="file_header">
       <p>我的文件</p>
       <div id="alert-container"></div> <!-- 中间的label容器 -->
-      <button id="allSelected" style="margin-right: 15px;" @click="selectAll">
-        <img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;">
-      </button>
-      <button id="addFolder" @click="addNewFolder">
-        <img src="../assets/新建文件夹.svg" alt="" style="width: 30px; height: 30px;">
-      </button>
-      <button id="back" @click="goBackToParentFolder">
-        <img src="../assets/回退.svg" alt="" style="width: 30px; height: 30px;margin-right: -15px;">
-      </button>
+      <div class="header-buttons">
+        <button id="allSelected" @click="selectAll">
+          <img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;">
+        </button>
+        <button id="addFolder" @click="addNewFolder">
+          <img src="../assets/新建文件夹.svg" alt="" style="width: 30px; height: 30px;">
+        </button>
+        <button id="back" @click="goBackToParentFolder">
+          <img src="../assets/回退.svg" alt="" style="width: 30px; height: 30px;">
+        </button>
+      </div>
     </div>
     <div class="file_op">
       <div class="file-list">
         <!-- 文件夹列表 -->
-        <div class="folder-item" v-for="(folder, index) in folders" :key="folder.id">
+        <div class="folder-item" v-for="(folder, index) in folders" :key="folder.id"
+             @click="getFolderFile(folder.id);hideFileOrFolderInfo()"
+             @mouseover="(e) => {
+                  showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account, {
+                    clientX: e.clientX + 260,
+                    clientY: e.clientY + 70
+                  });
+                }"
+             @mouseout="hideFileOrFolderInfo">
           <img src="../assets/已收藏文件.svg" alt="" v-if="folder.isFavorite" style="width: 20px;height: 20px;">
           <img v-else src="../assets/未收藏文件.svg" alt="" style="width: 20px;height: 20px;">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
@@ -480,29 +493,36 @@ const handlepreviewFile1=(account,fileID,token,event)=>{
             <button @mousedown.prevent="handleCancel(index)" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer;">>取消</button> <!-- 添加取消按钮 -->
           </template>
           <template v-else>
-            <a href="" class="file-name" @click.prevent="getFolderFile(folder.id)"
-               @mouseover="showFileOrFolderInfo(folder.id, 'folder', token, userInfo.account,$event)"
-               @mouseout="hideFileOrFolderInfo"
-               @click="hideFileOrFolderInfo">{{ folder.name }}</a>
-            <input type="checkbox" v-model="folder.selected" class="file-checkbox" /> <!-- 文件夹复选框 -->
+            <span class="file-name">
+              {{ folder.name }}
+            </span>
+            <input type="checkbox" v-model="folder.selected" class="file-checkbox" @click.stop/> <!-- 文件夹复选框 -->
           </template>
         </div>
-        <div class="file-item" v-for="(file, index) in files" :key="file.ID">
+        <div class="file-item" v-for="(file, index) in files" :key="file.ID"
+             @mouseover="(e) => {
+                  showFileOrFolderInfo(file.ID, 'file', token, userInfo.account, {
+                    clientX: e.clientX + 260,
+                    clientY: e.clientY + 70
+                  });
+                }"
+             @mouseout="hideFileOrFolderInfo"
+             @click="handlepreviewFile1(userInfo.account,file.ID,token,$event);hideFileOrFolderInfo()">
           <img src="../assets/已收藏文件.svg" alt="" v-if="file.isFavorite" style="width: 20px;height: 20px;">
           <img src="../assets/未收藏文件.svg" alt="" v-if="!file.isFavorite" style="width: 20px;height: 20px;">
           <img :src="fileURL" alt="文件图标" class="file-icon"/>
           <template v-if="file.isEditing">
             <input v-model="file.FileName" :id="`file-input-${index}`" class="file-input"
-                   @blur="finishEditing(file, index, isRe,isFolder)"
-                   @keydown.enter="finishEditing(file, index, isRe,isFolder)"/>
-            <button @mousedown.prevent="handleCancel(index)" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer;">>取消</button> <!-- 添加取消按钮 -->
+                   @blur.stop="finishEditing(file, index, isRe,isFolder)"
+                   @keydown.enter.stop="finishEditing(file, index, isRe,isFolder)"
+                   @click.stop/>
+            <button @mousedown.stop="handleCancel(index)" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer;">>取消</button> <!-- 添加取消按钮 -->
           </template>
           <template v-else>
-            <a href="" class="file-name"
-               @mouseover="showFileOrFolderInfo(file.ID, 'file', token, userInfo.account,$event)"
-               @mouseout="hideFileOrFolderInfo"
-               @click.prevent="handlepreviewFile1(userInfo.account,file.ID,token,$event)">{{ file.FileName }}</a>
-            <input type="checkbox" v-model="file.selected" class="file-checkbox" /> <!-- 文件夹复选框 -->
+            <span class="file-name">
+              {{ file.FileName }}
+            </span>
+            <input type="checkbox" v-model="file.selected" class="file-checkbox" @click.stop/> <!-- 文件夹复选框 -->
           </template>
         </div>
       </div>
@@ -517,52 +537,64 @@ const handlepreviewFile1=(account,fileID,token,event)=>{
       </div>
     </div>
     <!-- 删除确认模态框 -->
-    <div v-if="showDeleteModal" class="modal">
-      <div class="modal-content">
-        <h3>确定将选中的项目移入回收站？</h3>
-        <p>回收站中的项目将保留30天，您可以随时恢复它们</p>
-        <button id="btn1" @click="confirmDelete">确 定</button>
-        <button id="btn2" @click="cancelDelete">取 消</button>
+    <div v-if="showDeleteModal" class="delete-modal">
+      <div class="delete-modal-content">
+        <div class="modal-header">
+          <h3>移入回收站</h3>
+          <button class="close-button" @click="cancelDelete">×</button>
+        </div>
+
+        <div class="modal-body">
+          <img src="../assets/回收站.svg" alt="回收站" class="delete-icon">
+          <p class="warning-text">确定将选中的项目移入回收站吗？</p>
+          <p class="tip-text">回收站中的项目将保留30天，您可以随时恢复它们</p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="cancel-button" @click="cancelDelete">取消</button>
+          <button class="confirm-button delete" @click="confirmDelete">移入回收站</button>
+        </div>
       </div>
     </div>
-    <!-- 分享确认模态框 -->
-    <div v-if="isShare" class="shareModal">
-      <div class="modal-content">
-        <!-- 左上角分享标题 -->
-        <h3 class="modal-title">共享</h3>
+    <!-- 共享模态框 -->
+    <div v-if="isShare" class="share-modal">
+      <div class="share-modal-content">
+        <div class="modal-header">
+          <h3>共享文件</h3>
+          <button class="close-button" @click="isShare = false">×</button>
+        </div>
 
-        <!-- 主体内容区域 -->
-        <div class="content-container">
-          <!-- 左侧上传封面 -->
-          <div class="upload-section">
-            <input
-                ref="uploadCoverInput"
-                type="file"
-                accept="image/*"
-                style="display: none;"
-                @change="handleCoverUpload"
-            />
-            <button
-                id="uploadCover"
-                style="background: none; border: none; cursor: pointer;"
-                @click="triggerUpload"
-            >
-              <img ref="coverPreview" src="../assets/上传封面.svg" alt="上传封面" style="width: 50px; height: 50px;" />
-            </button>
-            <p>上传封面</p>
+        <div class="share-form">
+          <div class="form-group">
+            <label for="input1">共享名称</label>
+            <input type="text" id="input1" placeholder="请输入共享文件名称" />
           </div>
 
-          <!-- 右侧输入框区域 -->
-          <div class="input-group">
-            <input type="text" id="input1" placeholder="文件名" />
-            <textarea id="input2" placeholder="简介"></textarea>
+          <div class="form-group">
+            <label for="input2">文件简介</label>
+            <textarea id="input2" placeholder="请输入文件简介" rows="4"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>封面图片</label>
+            <div class="cover-upload">
+              <img :src="coverPreview?.src || cover"
+                   ref="coverPreview"
+                   @click="triggerUpload"
+                   class="cover-preview"
+              alt="111"/>
+              <input type="file"
+                     ref="uploadCoverInput"
+                     @change="handleCoverUpload"
+                     accept="image/*"
+                     style="display: none" />
+            </div>
           </div>
         </div>
 
-        <!-- 底部按钮，居中对齐 -->
-        <div class="button-group">
-          <button @click="confirmShare">确认</button>
-          <button @click="cancelShare">取消</button>
+        <div class="modal-footer">
+          <button class="cancel-button" @click="isShare = false">取消</button>
+          <button class="confirm-button" @click="confirmShare">确认共享</button>
         </div>
       </div>
     </div>
@@ -570,15 +602,19 @@ const handlepreviewFile1=(account,fileID,token,event)=>{
     <!-- 预览模态框 -->
     <div v-if="showPreviewModal" class="modalpre">
       <div class="modal-precontent">
-        <button class="close-prebutton" @click="showPreviewModal = false">×</button>
-        <h3 class="modal-pretitle">预览文件中…</h3>
-        <div class="file-preview-area">
+        <div class="modal-header">
+          <h3>文件预览</h3>
+          <button class="close-prebutton" @click="showPreviewModal = false">×</button>
+        </div>
+        <div class="preview-container">
           <div v-if="isLoading" class="loading-container">
             <img src="@/assets/加载.svg" alt="Loading..." class="loading-image" />
+            <span>正在加载中，请稍候...</span>
           </div>
-          <p v-if="!previewContent && !isLoading">该类型文件暂不支持预览</p>
-          <p v-else-if="isLoading">正在加载中，请稍候...</p>
-          <iframe v-else :src="previewContent"></iframe>
+          <div v-else-if="!previewContent" class="no-preview">
+            <p>该类型文件暂不支持预览</p>
+          </div>
+          <iframe v-else :src="previewContent" class="preview-iframe"></iframe>
         </div>
       </div>
     </div>
@@ -603,400 +639,201 @@ const handlepreviewFile1=(account,fileID,token,event)=>{
 </template>
 
 <style scoped>
+/* 整体容器样式优化 */
 #filebox {
-  position: relative;
-  height: calc(100vh - 60px);
-  width: 90%;
-  left: 0;
-  top: 0;
+  padding: 20px;
+  height: calc(100vh - 90px);
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
 }
 
+/* 头部区域美化 */
 .file_header {
-  position: relative;
   display: flex;
-  height: 20px;
-  margin: 15px 0 20px 15px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  margin-bottom: 15px;
 }
 
 .file_header p {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-family: 幼圆;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
   margin: 0;
 }
 
-.file_header p::before {
-  content: "";
-  background-image: url("../assets/文件.svg");
-  display: inline-block;
-  width: 20px; /* 控制宽度 */
-  height: 20px; /* 控制高度 */
-  background-size: contain; /* 图片自适应大小 */
-  background-repeat: no-repeat;
-  background-position: center;
-  margin-left: 15px;
-}
-
-.file_header button {
-  background: none; /* 去掉按钮背景 */
-  border: none; /* 去掉按钮边框 */
-  padding: 0; /* 去掉内边距 */
-  cursor: pointer; /* 设置鼠标指针 */
-}
-
-.file_op {
-  position: relative;
-  margin: 0 30px 20px 30px;
-  width: 100%; /* 列表宽度 */
-  height: 90%;
-  border: #cccccc 1px solid;
-  border-radius: 20px;
-}
-
-.file-list {
-  display: flex;
-  flex-direction: column; /* 单列显示 */
-  width: 100%; /* 列表宽度 */
-  height: 90%;
-  overflow-y: auto;
-  z-index: -1;
-}
-
-.folder-item {
-  min-height: 40px;
+/* 头部按钮组 */
+.header-buttons {
   display: flex;
   align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid #ddd; /* 分隔线 */
+  gap: 12px;  /* 按钮之间的间距 */
 }
 
-.file-item {
-  min-height: 40px;
+/* 按钮样式美化 */
+#allSelected, #addFolder, #back {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 36px;  /* 统一按钮大小 */
+  height: 36px;
   padding: 8px;
-  border-bottom: 1px solid #ddd; /* 分隔线 */
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.file-icon {
+#allSelected img, #addFolder img, #back img {
   width: 20px;
   height: 20px;
-  margin: 0 8px 0 10px; /* 图标和文件名之间的间距 */
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
 }
 
-.file-name {
-  font-size: 16px;
-  width: fit-content;
-  display: block;
-  text-decoration: none;
+#allSelected:hover, #addFolder:hover, #back:hover {
+  background: rgba(64, 149, 229, 0.1);
 }
 
-.file-name:visited {
-  color: black;
+#allSelected:hover img, #addFolder:hover img, #back:hover img {
+  opacity: 1;
 }
 
-.file-name:hover {
-  color: #007bff;
-}
-
-.file-checkbox {
-  margin-left: auto; /* 文件名和复选框之间的间距 */
-}
-
-.file-operations {
-  position: absolute;
-  bottom: 0;
-  display: inline-flex;
-  width: 100%;
-  z-index: 2;
-  border-radius: 20px;
-  background-color: white;
-}
-
-.file-operations button {
-  display: inline-flex;
+/* 文件操作区域美化 */
+.file_op {
   position: relative;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 5%;
-  aspect-ratio: 1 / 1;
-  margin: auto;
-  border: none;
-  background-color: transparent;
-}
-
-.file-operations button img {
-  width: 50%;
-  height: auto;
-}
-
-.info-popup {
-  position: absolute;
-  top: 50px; /* 距离父元素顶部50px */
-  left: 100px; /* 距离父元素左侧100px */
-  background: white;
-  color: #474343;
-  padding: 10px;
-  border-radius: 15px;
-  font-size: 14px;
-  font-family: 宋体;
-  z-index: 100; /* 确保它在前面 */
-  display: block; /* 确保它可以显示 */
-  font-weight: bold; /* 加粗字体 */
-  border: 2px solid #423f3f; /* 设置边界线，宽度为2px，颜色为黑色 */
-}
-
-#addFolder {
-  margin-left: auto; /* 将按钮推到右侧 */
-}
-
-#back {
-  margin-left: 10px; /* 给返回按钮添加一点间隔 */
-}
-
-/* alert-container 样式 */
-#alert-container {
-  flex: 1; /* 让其占据可用空间 */
-  text-align: center; /* 文本居中 */
-}
-
-@keyframes fadeInOut {
-  0% {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  10% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  90% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-}
-
-@keyframes shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  20%, 60% {
-    transform: translateX(-5px);
-  }
-  40%, 80% {
-    transform: translateX(5px);
-  }
-}
-
-.file-input {
-  font-size: 16px;
-  margin-left: 4px; /* 输入框和图标之间的最小间距 */
-  height: 30px;
   flex: 1;
-  border: #cccccc 1px solid;
-}
-
-.file-input:focus {
-  margin-left: 4px;
-  outline: none; /* 去掉默认的 focus 样式 */
-  border-color: #cccccc;
-}
-
-.file-input.shake {
-  animation: shake 0.3s ease-in-out;
-}
-
-/* 模态框样式 */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  text-align: center;
-}
-
-/* 模态框背景 */
-.shareModal {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-}
-
-/* 模态框内容 */
-.modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 500px;
-  position: relative;
-}
-
-/* 标题 */
-.modal-title {
-  text-align: center;
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  margin-top: 5px; /* 让标题更靠上 */
-}
-
-/* 主体内容容器 */
-.content-container {
-  display: flex;
-  align-items: flex-start; /* 左侧靠上对齐 */
-}
-
-/* 左侧上传封面区域 */
-.upload-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 15px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin-right: 20px;
-  margin-top: 40px; /* 调整上传封面更靠下 */
+  overflow-y: scroll;
 }
 
-.upload-section img {
-  cursor: pointer;
-  margin-bottom: 5px;
+/* 文件列表美化 */
+.file-list {
+  flex: 1;
+  padding: 5px;
 }
 
-.upload-section p {
-  font-size: 12px;
-  color: #666;
-  text-align: center;
-}
-
-/* 输入框区域 */
-.input-group {
-  flex-grow: 1;
-  padding-right: 20px; /* 增加右侧内边距 */
-}
-
-.input-group input,
-.input-group textarea {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.input-group textarea {
-  height: 120px;
-}
-
-/* 文本框聚焦时的样式 */
-input[type="text"]:focus, textarea:focus {
-  border-color: #66afe9; /* 柔和的蓝色边框 */
-  box-shadow: 0 0 5px rgba(102, 175, 233, 0.5); /* 添加蓝色光晕效果 */
-}
-
-/* 底部按钮区域，居中对齐 */
-.button-group {
+/* 文件项样式美化 */
+.folder-item, .file-item {
   display: flex;
-  justify-content: center; /* 居中对齐 */
-  margin-top: 10px;
-}
-
-.button-group button {
-  margin: 0 10px;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
+  align-items: center;
+  padding: 12px 20px;  /* 增加内边距 */
+  margin: 8px 0;  /* 增加项目间距 */
+  border-radius: 8px;
+  background: #f8f9fa;
+  transition: all 0.2s ease;
   cursor: pointer;
-  background-color: #007bff;
-  color: white;
-  transition: background-color 0.3s, color 0.3s; /* 增加平滑过渡效果 */
+  height: 35px;  /* 增加高度 */
+  gap: 16px;  /* 统一设置元素间距 */
 }
 
-
-/* 鼠标悬浮时的样式 */
-.button-group button:hover {
-  background-color: #0056b3; /* 悬浮时更深的蓝色 */
-  color: #e0f7fa; /* 更亮的文字颜色 */
+/* 收藏图标样式 */
+.folder-item img:first-child,
+.file-item img:first-child {
+  width: 24px;  /* 加大星星图标 */
+  height: 24px;
+  flex-shrink: 0;
 }
 
-/* 鼠标按下时的样式 */
-.button-group button:active {
-  background-color: #003f7f; /* 按下时更深的蓝色 */
-  color: #ffffff; /* 保持白色文字 */
+/* 文件图标样式 */
+.file-icon {
+  width: 24px;  /* 加大文件图标 */
+  height: 24px;
+  flex-shrink: 0;
 }
 
-
-.modal-content h3{
-  margin-bottom: 10px;
+/* 文件名称样式 */
+.file-name {
+  flex: 1;
+  font-size: 16px;  /* 加大字体 */
+  color: #333;
+  font-weight: 500;  /* 稍微加粗 */
+  margin-right: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.modal-content p{
-  color: gray;
+
+/* 复选框样式调整 */
+.file-checkbox {
+  width: 18px;  /* 稍微加大复选框 */
+  height: 18px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+/* 文件输入框样式调整 */
+.file-input {
+  flex: 1;
+  padding: 8px 14px;  /* 加大输入框内边距 */
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;  /* 匹配文件名字体大小 */
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+/* 悬浮和选中状态 */
+.folder-item:hover, .file-item:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* 滚动条美化 */
+.file_op::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file_op::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.file_op::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.file_op::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* 弹窗样式美化 */
+.info-popup {
+  position: fixed;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 250px;
+  font-size: 14px;
+  line-height: 1.6;
+  pointer-events: none;
+}
+
+.info-popup p {
+  margin: 8px 0;
+}
+
+.info-popup p:first-child {
   margin-top: 0;
-  margin-bottom: 30px;
 }
 
-#btn1{
-  position: relative;
-  vertical-align: middle;
-  height: 40px;
-  width: 120px;
-  font-size: 15px;
-  background-color: #4095E5;
-  color: white;
-  border-radius: 5%;
-  border: 1px solid #4095E5;
-  transition-duration: 0.2s;
-  margin: auto 30px;
+.info-popup p:last-child {
+  margin-bottom: 0;
 }
-#btn2{
-  position: relative;
-  vertical-align: middle;
-  height: 40px;
-  width: 120px;
-  font-size: 15px;
-  background-color: white;
-  color: gray;
-  border-radius: 5%;
-  border: 1px solid gray;
-  transition-duration: 0.2s;
-  margin: auto 30px;
-}
-#btn1:hover{
-  background-color: white;
-  color: #4095E5;
-  border: 1px solid #4095E5;
 
-}
-#btn2:hover{
-  color: black;
-  border: 1px solid black;
-}
-/* 预览模态框 */
-.modalpre {
-  z-index: 10;
+/* 模态框样式美化 */
+.modal, .modalpre {
   position: fixed;
   top: 0;
   left: 0;
@@ -1006,84 +843,514 @@ input[type="text"]:focus, textarea:focus {
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
 }
 
-.modal-precontent {
-  position: relative;
-  background: #fff;
-  border-radius: 8px;
-  min-width: 300px;
-  min-height: 200px;
-  width: 1100px; /* 模态框固定宽度 */
-  height: 700px; /* 模态框固定高度 */
-  display: flex;
-  flex-direction: column; /* 让内容垂直排列 */
-  align-items: center;
-  /*cursor: move;
-  resize: both;
-  overflow: auto;  使内容可滚动 */
-  cursor: move;
-  resize: both;
-  overflow: auto; /* 如果内容溢出，添加滚动条 */
+.modal-content, .modal-precontent {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.close-prebutton {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 30px;
-  cursor: pointer;
-}
-
-.close-prebutton:hover {
-  color: red;
-}
-
-.modal-pretitle {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  font-size: 20px;
-  font-weight: bold;
-  margin: 0;
-}
-
-.file-preview-area {
-  display: flex;
-  justify-content: center; /* 水平居中 */
-  align-items: center;    /* 垂直居中 */
-  width: 80%;
-  height: 80%;
-  margin: auto;           /* 如果需要内容居中，还可用 margin 调整 */
-  background-color: #f5f5f5; /* 可选，设置背景色以便预览更清晰 */
-  border: 1px solid #ccc;    /* 可选，添加边框样式 */
-  overflow: hidden;          /* 防止内容溢出 */
-}
-
+/* 加载动画美化 */
 .loading-container {
-  position: absolute;
-  top: 240px;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 10px;
-  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
 }
 
 .loading-image {
-  width: 40px; /* 设置图片大小 */
-  height: auto;
-  position: absolute;
-  left: 50%;  /* 使图片水平居中 */
-  transform: translateX(-50%);  /* 平移图片，使其居中 */
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
 }
-iframe {
-  width: 100%;
-  height: 100%;
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 文件操作按钮组 */
+.file-operations {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;  /* 增加按钮之间的间距 */
+  padding: 20px 0;  /* 增加上下内边距 */
+  border-top: 1px solid #eee;
+  background: white;
+}
+
+.file-operations button {
+  display: flex;
+  align-items: center;
+  gap: 10px;  /* 增加图标和文字的间距 */
+  height: 42px;  /* 增加按钮高度 */
+  padding: 0 20px;  /* 增加左右内边距 */
   border: none;
-  margin: 10px;
-  object-fit: contain; /* 确保内容适应容器 */
+  border-radius: 8px;
+  background: #f5f7fa;
+  color: #333;
+  font-size: 15px;  /* 增加字体大小 */
+  font-weight: 500;  /* 加粗字体 */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-operations button img {
+  width: 20px;  /* 增加图标大小 */
+  height: 20px;
+  opacity: 0.8;
+}
+
+.file-operations button:hover:not(:disabled) {
+  background: #e9ecef;
+  transform: translateY(-1px);
+}
+
+.file-operations button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f0f2f5;
+}
+
+.file-operations button:hover:not(:disabled) img {
+  opacity: 1;
+}
+
+/* 特殊按钮样式 */
+.file-operations button.primary {
+  background: #4095E5;
+  color: white;
+}
+
+.file-operations button.primary:hover:not(:disabled) {
+  background: #3084d4;
+  box-shadow: 0 2px 8px rgba(64, 149, 229, 0.2);
+}
+
+.file-operations button.danger {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.file-operations button.danger:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.15);
+}
+
+/* 预览模态框样式 */
+.modalpre {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-precontent {
+  width: 90vw;
+  height: 90vh;
+  background: #fff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.close-prebutton {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-prebutton:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.preview-container {
+  flex: 1;
+  position: relative;
+  background: #f8f9fa;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* 移除外层滚动条 */
+}
+
+.preview-iframe {
+  width: 95%; /* 稍微缩小一点，留出边距 */
+  height: 95%;
+  border: none;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: auto; /* 只在 iframe 内部显示滚动条 */
+}
+
+/* 美化 iframe 的滚动条 */
+.preview-iframe::-webkit-scrollbar {
+  width: 8px;
+  height: 8px; /* 添加水平滚动条的高度 */
+}
+
+.preview-iframe::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.preview-iframe::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.preview-iframe::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* 加载状态和无预览状态的容器样式优化 */
+.loading-container, .no-preview {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.loading-image {
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+.loading-container span {
+  color: #666;
+  font-size: 14px;
+}
+
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 共享模态框样式 */
+.share-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.share-modal-content {
+  width: 500px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.close-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.share-form .form-group input,
+.share-form .form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.share-form {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #4095E5;
+  box-shadow: 0 0 0 2px rgba(64, 149, 229, 0.1);
+}
+
+.cover-upload {
+  text-align: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #ddd;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cover-upload:hover {
+  border-color: #4095E5;
+  background: #f0f7ff;
+}
+
+.cover-preview {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+
+.modal-footer {
+  padding: 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancel-button,
+.confirm-button {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button {
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+}
+
+.confirm-button {
+  border: none;
+  background: #4095E5;
+  color: white;
+}
+
+.cancel-button:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.confirm-button:hover {
+  background: #3084d4;
+}
+
+/* 删除模态框样式 */
+.delete-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.delete-modal-content {
+  width: 420px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.close-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.modal-body {
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.delete-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.warning-text {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.tip-text {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.modal-footer {
+  padding: 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancel-button,
+.confirm-button {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button {
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+}
+
+.confirm-button.delete {
+  border: none;
+  background: #dc3545;
+  color: white;
+}
+
+.cancel-button:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.confirm-button.delete:hover {
+  background: #c82333;
 }
 
 </style>

@@ -4,26 +4,14 @@ import { getAllSharedItems, searchInGallery } from "@/homepage/api.js";
 import { useEventBus } from "@vueuse/core";
 
 const token = localStorage.getItem('token');
+const userData = JSON.parse(localStorage.getItem('userData'));
+var userInfo = userData.data.userInfo;
 const items = ref([]);
 const pageIndex = ref(1); // 默认选中第一个按钮
 const totalPages = ref(1);
 
-  /*{
-    "owner_account": {
-    "account": "administer",
-        "name": "MGCadm1H2a",
-        "intro": "这个人很懒，什么都没有写",
-        "avatar": "http://127.0.0.1:8080/resources/img/A.png"
-  },
-    "folder_name": "administer1",
-      "ipfs_hash": "QmTs5VMPUjwnMTyiqSzVyroVxsy7MxcyvXqGSbkVQYoTkf",
-      "intro": "nothing...",
-      "cover_img": "http://127.0.0.1:8080/resources/img/cover_img/default.png",
-      "pin_date": "2024-12-14 15:55:18"
-  }*/
-
 onMounted(() => {
-  getAllSharedItems(token, pageIndex.value)
+  getAllSharedItems(token, pageIndex.value, userInfo.account)
       .then(data => {
         items.value = data.folders;
         totalPages.value = data.total_page;
@@ -32,21 +20,21 @@ onMounted(() => {
 
 const selectButton = (index) => {
   pageIndex.value = index;
-  getAllSharedItems(token, pageIndex.value)
+  getAllSharedItems(token, pageIndex.value, userInfo.account)
       .then(data => {
         items.value = data.folders;
       })
 };
 const selectIncrement = () => {
   pageIndex.value += 1;
-  getAllSharedItems(token, pageIndex.value)
+  getAllSharedItems(token, pageIndex.value, userInfo.account)
       .then(data => {
         items.value = data.folders;
       })
 }
 const selectDecrement = () => {
   pageIndex.value -= 1;
-  getAllSharedItems(token, pageIndex.value)
+  getAllSharedItems(token, pageIndex.value, userInfo.account)
       .then(data => {
         items.value = data.folders;
       })
@@ -94,7 +82,7 @@ onMounted(() => {
       if(query===''){
         //返回首页
         pageIndex.value = 1;
-        getAllSharedItems(token, pageIndex.value)
+        getAllSharedItems(token, pageIndex.value, userInfo.account)
             .then(data => {
               items.value = data.folders;
               totalPages.value = data.total_page;
@@ -112,15 +100,19 @@ onMounted(() => {
 
 <template>
   <div id="gallery_box">
-    <p>画廊</p>
+    <div class="file_header">
+      <p>画廊</p>
+    </div>
     <div class="content_box">
       <div class="file_box">
         <router-link v-for="(item,index) in items" :key="index"
                      :to="{ name: 'Content', query: { item: JSON.stringify(item)} }" custom v-slot="{ navigate }">
           <div class="item" @click="navigate" role="link" :title=item.folder_name>
             <img id="cover" :src=item.cover_img alt="">
-            <img id="avatar" :src=item.owner_account.avatar alt="">
-            <span>{{item.folder_name}}</span>
+            <div class="item-info">
+              <img id="avatar" :src="item.owner_account.avatar" alt="">
+              <span>{{ item.folder_name }}</span>
+            </div>
           </div>
         </router-link>
       </div>
@@ -137,38 +129,38 @@ onMounted(() => {
 
 <style scoped>
 #gallery_box{
-  position: relative;
-  height: calc(100vh - 60px);
-  width: 90%;
-  left: 0;
-  top: 0;
+  padding: 20px;
+  height: calc(100vh - 90px);
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
 }
-p{
+/* 头部区域美化 */
+.file_header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-family: 幼圆;
-  margin: 15px 0 0 15px ;
+  justify-content: space-between;
+  padding: 0 10px;
+  margin-bottom: 15px;
 }
-p::before{
-  content: "";
-  background-image: url("../assets/图片.svg");
-  display: inline-block;
-  width: 20px; /* 控制宽度 */
-  height: 20px; /* 控制高度 */
-  background-size: contain; /* 图片自适应大小 */
-  background-repeat: no-repeat;
-  background-position: center;
+
+.file_header p {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
 }
+
 .content_box{
-  position: relative;
-  margin: 20px 30px;
-  width: 100%; /* 列表宽度 */
-  height: 90%;
-  border: #cccccc 1px solid;
-  border-radius: 20px;
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
 }
+
 .file_box{
   display: grid;
   width: 100%;
@@ -179,22 +171,20 @@ p::before{
   margin-top: 10px;
 }
 .item{
-  display: grid;
   position: relative;
-  grid-template-rows: 7fr 3fr; /* 两行，每行高度相等 */
-  grid-template-columns: 2fr 8fr; /* 第二行的两列，比例为 3:7 */
-  grid-template-areas:
-    "a a" /* 第一行只有一列，占据整个宽度 */
-    "b c";
-  width: 240px;
-  height: 180px;
+  background: white;
+  border-radius: 12px;
   overflow: hidden;
+  transition: all 0.3s ease;
+  height: 170px;
+  width: 230px;
+  cursor: pointer;
+  border: #cccccc solid 1.5px;
   padding: 5px;
 }
 .item:hover {
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-  border: #4095E5 1px solid;
-  border-radius: 10px;
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(64, 149, 229, 0.15);
 }
 .item::before {
   content: '';
@@ -205,7 +195,6 @@ p::before{
   height: 100%;
   background-color: rgba(255, 255, 255, 0.3); /* 透明黑色覆盖层 */
   opacity: 0; /* 初始状态下不显示 */
-  transition: opacity 0.3s ease;
 }
 .item:hover::before {
   opacity: 1; /* 悬停时显示覆盖层 */
@@ -217,24 +206,41 @@ p::before{
   object-fit: cover;
   overflow: hidden;
   justify-self: center;
+  border-radius: 12px 12px 0 0;
 }
+
+.item-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  padding: 12px;
+  background: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
 #avatar{
   grid-area: b;
-  height: 45px;
-  width: 45px;
-  padding: 5px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
 .item span {
   grid-area: c;
-  height: 100%;
-  width: 100%;
-  display: block;
-  align-content: center; /* 垂直居中 */
-  overflow: hidden; /* 隐藏溢出的文本 */
-  white-space: nowrap; /* 防止文本换行 */
-  text-overflow: ellipsis; /* 显示省略号 */
-  padding: 0 10px; /* 可选：添加一些内边距 */
-  font-size: 18px;
+  flex: 1;
+  font-size: 15px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pages{

@@ -6,8 +6,15 @@ import {
   fetchDelSubInfo,
   recoverItems,
   showLabelAlert,
-  completeDeleteItems,searchInCan,
-  showBinFileOrFolderInfo, hideBinFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft
+  completeDeleteItems,
+  searchInCan,
+  showBinFileOrFolderInfo,
+  hideBinFileOrFolderInfo,
+  fileOrFolderInfo,
+  popupTop,
+  popupLeft,
+  showFileOrFolderInfo,
+  hideFileOrFolderInfo
 } from "@/homepage/api.js";
 import { useEventBus } from "@vueuse/core";
 
@@ -87,7 +94,10 @@ const isAnyFileSelected = computed(() => {
 const selectAll = () => {
   isAllSelected.value = !isAllSelected.value;
   const newState = isAllSelected.value;
-  [...files.value, ...folders.value].forEach(item => (item.selected = newState));
+  if(files.value)
+    files.value.forEach(item => (item.selected = newState));
+  if(folders.value)
+    folders.value.forEach(item => (item.selected = newState));
 };
 
 const confirmRecover = () => {
@@ -142,19 +152,35 @@ const clickDelete = () => {
     <div class="file_header">
       <p>回收站</p>
       <div id="alert-container"></div> <!-- 中间的label容器 -->
-      <button id="allSelected" style="margin-right: -15px;" @click="selectAll"><img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;"></button>
+      <div class="header-buttons">
+        <button id="allSelected" @click="selectAll">
+          <img src="../assets/全选.svg" alt="" style="width: 30px; height: 30px;">
+        </button>
+      </div>
     </div>
     <div class="file_op">
       <div class="file-list">
         <!-- 文件夹列表 -->
-        <div class="folder-item" v-for="folder in folders" :key="folder.id">
+        <div class="folder-item" v-for="folder in folders" :key="folder.id"
+             @mouseover="(e) => {
+                  showBinFileOrFolderInfo(folder.bin_id,folder.id, 'folder', token, userInfo.account, {
+                    clientX: e.clientX + 260,
+                    clientY: e.clientY + 70
+                  });
+                }"
+             @mouseout="hideBinFileOrFolderInfo">
           <img :src=folderURL alt="文件夹图标" class="file-icon" />
-            <span class="file-name"
-                  @mouseover="showBinFileOrFolderInfo(folder.bin_id,folder.id, 'folder', token, userInfo.account,$event)"
-                  @mouseout="hideBinFileOrFolderInfo">{{ folder.folder_name }}</span>
+            <span class="file-name">{{ folder.folder_name }}</span>
             <input type="checkbox" v-model="folder.selected" class="file-checkbox"  @click.stop /> <!-- 文件夹复选框 -->
         </div>
-        <div class="file-item" v-for="file in files" :key="file.ID">
+        <div class="file-item" v-for="file in files" :key="file.ID"
+             @mouseover="(e) => {
+                  showBinFileOrFolderInfo(1,file.ID, 'file', token, userInfo.account,{
+                    clientX: e.clientX + 260,
+                    clientY: e.clientY + 70
+                  });
+                }"
+             @mouseout="hideBinFileOrFolderInfo">
           <img :src="fileURL" alt="文件图标" class="file-icon" />
           <span class="file-name"
                 @mouseover="showBinFileOrFolderInfo(1,file.ID, 'file', token, userInfo.account,$event)"
@@ -167,181 +193,305 @@ const clickDelete = () => {
         <button @click="clickDelete"><img src="../assets/回收站.svg" alt="">删除</button>
       </div>
     </div>
-  </div>
-  <div v-if="showRecoverModal" class="modal">
-    <div class="modal-content">
-      <h3>确定恢复选中的文件（夹）？</h3>
-      <p>您可以在文件列表中查看恢复的文件（夹）</p>
-      <button id="btn1" @click="confirmRecover">确 定</button>
-      <button id="btn2" @click="cancelRecover">取 消</button>
+    <div v-if="showRecoverModal" class="modal-wrapper">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>恢复文件</h3>
+          <button class="close-button" @click="cancelRecover">×</button>
+        </div>
+
+        <div class="modal-body">
+          <img src="../assets/恢复.svg" alt="恢复" class="modal-icon">
+          <p class="warning-text">确定恢复选中的文件（夹）？</p>
+          <p class="tip-text">您可以在文件列表中查看恢复的文件（夹）</p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="cancel-button" @click="cancelRecover">取消</button>
+          <button class="confirm-button recover" @click="confirmRecover">恢复</button>
+        </div>
+      </div>
     </div>
-  </div>
-  <div v-if="showDeleteModal" class="modal">
-    <div class="modal-content">
-      <h3>确定彻底删除选中的文件（夹）？</h3>
-      <p>彻底删除后，你将无法找回该文件（夹）</p>
-      <button id="btn3" @click="confirmDelete">确 定</button>
-      <button id="btn4" @click="cancelDelete">取 消</button>
+    <div v-if="showDeleteModal" class="modal-wrapper">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>永久删除</h3>
+          <button class="close-button" @click="cancelDelete">×</button>
+        </div>
+
+        <div class="modal-body">
+          <img src="../assets/回收站.svg" alt="删除" class="modal-icon">
+          <p class="warning-text">确定彻底删除选中的文件（夹）？</p>
+          <p class="tip-text">彻底删除后，你将无法找回该文件（夹）</p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="cancel-button" @click="cancelDelete">取消</button>
+          <button class="confirm-button delete" @click="confirmDelete">删除</button>
+        </div>
+      </div>
     </div>
-  </div>
-  <!-- 显示悬停的文件/文件夹信息 -->
-  <div v-if="fileOrFolderInfo.type==='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
-    <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
-    <p>名称: {{ fileOrFolderInfo.data.folder_name}}</p>
-    <p>路径: {{ fileOrFolderInfo.data.path }}</p>
-    <p>是否收藏: {{ fileOrFolderInfo.data.is_favorite ? '是' : '否' }}</p>
-    <p>分享状态: {{ fileOrFolderInfo.data.is_share ? '已共享' : '未共享' }}</p>
-  </div>
-  <div v-if="fileOrFolderInfo.type==='file'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
-    <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
-    <p>名称: {{ fileOrFolderInfo.data.FileName }}</p>
-    <p>路径: {{ fileOrFolderInfo.data.Path }}</p>
-    <p>上传时间: {{ fileOrFolderInfo.data.CreatedAt }}</p>
-    <p>是否收藏: {{ fileOrFolderInfo.data.Favorite ? '是' : '否' }}</p>
-    <p>分享状态: {{ fileOrFolderInfo.data.Share ? '已共享' : '未共享' }}</p>
+    <!-- 显示悬停的文件/文件夹信息 -->
+    <div v-if="fileOrFolderInfo.type==='folder'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+      <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
+      <p>名称: {{ fileOrFolderInfo.data.folder_name}}</p>
+      <p>路径: {{ fileOrFolderInfo.data.path }}</p>
+      <p>是否收藏: {{ fileOrFolderInfo.data.is_favorite ? '是' : '否' }}</p>
+      <p>分享状态: {{ fileOrFolderInfo.data.is_share ? '已共享' : '未共享' }}</p>
+    </div>
+    <div v-if="fileOrFolderInfo.type==='file'" class="info-popup" :style="{ top: popupTop, left: popupLeft }">
+      <p>类型: {{ fileOrFolderInfo.type === 'folder' ? '文件夹' : '文件' }}</p>
+      <p>名称: {{ fileOrFolderInfo.data.FileName }}</p>
+      <p>路径: {{ fileOrFolderInfo.data.Path }}</p>
+      <p>上传时间: {{ fileOrFolderInfo.data.CreatedAt }}</p>
+      <p>是否收藏: {{ fileOrFolderInfo.data.Favorite ? '是' : '否' }}</p>
+      <p>分享状态: {{ fileOrFolderInfo.data.Share ? '已共享' : '未共享' }}</p>
+    </div>
+
   </div>
 </template>
 
 <style scoped>
-#filebox{
-  position: relative;
-  height: calc(100vh - 60px);
-  width: 90%;
-  left: 0;
-  top: 0;
-}
-.file_header p{
+/* 整体容器样式优化 */
+#filebox {
+  padding: 20px;
+  height: calc(100vh - 90px);
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-family: 幼圆;
-  margin: 15px 0 0 15px ;
-}
-.file_header p::before{
-  content: "";
-  background-image: url("../assets/回收站.svg");
-  display: inline-block;
-  width: 20px; /* 控制宽度 */
-  height: 20px; /* 控制高度 */
-  margin-left: 15px;
-  background-size: contain; /* 图片自适应大小 */
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-.file_op{
-  position: relative;
-  margin: 20px 30px;
-  width: 100%; /* 列表宽度 */
-  height: 90%;
-  border: #cccccc 1px solid;
-  border-radius: 20px;
-}
-
-.file-list {
-  display: flex;
-  flex-direction: column; /* 单列显示 */
-  width: 100%; /* 列表宽度 */
-  height: 90%;
-  overflow-y: auto;
-  z-index: -1;
-}
-.file-item {
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* 左右对齐 */
-  padding: 8px;
-  border-bottom: 1px solid #ddd; /* 分隔线 */
-}
-.file-icon {
-  width: 20px;
-  height: 20px;
-  margin: 0 8px 0 12px; /* 图标和文件名之间的间距 */
-}
-.file-name {
-  font-size: 16px;
-  flex: 1; /* 文件名占用剩余空间 */
-}
-.file-checkbox {
-  margin-left: 8px; /* 文件名和复选框之间的间距 */
-}
-
-.file-operations{
-  position: absolute;
-  bottom: 0;
-  display: inline-flex;
-  width: 100%;
-  z-index: 2;
-  background-color: white;
-  border-radius: 20px;
-}
-.file-operations button{
-  display: inline-flex;
-  position: relative;
   flex-direction: column;
+  background: #f8f9fa;
+}
+
+/* 头部区域美化 */
+.file_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  margin-bottom: 15px;
+}
+
+.file_header p {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+/* 头部按钮组 */
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;  /* 按钮之间的间距 */
+}
+
+/* 按钮样式美化 */
+#allSelected{
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 5%;
-  aspect-ratio: 1 / 1;
-  margin: auto;
+  width: 36px;  /* 统一按钮大小 */
+  height: 36px;
+  padding: 8px;
   border: none;
-  background-color: transparent;
-}
-.file-operations button img{
-  width: 50%;
-  height: auto;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-#message{
-  position: absolute;
-  display: none;
-  flex-direction: column;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border: #8EE5EE7F 2px solid;
-  width: 500px;
-  height: 250px;
-  z-index: 3;
-  border-radius: 40px;
-  background-color: white;
+#allSelected img{
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
 }
-#message span{
-  font-size: 20px;
-  text-align: center;
-  margin: 12% auto 10% auto;
+
+#allSelected:hover{
+  background: rgba(64, 149, 229, 0.1);
 }
-.con{
-  display: inline-flex;
-  margin: auto auto;
-  width: 100%;
-  height: 50%
+
+#allSelected:hover img{
+  opacity: 1;
 }
-.con button{
-  width: 150px;
-  height: 60px;
-  margin: 0 auto;
-  background-color: #93d2f377;
-  border-radius: 10px;
-  border: #cccccc 1px solid;
-  font-size: 15px;
-}
-.info-popup {
-  position: absolute;
-  top: 50px; /* 距离父元素顶部50px */
-  left: 100px; /* 距离父元素左侧100px */
+
+/* 文件操作区域美化 */
+.file_op {
+  flex: 1;
   background: white;
-  color: #474343;
-  padding: 10px;
-  border-radius: 15px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 文件列表美化 */
+.file-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.file-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.file-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.file-list::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* 文件项样式美化 */
+.folder-item, .file-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;  /* 增加内边距 */
+  margin: 8px 0;  /* 增加项目间距 */
+  border-radius: 8px;
+  background: #f8f9fa;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  height: 35px;  /* 增加高度 */
+  gap: 16px;  /* 统一设置元素间距 */
+}
+
+/* 悬浮和选中状态 */
+.folder-item:hover, .file-item:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* 文件名称样式 */
+.file-name {
+  flex: 1;
+  font-size: 16px;  /* 加大字体 */
+  color: #333;
+  font-weight: 500;  /* 稍微加粗 */
+  margin-right: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 文件图标样式 */
+.file-icon {
+  width: 24px;  /* 加大文件图标 */
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* 复选框样式调整 */
+.file-checkbox {
+  width: 18px;  /* 稍微加大复选框 */
+  height: 18px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+/* 文件操作按钮组 */
+.file-operations {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;  /* 增加按钮之间的间距 */
+  padding: 20px 0;  /* 增加上下内边距 */
+  margin-top: auto;
+  border-top: 1px solid #eee;
+}
+
+.file-operations button {
+  display: flex;
+  align-items: center;
+  gap: 10px;  /* 增加图标和文字的间距 */
+  height: 42px;  /* 增加按钮高度 */
+  padding: 0 20px;  /* 增加左右内边距 */
+  border: none;
+  border-radius: 8px;
+  background: #f5f7fa;
+  color: #333;
+  font-size: 15px;  /* 增加字体大小 */
+  font-weight: 500;  /* 加粗字体 */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-operations button img {
+  width: 20px;  /* 增加图标大小 */
+  height: 20px;
+  opacity: 0.8;
+}
+
+
+.file-operations button:hover:not(:disabled) {
+  background: #e9ecef;
+  transform: translateY(-1px);
+}
+
+.file-operations button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f0f2f5;
+}
+
+.file-operations button:hover:not(:disabled) img {
+  opacity: 1;
+}
+
+
+/* 特殊按钮样式 */
+.file-operations button.primary {
+  background: #4095E5;
+  color: white;
+}
+
+.file-operations button.primary:hover:not(:disabled) {
+  background: #3084d4;
+  box-shadow: 0 2px 8px rgba(64, 149, 229, 0.2);
+}
+
+.file-operations button.danger {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.file-operations button.danger:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.15);
+}
+
+/* 弹窗样式美化 */
+.info-popup {
+  position: fixed;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 250px;
   font-size: 14px;
-  font-family: 宋体;
-  z-index: 100; /* 确保它在前面 */
-  display: block; /* 确保它可以显示 */
-  font-weight: bold; /* 加粗字体 */
-  border: 2px solid #423f3f; /* 设置边界线，宽度为2px，颜色为黑色 */
+  line-height: 1.6;
+  pointer-events: none;
+}
+
+.info-popup p {
+  margin: 8px 0;
+}
+
+.info-popup p:first-child {
+  margin-top: 0;
+}
+
+.info-popup p:last-child {
+  margin-bottom: 0;
 }
 
 /* alert-container 样式 */
@@ -351,203 +501,136 @@ const clickDelete = () => {
 }
 
 
-
-.file_header{
-  position: relative;
-  display: flex;
-  height: 20px;
-  margin: 15px 5px 5px 15px;
-}
-.file_header p{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-family: 幼圆;
-  margin: 0;
-}
-.file_header p::before{
-  content: "";
-  background-image: url("../assets/回收站.svg");
-  display: inline-block;
-  width: 20px; /* 控制宽度 */
-  height: 20px; /* 控制高度 */
-  background-size: contain; /* 图片自适应大小 */
-  background-repeat: no-repeat;
-  background-position: center;
-}
-.file_header button {
-  background: none; /* 去掉按钮背景 */
-  border: none; /* 去掉按钮边框 */
-  padding: 0; /* 去掉内边距 */
-  cursor: pointer; /* 设置鼠标指针 */
-}
-
-
-#allSelected{
-  margin-left: auto; /* 将按钮推到右侧 */
-}
-
-.folder-item {
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid #ddd; /* 分隔线 */
-}
-.file-item {
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid #ddd; /* 分隔线 */
-}
-.file-icon {
-  width: 20px;
-  height: 20px;
-  margin: 0 8px 0 10px; /* 图标和文件名之间的间距 */
-}
-.file-name {
-  font-size: 16px;
-  width: fit-content;
-  display: block;
-  text-decoration:none;
-}
-.file-name:visited {
-  color: black;
-}
-.file-name:hover{
-  color: #007bff;
-}
-.file-checkbox {
-  margin-left: auto; /* 文件名和复选框之间的间距 */
-}
-
-.file-operations{
-  position: absolute;
-  bottom: 0;
-  display: inline-flex;
-  width: 100%;
-  z-index: 2;
-  border-radius: 20px;
-  background-color: white;
-}
-.file-operations button{
-  display: inline-flex;
-  position: relative;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 5%;
-  aspect-ratio: 1 / 1;
-  margin: auto;
-  border: none;
-  background-color: transparent;
-}
-.file-operations button img{
-  width: 50%;
-  height: auto;
-}
-
 /* 模态框样式 */
-.modal {
+.modal-wrapper {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
 }
+
 .modal-content {
-  background-color: white;
+  width: 420px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.modal-header {
   padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.close-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.modal-body {
+  padding: 30px 20px;
   text-align: center;
 }
-.modal-content h3{
-  margin-bottom: 10px;
-}
-.modal-content p{
-  color: gray;
-  margin-top: 0;
-  margin-bottom: 30px;
+
+.modal-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 20px;
+  opacity: 0.8;
 }
 
-#btn1{
-  position: relative;
-  vertical-align: middle;
-  height: 40px;
-  width: 120px;
-  font-size: 15px;
-  background-color: #4095E5;
+.warning-text {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.tip-text {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.modal-footer {
+  padding: 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancel-button,
+.confirm-button {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button {
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+}
+
+.confirm-button {
+  border: none;
   color: white;
-  border-radius: 5%;
-  border: 1px solid #4095E5;
-  transition-duration: 0.2s;
-  margin: auto 30px;
 }
-#btn2{
-  position: relative;
-  vertical-align: middle;
-  height: 40px;
-  width: 120px;
-  font-size: 15px;
-  background-color: white;
-  color: gray;
-  border-radius: 5%;
-  border: 1px solid gray;
-  transition-duration: 0.2s;
-  margin: auto 30px;
-}
-#btn1:hover{
-  background-color: white;
-  color: #4095E5;
-  border: 1px solid #4095E5;
 
+.confirm-button.recover {
+  background: #4095E5;
 }
-#btn2:hover{
-  color: black;
-  border: 1px solid black;
-}
-#btn3{
-  position: relative;
-  vertical-align: middle;
-  height: 40px;
-  width: 120px;
-  font-size: 15px;
-  background-color: red;
-  color: white;
-  border-radius: 5%;
-  border: 1px solid red;
-  transition-duration: 0.2s;
-  margin: auto 30px;
-}
-#btn4{
-  position: relative;
-  vertical-align: middle;
-  height: 40px;
-  width: 120px;
-  font-size: 15px;
-  background-color: white;
-  color: gray;
-  border-radius: 5%;
-  border: 1px solid gray;
-  transition-duration: 0.2s;
-  margin: auto 30px;
-}
-#btn3:hover{
-  background-color: white;
-  color: red;
-  border: 1px solid red;
 
+.confirm-button.delete {
+  background: #dc3545;
 }
-#btn4:hover{
-  color: black;
-  border: 1px solid black;
+
+.cancel-button:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.confirm-button.recover:hover {
+  background: #3084d4;
+}
+
+.confirm-button.delete:hover {
+  background: #c82333;
 }
 </style>

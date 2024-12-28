@@ -6,132 +6,234 @@
     <meta charset="UTF-8">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.js"></script>
-
     <style>
         body {
-            background-color: #f3fbfe;
+            background: linear-gradient(135deg, #f6f8fa 0%, #e9ecef 100%);
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        input[type="password"]::-ms-reveal,
-        input[type="password"]::-ms-clear {
-            display: none;
-        }
-
         .center-box {
-            background-color: white;
-            width: 800px;
-            height: 500px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            width: 900px;
+            height: 550px;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
             position: relative;
-            box-sizing: border-box;
+            overflow: hidden;
         }
 
-        .image-container {
-            margin-right: 10px;
-            margin-top: 70px;
+        .center-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(64, 149, 229, 0.1), transparent 60%);
+            z-index: 0;
         }
 
-        img {
-            width: 300px;
-            height: 300px;
+        .logo-container {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-right: 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-text {
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #4095E5, #73b4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .logo-desc {
+            font-size: 18px;
+            color: #666;
+            text-align: center;
+            line-height: 1.8;
+            margin-top: 20px;
+            max-width: 80%;
+        }
+
+        .form-container {
+            flex: 1;
+            padding-left: 60px;
+            padding-right: 60px;
+            border-left: 1px solid rgba(238, 238, 238, 0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-group {
+            position: relative;
+            margin: 20px 0;
+            width: 100%;
         }
 
         .input-field {
-            width: 250px;
-            height: 40px;
-            padding: 10px;
-            margin: 20px 0;
-            border: 2px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-            position: absolute;
-            right: 130px;
-        }
-
-        .input-account {
-            top: 80px;
-        }
-
-        .input-password {
-            top: 150px;
-        }
-
-        .input-confirm-password {
-            top: 220px;
-        }
-
-        .clear-btn, .toggle-password-btn, .toggle-confirm-password-btn {
-            position: absolute;
-            cursor: pointer;
-            font-size: 20px; /* 调整图标大小 */
-        }
-
-        .clear-btn {
-            right: 150px; /* 调整位置以适应输入框 */
-            top: 110px; /* 账号输入框位置 */
-        }
-
-        .toggle-password-btn {
-            right: 145px; /* 密码输入框位置，稍微向左 */
-            top: 175px; /* 密码输入框上下对齐 */
-        }
-
-        .toggle-confirm-password-btn {
-            right: 145px; /* 确认密码输入框位置，稍微向左 */
-            top: 245px; /* 确认密码输入框上下对齐 */
-        }
-
-        button {
-            padding: 10px 110px;
+            width: 100%;
+            height: 50px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #eee;
+            border-radius: 15px;
             font-size: 16px;
-            background-color: #5fbdd7;
-            color: white;
-            border: 2px solid #f8f8f8;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            position: absolute;
-            right: 130px;
-            bottom: 130px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
         }
 
-        button:hover {
-            background-color: #459eb4;
+        .input-field:focus {
+            border-color: #4095E5;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(64, 149, 229, 0.1);
+            background: white;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+
+        .toggle-btn:hover {
+            color: #4095E5;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            height: 50px;
+            margin-top: 30px;
+            background: linear-gradient(45deg, #4095E5, #73b4ff);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.2) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transition: all 0.5s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(64, 149, 229, 0.3);
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-container, .form-container {
+            animation: fadeIn 1s ease-out;
         }
     </style>
 </head>
 <body>
 <div id="app" class="center-box">
-    <div class="image-container">
-        <img src="/register.png" alt="示例图片" />
+    <div class="logo-container">
+        <div class="logo-text">MetaGallery Cloud</div>
+        <div class="logo-desc">
+            开启您的云存储之旅<br>
+            安全、便捷、高效的文件管理体验
+        </div>
     </div>
-    <form @submit.prevent="register">
-        <div>
-            <input type="text" v-model="account" placeholder="账号" class="input-field input-account" required />
-            <span class="clear-btn" v-if="account" @click="account = ''">×</span>
-        </div>
-        <div>
-            <input :type="passwordVisible ? 'text' : 'password'" v-model="password" placeholder="密码" class="input-field input-password" required />
-            <span class="toggle-password-btn" @click="togglePasswordVisibility">
-                {{ passwordVisible ? '👁️' : '🙈' }}
-            </span>
-        </div>
-        <div>
-            <input :type="confirmPasswordVisible ? 'text' : 'password'" v-model="confirmPassword" placeholder="确认密码" class="input-field input-confirm-password" required />
-            <span class="toggle-confirm-password-btn" @click="toggleConfirmPasswordVisibility">
-                {{ confirmPasswordVisible ? '👁️' : '🙈' }} <!-- 使用独立的可见性状态 -->
-            </span>
-        </div>
-        <button type="submit">注册</button>
-    </form>
+    
+    <div class="form-container">
+        <form @submit.prevent="register">
+            <div class="input-group">
+                <input type="text" 
+                       v-model="account" 
+                       placeholder="请输入账号（5-10位字母数字）" 
+                       class="input-field" 
+                       required />
+            </div>
+            
+            <div class="input-group">
+                <input :type="passwordVisible ? 'text' : 'password'" 
+                       v-model="password" 
+                       placeholder="请设置密码（至少6位）" 
+                       class="input-field" 
+                       required />
+                <span class="toggle-btn" @click="togglePasswordVisibility">
+                    {{ passwordVisible ? '👁️' : '🙈' }}
+                </span>
+            </div>
+            
+            <div class="input-group">
+                <input :type="confirmPasswordVisible ? 'text' : 'password'" 
+                       v-model="confirmPassword" 
+                       placeholder="请确认密码" 
+                       class="input-field" 
+                       required />
+                <span class="toggle-btn" @click="toggleConfirmPasswordVisibility">
+                    {{ confirmPasswordVisible ? '👁️' : '🙈' }}
+                </span>
+            </div>
+
+            <button type="submit" class="submit-btn">注册账号</button>
+        </form>
+    </div>
 </div>
 
 <script>
@@ -168,17 +270,15 @@
                 const encryptedPassword = CryptoJS.SHA256(this.password).toString(CryptoJS.enc.Base64);
                 const encryptedConfirmPassword = CryptoJS.SHA256(this.confirmPassword).toString(CryptoJS.enc.Base64);
 
-                const payload = new URLSearchParams();
-                payload.append('account', this.account);
-                payload.append('password', encryptedPassword);
-                payload.append('confirm_password', encryptedConfirmPassword);
+                var formdata = new FormData();
+                formdata.append('account', this.account);
+                formdata.append('password', encryptedPassword);
+                formdata.append('confirm_password', encryptedConfirmPassword);
 
-                fetch('http://localhost:8080/api/register', {
+                fetch('https://metagallerycloud.online:8443/api/register', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: payload.toString()
+                    body: formdata,
+                    redirect: 'follow'
                 })
                     .then(response => {
                         if (!response.ok) {
