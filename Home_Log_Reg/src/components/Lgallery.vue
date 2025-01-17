@@ -63,9 +63,8 @@ const visiblePages = computed(() => {
 const searchQuery = ref(""); // 当前搜索关键字
 const eventBus1 = useEventBus("search-update");
 const performSearch = (query) => {
-  console.log(query);
   pageIndex.value = 1;
-  searchInGallery(token, query, pageIndex.value)
+  searchInGallery(token, query, pageIndex.value, userInfo.account)
       .then(data => {
         items.value = data.folders;
         totalPages.value = data.total_page;
@@ -78,7 +77,6 @@ onMounted(() => {
   eventBus1.on(({ index, query }) => {
     if (index === 3) {
       searchQuery.value = query;
-      console.log(`页面索引 ${index} 接收到搜索内容：`, query);
       if(query===''){
         //返回首页
         pageIndex.value = 1;

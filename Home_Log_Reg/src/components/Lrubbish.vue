@@ -38,14 +38,11 @@ const showDeleteModal = ref(false); // 控制模态框显示的状态
 const searchQuery = ref(""); // 当前搜索关键字
 const eventBus1 = useEventBus("search-update");
 const performSearch = (query) => {
-  console.log(query);
   searchInCan(token, userInfo.account, query)
       .then(({ folder, file }) => {
         Stack.push([folder,file]);
         folders.value=folder;
         files.value=file;
-        console.log("Folders:", folder);
-        console.log("Files:", file);
       })
       .catch((error) => {
         console.error("Search failed:", error);
@@ -58,7 +55,6 @@ onMounted(() => {
   eventBus1.on(({ index, query }) => {
     if (index === 4) {
       searchQuery.value = query;
-      console.log(`页面索引 ${index} 接收到搜索内容：`, query);
       if(query===''){
         Stack.pop();
         folders.value = Stack[Stack.length - 1][0];
@@ -77,7 +73,6 @@ onMounted(async () => {
   await fetchDelSubInfo(Stack, token, userInfo.account);
   folders.value = Stack[Stack.length - 1][0];
   files.value = Stack[Stack.length - 1][1];
-  console.log(Stack);
 })
 
 const selectedIds = computed(() => {
@@ -101,7 +96,6 @@ const selectAll = () => {
 };
 
 const confirmRecover = () => {
-  console.log(selectedIds);
   recoverItems(selectedIds, token, userInfo.account)
       .then(result => {
         showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
@@ -124,7 +118,6 @@ const clickRecover = () => {
 };
 
 const confirmDelete = () => {
-  console.log(selectedIds);
   completeDeleteItems(selectedIds, token, userInfo.account)
       .then(result => {
         showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"

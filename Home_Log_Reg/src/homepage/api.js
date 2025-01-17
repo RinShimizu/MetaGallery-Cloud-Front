@@ -79,10 +79,8 @@ export const fetchSubInfo = (Stack, token, account, folder_id) => {
                         existingFile.isFavorite = file.Favorite;
                     }
                 });
-
                 // 将数据压入栈
                 Stack.push([foldersFromServer, filesFromServer]);
-
                 // 返回结果
                 resolve({ folders: foldersFromServer, files: filesFromServer });
             })
@@ -107,7 +105,6 @@ export const uploadFile = async (selectedFile, token, account, folder_id) => {
     formdata.append("file", selectedFile.value.files[0], selectedFile.value.value);
 
     for (let [key, value] of formdata.entries()) {
-        console.log(key + ': ' + value);
     }
     var requestOptions = {
         method: 'POST',
@@ -125,7 +122,6 @@ export const uploadFile = async (selectedFile, token, account, folder_id) => {
             return `上传失败，${result.msg}`;
         }
     } catch (error) {
-        console.log('error', error);
         return `上传过程中发生错误，请重试`;
     }
 };
@@ -142,7 +138,6 @@ export const creatIng=(folders,isCancel)=>{
     return newFolder;
 }
 export const createFolder = async (Stack, folderPath, file, token, account, index, isEditing, inputEl) => {
-    console.log('index2:', index);
     const myHeaders = new Headers();
     myHeaders.append("Authorization", token);
     myHeaders.append("Content-Type", "application/json");
@@ -169,10 +164,8 @@ export const createFolder = async (Stack, folderPath, file, token, account, inde
         }
 
         const data = await response.json();
-        console.log("返回的数据：", data); // 查看返回的数据内容
 
         if (data.status === "FAILED") {
-            console.log('文件夹创建失败，返回消息:', data.msg);
 
             // 重新聚焦输入框并全选
             if (inputEl) {
@@ -182,7 +175,6 @@ export const createFolder = async (Stack, folderPath, file, token, account, inde
                 setTimeout(() => inputEl.classList.remove('shake'), 300); // 移除震动效果
             }
         } else {
-            console.log('文件夹创建成功');
             isEditing = false;
             Stack.pop(); // 删除栈顶元素
             await fetchSubInfo(Stack, token, account, folderPath); // 更新文件夹内容
@@ -196,7 +188,6 @@ export const createFolder = async (Stack, folderPath, file, token, account, inde
 };
 
 export const renameFolder = async (folders, folder, oldName, account, token, isEditing, result) => {
-    console.log('renameAPI');
 
     // 如果名称未更改，直接返回成功
     if (folder.name === oldName) {
@@ -231,35 +222,29 @@ export const renameFolder = async (folders, folder, oldName, account, token, isE
     try {
         const response = await fetch("https://metagallerycloud.online:8443/api/renameFolder", requestOptions);
         const responseText = await response.text();
-        console.log(responseText);
 
         // 假设返回成功信息
         result = '文件夹重命名成功！';
         return result;  // 返回结果
     } catch (error) {
-        console.log('error', error);
         result = 'error';
         return result;  // 返回错误结果
     }
 };
 
 export const renameFile = async (files, file, oldName, account, token, isEditing) => {
-    console.log('exist');
 
     // 如果名称未更改，直接返回成功
     if (file.FileName === oldName) {
-        console.log(1111, file.FileName, oldName);
         return '文件重命名成功！';
     }
 
     // 检查是否有重复名字
     const duplicateCount = files.filter(existingFile => existingFile.FileName === file.FileName).length;
     if (duplicateCount > 1) {
-        console.log(2222, file.FileName, oldName);
         return `重命名失败：名称 "${file.FileName}" 已经存在！`;
     }
 
-    console.log(3333, file.FileName, oldName);
 
     // 设置请求头
     var myHeaders = new Headers();
@@ -270,7 +255,6 @@ export const renameFile = async (files, file, oldName, account, token, isEditing
     formdata.append("account", account);
     formdata.append("file_id", file.ID);
     formdata.append("new_file_name", file.FileName);
-    console.log("111", formdata);
 
     // 构造请求选项
     var requestOptions = {
@@ -284,12 +268,10 @@ export const renameFile = async (files, file, oldName, account, token, isEditing
     try {
         const response = await fetch("https://metagallerycloud.online:8443/api/renameFile", requestOptions);
         const responseText = await response.text();
-        console.log(responseText);
 
         // 假设返回成功信息
         return '文件重命名成功！';
     } catch (error) {
-        console.log('error', error);
         return 'error';
     }
 };
@@ -313,8 +295,6 @@ const deleteFolder=(folder_id,token,account)=>{
 
     return fetch("https://metagallerycloud.online:8443/api/removeFolder", requestOptions)
         .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
 }
 const deleteFile =  (token, account, file_id) => {
     var myHeaders = new Headers();
@@ -326,7 +306,6 @@ const deleteFile =  (token, account, file_id) => {
         "file_id": file_id
     });
 
-    console.log(raw);
     var requestOptions = {
         method: 'DELETE',
         headers: myHeaders,
@@ -336,19 +315,15 @@ const deleteFile =  (token, account, file_id) => {
 
     return fetch("https://metagallerycloud.online:8443/api/removeFile", requestOptions)
         .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
 }
 export const deleteItems = async (selectedIds, token, account) => {
     const folders = selectedIds.value.folders;
     const files = selectedIds.value.files;
     try {
         for (const folder of folders) {
-            console.log(111);
             await deleteFolder(folder.id, token, account);
         }
         for (const file of files) {
-            console.log(111);
             await deleteFile(token, account, file.ID);
         }
         return '删除成功';
@@ -385,9 +360,7 @@ export const preJudge=(isFolder,folders,file)=>{
         const duplicateCount = folders.filter(existingFolder => existingFolder.name === file.name).length;
         if (duplicateCount > 1) {
             msg='该文件夹名已存在！';
-            console.log('folders:', folders); // 查看所有文件夹数据
 
-            console.log(file.name.trim());
         }
     }
     else{
@@ -417,9 +390,7 @@ export const preJudge=(isFolder,folders,file)=>{
         const folderExists = folders.slice(1).some(existingFolder => existingFolder.name === file.FileName);
         if (folderExists) {
             msg='该文件夹名已存在！';
-            console.log('folders:', folders); // 查看所有文件夹数据
 
-            console.log(file.FileName.trim());
         }
     }
     // 1. 文件夹名称长度不能超过 255 个字符
@@ -502,7 +473,6 @@ export const fetchDelSubInfo = (Stack, token, account) => {
 export const isAllSelectedFilesFavorited = (selectedIds) =>{
     const folders=selectedIds.value.folders;
     const files=selectedIds.value.files;
-    console.log(folders,"fggghjjjkkkkk");
     const allSelectedFilesFavorited = files
         //.filter(file => file.selected)  // 过滤选中的文件
         .every(file => file.isFavorite);  // 检查是否所有选中的文件都已收藏
@@ -518,7 +488,6 @@ export const markAsFavorite = (selectedIds, account, token, isAllFavorited) => {
     const folders=selectedIds.value.folders;
     const files=selectedIds.value.files;
     const newFavoriteState = isAllFavorited ? 1 : 2;
-    console.log(folders);
     for(const file of files) {
         //if (file.selected) {
         const requestData = {
@@ -577,12 +546,10 @@ export const favoriteButtonIcon = (isAllFavorited, favoriteIcon, unfavoriteIcon)
 // 显示文件/文件夹信息
 export const showFileOrFolderInfo = async (id, type, token, account,event) => {
     isHovering = true; // 标记悬停开始
-    console.log(isHovering);
     hoverTimer = setTimeout(async () => {
         if (!isHovering) return; // 如果鼠标已经移出，不执行后续操作
 
         const info = await fetchFileOrFolderInfo(id, type, token, account);
-        console.log("info",info);
         if (type === 'folder' && !info) {
             // 如果是空文件夹，不显示或清除信息
             fileOrFolderInfo.value = { type: '', data: null };
@@ -603,7 +570,6 @@ export const showFileOrFolderInfo = async (id, type, token, account,event) => {
 // 隐藏文件/文件夹信息
 export const hideFileOrFolderInfo = () => {
     isHovering = false; // 标记悬停结束
-    console.log(isHovering);
     if (hoverTimer) {
         clearTimeout(hoverTimer); // 清除计时器
         hoverTimer = null;
@@ -612,12 +578,10 @@ export const hideFileOrFolderInfo = () => {
 };
 // 从服务器获取文件或文件夹信息
 export const fetchFileOrFolderInfo = async (id, type, token, account) => {
-    //console.log("fetchFileOrFolderInfo id",id);
     let url = '';
     if (type === 'file') {
         url = `https://metagallerycloud.online:8443/api/getFileData?account=${account}&file_id=${id}`;
     } else if (type === 'folder') {
-        console.log(123);
         url = `https://metagallerycloud.online:8443/api/loadFolder/getFolderInfo?account=${account}&folder_id=${id}`;
     }
 
@@ -630,7 +594,6 @@ export const fetchFileOrFolderInfo = async (id, type, token, account) => {
     });
 
     const data = await response.json();
-    //console.log("data",data);
     if (data.data && data.data.items && data.data.items.length === 0) {
         // 处理空文件夹的情况，比如返回 null 或其他标识
         return null;
@@ -656,8 +619,6 @@ const recoverFile = (fileId, token, account) => {
 
     return fetch("https://metagallerycloud.online:8443/api/recoverBinFile", requestOptions)
         .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
 }
 const recoverFolder = (binID, token, account) => {
     var myHeaders = new Headers();
@@ -678,8 +639,6 @@ const recoverFolder = (binID, token, account) => {
 
     return fetch("https://metagallerycloud.online:8443/api/recoverBinFolder", requestOptions)
         .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
 }
 export const recoverItems = async (selectedIds, token, account) => {
     const folders = selectedIds.value.folders;
@@ -717,8 +676,6 @@ const completeDeleteFolder = (folderID, bin_id, token, account) => {
 
     return fetch("https://metagallerycloud.online:8443/api/deleteFolder", requestOptions)
         .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
 }
 export const shareItems=async (selectedItems, token, account, shared_name, intro,coverFile) => {
 
@@ -726,12 +683,10 @@ export const shareItems=async (selectedItems, token, account, shared_name, intro
     // const files = selectedItems.value.files; // 选中的文件数组
     try {
         for (const folder of folders) {
-            console.log("shareFoldering");
             await shareFolder(token,account,folder.id,shared_name,intro,coverFile);
             await shareFolder(token,account,folder.id,shared_name,intro);
         }
         // for (const file of files) {
-        //     console.log(111);
         //     await deleteFile(token, account, file.ID);
         // }
         return '文件夹共享成功';
@@ -758,7 +713,6 @@ export const shareFolder=(token,account,id,name,intro, coverFile)=>{
     //     console.warn("未上传封面图片");
     // }
 
-    console.log("11",id);
 
     var requestOptions = {
         method: 'POST',
@@ -769,8 +723,6 @@ export const shareFolder=(token,account,id,name,intro, coverFile)=>{
 
     return fetch("https://metagallerycloud.online:8443/api/shareFolder", requestOptions)
         .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
 }
 export const fetchSharedInfo = async (token, account) => {
 
@@ -785,7 +737,6 @@ export const fetchSharedInfo = async (token, account) => {
     });
 
     const data = await response.json();
-    console.log("data",data);
     return data.data.result;  // 返回相关的信息
 };
 export const fetchShareSubInfo = async (token, account, owner_account, name, ipfs_hash) => {
@@ -829,11 +780,9 @@ export const unShareItems=async (shareItems, token, account) => {
     const files = shareItems.value.files;
     try {
         for (const folder of folders) {
-            console.log("unshareFoldering");
             await unShareFolder(folder.folder_name, token, account);
         }
         // for (const file of files) {
-        //     console.log(111);
         //     await deleteFile(token, account, file.ID);
         // }
         return '取消分享成功';
@@ -855,7 +804,6 @@ export const unShareFolder=(name,token,account)=>{
     formdata.append("account", account);
     formdata.append("shared_name", name);
 
-    console.log("name:",name);
 
     var requestOptions = {
         method: 'POST',
@@ -866,8 +814,6 @@ export const unShareFolder=(name,token,account)=>{
 
     return fetch("https://metagallerycloud.online:8443/api/gallery/unshareFolder", requestOptions)
         .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
 }
 const completeDeleteFile = (fileID, token, account) => {
     var myHeaders = new Headers();
@@ -888,8 +834,6 @@ const completeDeleteFile = (fileID, token, account) => {
 
     return fetch("https://metagallerycloud.online:8443/api/deleteFile", requestOptions)
         .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
 }
 export const completeDeleteItems = async (selectedIds, token, account) => {
     const folders = selectedIds.value.folders;
@@ -908,7 +852,6 @@ export const completeDeleteItems = async (selectedIds, token, account) => {
 export const downloadFile = async (account, selectedIds, token) => {
     const folders=selectedIds.value.folders;
     const files=selectedIds.value.files;
-    console.log("folders",folders);
     // 检查是否有选中的文件夹
     if (folders.length>0) {
         alert('不允许下载文件夹！');
@@ -921,14 +864,12 @@ export const downloadFile = async (account, selectedIds, token) => {
     // 下载选中的文件
     files.forEach(file => {
         const fileId = file.ID;
-        console.log(file.ID);
         const url = `https://metagallerycloud.online:8443/api/downloadFile?account=${account}&file_id=${fileId}`;
         downloadPromises.push(downloadSingleFile(url, token, file.FileName)); // 将文件名传入
     });
     // 等待所有文件下载完成
     try {
         await Promise.all(downloadPromises);
-        console.log('所有文件下载完成！');
     } catch (error) {
         console.error('批量下载时出现错误:', error);
     }
@@ -979,7 +920,6 @@ export async function handlepreviewFile(account,fileID,token,setPreviewContent,e
     event.preventDefault();
     const previewUrl = await previewFile(account,fileID,token);
     //const previewPageUrl = `/preview?url=${encodeURIComponent(previewUrl)}`;
-    console.log("previewPageUrl",previewUrl);
     //window.open(previewPageUrl, '_blank');
     //window.open(previewUrl, '_blank');
     setPreviewContent(previewUrl);
@@ -988,7 +928,6 @@ export async function previewFile(account, fileID,token) {
     if (!account || !fileID) {
         throw new Error("账号或文件ID不能为空");
     }
-    console.log("进入预览函数");
     // const queryParams = new URLSearchParams({ account, file_id: fileID }).toString();
     // const url = `/api/preview?${queryParams}`;
     const url = `https://metagallerycloud.online:8443/api/previewFile?account=${account}&file_id=${fileID}`;
@@ -1006,10 +945,8 @@ export async function previewFile(account, fileID,token) {
             throw new Error(errorData.message || "预览失败，请稍后再试");
         }
         // const data = await response.json();
-        // console.log("url:",data.url);
         // return data.url || "";
         const blob = await response.blob();
-        console.log("blob:",blob);
         if(blob.type===""||blob.type==="application/json"||blob.type==="application/zip"){
             return null;
         }
@@ -1050,7 +987,6 @@ export async function previewFile(account, fileID,token) {
                     // 将 canvas 转换为 Blob 对象
                     canvas.toBlob((compressedBlob) => {
                         const previewUrl = URL.createObjectURL(compressedBlob);
-                        console.log("压缩后的预览 URL:", previewUrl);
                         resolve(previewUrl); // 在这里返回压缩后的预览 URL
                     }, 'image/jpeg', 0.7); // 压缩为 JPEG 格式，质量为 0.7
                 };
@@ -1063,7 +999,6 @@ export async function previewFile(account, fileID,token) {
             });
         }
         const previewUrl = URL.createObjectURL(blob); // 生成本地 URL
-        console.log("预览 URL:", previewUrl);
         return previewUrl;
     } catch (error) {
         throw new Error(error.message || "预览失败，请稍后再试");
@@ -1087,10 +1022,9 @@ export const getAllSharedItems = async (token, page_num, account) => {
             return result.data.result;
         })
         .catch(error => {
-            console.log('error', error);
         });
 }
-export const searchInGallery = async (token, search_key, page_num) => {
+export const searchInGallery = async (token, search_key, page_num, account) => {
     var myHeaders = new Headers();
     myHeaders.append("Authorization", token);
 
@@ -1100,12 +1034,11 @@ export const searchInGallery = async (token, search_key, page_num) => {
         redirect: 'follow'
     };
 
-    return fetch(`https://metagallerycloud.online:8443/api/search/gallery?keyword=${search_key}&page_num=${page_num}`, requestOptions)
+    return fetch(`https://metagallerycloud.online:8443/api/search/gallery?keyword=${search_key}&page_num=${page_num}&account=${account}`, requestOptions)
         .then(response => response.json())
         .then(result => {
             return result.data.result;
         })
-        .catch(error => console.log('error', error));
 }
 export const searchInFile = async (token, account, folder_id, name) => {
     const url = `https://metagallerycloud.online:8443/api/search/listFilesAndFolders?account=${account}&parent_folder=${folder_id}&keyword=${name}`;
@@ -1124,13 +1057,10 @@ export const searchInFile = async (token, account, folder_id, name) => {
         }
 
         const data = await response.json();
-        console.log("Raw data:", data);
 
         // 使用 processSearchResult 函数处理结果
         const { folder, file } = processSearchResult(data.data);
 
-        console.log("Processed Folders:", folder);
-        console.log("Processed Files:", file);
 
         return { folder, file };
     } catch (error) {
@@ -1155,13 +1085,10 @@ export const searchInCan = async (token, account, name) => {
         }
 
         const data = await response.json();
-        console.log("Raw data:", data);
 
         // 使用 processSearchResult 函数处理结果
         const { folder, file } = processSearchRubbishResult(data.data);
 
-        console.log("Processed Folders:", folder);
-        console.log("Processed Files:", file);
 
         return { folder, file };
     } catch (error) {
@@ -1186,13 +1113,10 @@ export const searchInStar = async (token, account, name) => {
         }
 
         const data = await response.json();
-        console.log("Raw data:", data);
 
         // 使用 processSearchResult 函数处理结果
         const { folder, file } = processSearchResult(data.data);
 
-        console.log("Processed Folders:", folder);
-        console.log("Processed Files:", file);
 
         return { folder, file };
     } catch (error) {
@@ -1217,13 +1141,10 @@ export const searchInShare = async (token, account, name) => {
         }
 
         const data = await response.json();
-        console.log("Raw data:", data);
 
         // 使用 processSearchResult 函数处理结果
         const  folder = processSearchShareResult(data.data);
         const file=[];
-        console.log("Processed Folders:", folder);
-        console.log("Processed Files:", file);
 
         return { folder, file };
     } catch (error) {
@@ -1240,7 +1161,6 @@ export const processSearchShareResult = (data) => {
             selected: false,                   // 默认未选中
         });
     });
-    console.log(folder);
     return folder;
 };
 export const processSearchResult = (data) => {
@@ -1331,11 +1251,7 @@ export const processSearchRubbishResult = (data) => {
 
 // 定义获取收藏文件夹的函数
 export async function fetchFavoriteFolders(account,token) {
-    console.log("进入获取收藏结果的函数");
-    console.log('Token:', token);
     try {
-        // console.log("1");
-        // console.log("Account:", account);
         const response = await fetch(`https://metagallerycloud.online:8443/api/getFavoriteFolder?account=${account}`, {
             method: 'POST',
             headers: {
@@ -1343,9 +1259,7 @@ export async function fetchFavoriteFolders(account,token) {
             },
             redirect: 'follow'
         });
-        //console.log("11");
         const data = await response.json();
-        console.log("data:",data);
         const folder=[];
         if (response.ok) {
             data.data.forEach((item) => {
@@ -1362,7 +1276,6 @@ export async function fetchFavoriteFolders(account,token) {
             });
             favoriteFolders.value = folder; // 假设后端返回的收藏夹数据在 data 属性中
 
-            console.log("fafolders",folder);
             return folder;
         } else {
             errorMessage.value = data.message || '获取收藏文件夹失败';
@@ -1382,7 +1295,6 @@ export async function fetchFavoriteFiles(account,token) {
             redirect: 'follow'
         });
         const data = await response.json();
-        //console.log("data:",data);
         if (response.ok) {
             const file=[];
             data.data.forEach((item) => {
@@ -1394,7 +1306,6 @@ export async function fetchFavoriteFiles(account,token) {
             });
             favoriteFiles.value = file; // 假设后端返回的文件数据在 data 属性中
             return file;
-            //console.log("111",favoriteFiles.value);
         } else {
             errorMessage.value = data.message || '获取收藏文件失败';
         }
@@ -1446,7 +1357,6 @@ export const showBinFileOrFolderInfo = async (binid,id, type, token, account,eve
         if (!isHovering) return; // 如果鼠标已经移出，不执行后续操作
 
         const info = await fetchBinFileOrFolderInfo(binid,id, type, token, account);
-        console.log("info",info);
         if (type === 'folder' && !info) {
             // 如果是空文件夹，不显示或清除信息
             fileOrFolderInfo.value = { type: '', data: null };
@@ -1475,12 +1385,10 @@ export const hideBinFileOrFolderInfo = () => {
 };
 // 从服务器获取回收站文件或文件夹信息
 export const fetchBinFileOrFolderInfo = async (binid,id, type, token, account) => {
-    //console.log("fetchFileOrFolderInfo id",id);
     let url = '';
     if (type === 'file') {
         url = `https://metagallerycloud.online:8443/api/getBinFileData?account=${account}&file_id=${id}`;
     } else if (type === 'folder') {
-        console.log(123);
         url = `https://metagallerycloud.online:8443/api/getBinFolderInfo?account=${account}&bin_id=${binid}&folder_id=${id}`;
     }
 
@@ -1493,7 +1401,6 @@ export const fetchBinFileOrFolderInfo = async (binid,id, type, token, account) =
     });
 
     const data = await response.json();
-    //console.log("data",data);
     if (data.data && data.data.items && data.data.items.length === 0) {
         // 处理空文件夹的情况，比如返回 null 或其他标识
         return null;

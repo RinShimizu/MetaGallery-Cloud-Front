@@ -1,14 +1,12 @@
 <script setup>
-import {ref, computed, onMounted, toRaw} from 'vue';
+import {ref, computed, onMounted} from 'vue';
   import fileURL from '../assets/文件.svg';
   import folderURL from '../assets/文件夹.svg';
 import {
   fetchSubInfo,
   showFileOrFolderInfo, hideFileOrFolderInfo, fileOrFolderInfo, popupTop, popupLeft, searchInStar,
   downloadFile,//下载
-  handlepreviewFile, isLoading, favoriteButtonIcon,//预览
-  favoriteFolders, favoriteFiles, fetchFavoriteFolders, fetchFavoriteFiles, Stackfa,//获取已收藏文件和文件夹
-  markAsFavorite, deleteItems//用于取消收藏
+  handlepreviewFile, isLoading, favoriteFiles, fetchFavoriteFolders, fetchFavoriteFiles//获取已收藏文件和文件夹
 } from "@/homepage/api.js";
   import {useEventBus} from "@vueuse/core";
 
@@ -23,14 +21,11 @@ import {
   const searchQuery = ref(""); // 当前搜索关键字
   const eventBus1 = useEventBus("search-update");
   const performSearch = (query) => {
-    console.log(query);
     searchInStar(token, userInfo.account, query)
         .then(({ folder, file }) => {
           Stack.push([folder,file]);
           folders.value=folder;
           files.value=file;
-          console.log("Folders:", folder);
-          console.log("Files:", file);
         })
         .catch((error) => {
           console.error("Search failed:", error);
@@ -43,7 +38,6 @@ import {
     eventBus1.on(({ index, query }) => {
       if (index === 2) {
         searchQuery.value = query;
-        console.log(`页面索引 ${index} 接收到搜索内容：`, query);
         if(query===''){
           goBackToParentFolder();
         }
@@ -58,41 +52,35 @@ import {
   const previewContentfa = ref('');
   const selectedIds = computed(() => {
     return {
-      files: favoriteFiles.value.filter(file => file.selected), // 选中的文件对象数组
-      folders: favoriteFolders.value.filter(folder => folder.selected), // 选中的文件夹对象数组
+      files: files.value.filter(file => file.selected), // 选中的文件对象数组
+      folders: folders.value.filter(folder => folder.selected), // 选中的文件夹对象数组
     };
   });
 
   const isAnyFileSelected = computed(() => {
-    console.log(favoriteFiles.value);
-
-    return favoriteFiles.value.some(file => file.selected)||favoriteFolders.value.some(folder => folder.selected);
+    var i=0,j=0;
+    if(files.value)
+      i=files.value.some(file => file.selected)
+    if(folders.value)
+      j=folders.value.some(folder => folder.selected);
+    return i+j;
   });
 
 
   onMounted(async () => {
-    console.log(favoriteFiles.value);
 
     Stack.length = 0;
     const folder=await fetchFavoriteFolders(account,userData.data.token);
     const file=await fetchFavoriteFiles(account,userData.data.token);
-    // const {folder, file}=await Promise.all([fetchFavoriteFolders(account,userData.data.token), fetchFavoriteFiles(account,userData.data.token)]);
     Stack.push([folder, file]);
-    console.log("12",folder)
     folders.value=folder;
     files.value=file;
-    console.log("enter",files.value);
-    // favoriteFolders.value = Stack[Stack.length - 1][0];
-    // favoriteFiles.value = Stack[Stack.length - 1][1];
   });
 
   const getFolderFile = async (ID) => {
-    console.log("curPathID:"+ID);
     await fetchSubInfo(Stack, userData.data.token, userInfo.account, ID);
     folders.value = Stack[Stack.length - 1][0];
     files.value = Stack[Stack.length - 1][1];
-    console.log('3',folders.value);
-    // console.log("Stackfa:",Stackfa);
   }
 
   const goBackToParentFolder = () => {
@@ -133,7 +121,6 @@ import {
   const showPreviewModal = ref(false);
   const setPreviewContent = (url) => {
     previewContentfa.value = url; // 更新 previewContent
-    //console.log("Updated previewContent:", previewContent.value);
   };
   const handlepreviewFile1=(account,fileID,token,event)=>{
     previewContentfa.value ='';
@@ -150,11 +137,6 @@ const selectAll = () => {
     folders.value.forEach(item => (item.selected = newState));
 };
 
-const cancleFavorite = () => {
-  markAsFavorite(selectedIds, account, token, 1);
-  folders.value = folders.value.filter(folder => !selectedIds.value.folders.includes(folder));
-  files.value = files.value.filter(folder => !selectedIds.value.files.includes(folder));
-};
 </script>
 
 <template>
@@ -202,7 +184,6 @@ const cancleFavorite = () => {
       </div>
       <div class="file-operations" v-if="isAnyFileSelected">
         <button @click="handleBatchDownload"><img src="../assets/下载.svg" alt="">下载</button>
-        <button @click="cancleFavorite"><img src="../assets/取消.svg" alt="">取消收藏</button>
       </div>
     </div>
 

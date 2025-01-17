@@ -27,14 +27,11 @@ var currentFolderName='root';
 const searchQuery = ref(""); // 当前搜索关键字
 const eventBus1 = useEventBus("search-update");
 const performSearch = (query) => {
-  console.log(query);
   searchInShare(token, userInfo.account, query)
       .then(({ folder, file }) => {
         folders.value=folder;
         files.value=file;
         Stack.push([toRaw(folders.value), toRaw(files.value)]);
-        console.log("Folders:", folder);
-        console.log("Files:", file);
       })
       .catch((error) => {
         console.error("Search failed:", error);
@@ -47,7 +44,7 @@ onMounted(() => {
   eventBus1.on(({ index, query }) => {
     if (index === 1) {
       searchQuery.value = query;
-      console.log(`页面索引 ${index} 接收到搜索内容：`, query);
+
       if(query===''){
         goBackToParentShareFolder();
       }
@@ -67,7 +64,6 @@ onMounted(async () => {
     selected: false, // 添加 `selected` 属性
   }));
   Stack.push([toRaw(folders.value), toRaw(files.value)]);
-  console.log("folders_shared",folders.value);
 })
 
 const selectedIds = computed(() => {
@@ -103,11 +99,8 @@ const selectAll = () => {
 const enterFolder = async (folder) => {
   isLoading.value = true;
   currentFolderName=folder.folder_name;
-  console.log("curPathName:" + currentFolderName);
-  console.log(folder)
   // 调用 API 获取子文件夹和文件
   const { subfolders, file } = await fetchShareSubInfo(userData.data.token, userInfo.account, userInfo.account, currentFolderName, folder.ipfs_hash);
-  console.log('f',subfolders);
   // 更新 folders 和 files 的值
   folders.value = subfolders;
   files.value = file;
@@ -117,12 +110,9 @@ const enterFolder = async (folder) => {
 
 const goBackToParentShareFolder=()=>{
   if(Stack.length > 1){
-    console.log("Stack",Stack)
     Stack.pop();
-    console.log("Stack",Stack)
     folders.value = Stack[Stack.length - 1][0];
     files.value = Stack[Stack.length - 1][1];
-    console.log("goback",folders.value);
   }
   else{
     showLabelAlert('当前目录为系统默认目录');
@@ -134,7 +124,6 @@ const showUnshareModal = ref(false); // 控制模态框显示的状态
 
 // 确认删除
 const confirmUnshare = () => {
-  console.log(selectedIds);
   unShareItems(selectedIds,token,account)
       .then(result => {
         showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
@@ -166,8 +155,6 @@ const downloadSharedFiles=()=>{
   }
   files.forEach(file => {
     const filename=file.file_name;
-    // console.log("filename",filename);
-    // console.log("file.ipfs_hash",file.cid);
     downloadSharedFile(account,filename,file.cid, token);
   });
 }

@@ -166,21 +166,6 @@
             left: 100%;
         }
 
-        .forgot-password {
-            text-align: center;
-            margin-top: 20px;
-            width: 100%;
-            color: #4095E5;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .forgot-password:hover {
-            color: #3084d4;
-            text-decoration: underline;
-        }
-
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -232,7 +217,6 @@
 
             <button type="submit" class="submit-btn">登录</button>
         </form>
-        <p class="forgot-password">忘记密码？</p>
     </div>
 </div>
 
@@ -315,7 +299,6 @@
                             localStorage.removeItem('rootFolderData');
                         }
                         localStorage.setItem('rootFolderData', JSON.stringify(data.data));
-                        console.log('After set:', data.data.id);
                         window.location.href = '../homepage.html';
                     }
                 } catch (error) {

@@ -448,10 +448,6 @@
 
         // 从 localStorage 中读取 userData
         const userData = JSON.parse(localStorage.getItem('userData'));
-        console.log("从 localStorage 读取到的数据:", userData);
-
-        // const token = localStorage.getItem('token');
-        // console.log("获取到的 token:", token);
         if (userData && userData.data && userData.data.userInfo) {
             // 获取嵌套的 userInfo
             const userInfo = userData.data.userInfo;
@@ -465,35 +461,30 @@
 
             if (accountValueElement) {
                 accountValueElement.textContent = userInfo.account || '不可修改';
-                console.log("accountValue 填充成功:", userInfo.account);
             } else {
                 console.error("accountValue 元素未找到");
             }
 
             if (nicknameElement) {
                 nicknameElement.value = userInfo.name || '';
-                console.log("nickname 填充成功:", userInfo.name);
             } else {
                 console.error("nickname 元素未找到");
             }
 
             if (signatureElement) {
                 signatureElement.value = userInfo.intro || '';
-                console.log("signature 填充成功:", userInfo.intro);
             } else {
                 console.error("signature 元素未找到");
             }
             if (avatarImage) {
                 // 使用 userInfo.avatar 替换 small-icon2.png
                 avatarImage.src = userInfo.avatar || 'small-icon2.png';
-                console.log("头像已成功更新为:", userInfo.avatar);
             } else {
                 console.error("找不到头像 img 元素");
             }
             if (accountAvatarImage) {
                 // 使用 userInfo.avatar 替换 small-icon2.png
                 accountAvatarImage.src = userInfo.avatar || 'small-icon2.png';
-                console.log("头像已成功更新为:", userInfo.avatar);
             } else {
                 console.error("找不到头像 img 元素");
             }
@@ -525,14 +516,12 @@
                         body: formData1, // 将更新的数据转为 JSON 字符串
                     })
                         .then(response => {
-                            console.log('响应对象:', response);
                             if (!response.ok) {
                                 throw new Error('网络响应不是 OK');
                             }
                             return response.json(); // 解析响应为 JSON
                         })
                         .then(data => {
-                            console.log('成功:', data);
                             alert(data.msg)
                         })
                         .catch((error) => {
@@ -558,21 +547,18 @@
                         body: formData, // 将更新的数据转为 JSON 字符串
                     })
                         .then(response => {
-                            console.log('响应对象:', response);
                             if (!response.ok) {
                                 throw new Error('网络响应不是 OK');
                             }
                             return response.json(); // 解析响应为 JSON
                         })
                         .then(data => {
-                            console.log('成功:', data);
                             alert(data.msg)
                             if(data.status==='SUCCESS'){
                                 //localStorage.setItem('userData', JSON.stringify(data));
                                 userData.data.userInfo.name = nickname; // 更新昵称
                                 userData.data.userInfo.intro = signature; // 更新个性签名
                                 localStorage.setItem('userData', JSON.stringify(userData)); // 保存更新后的数据
-                                console.log("localStorage 更新成功:", userData);
                             }
                         })
                         .catch((error) => {

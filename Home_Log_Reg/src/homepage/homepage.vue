@@ -78,10 +78,8 @@ const handleSearch = () => {
     showLabelAlert("请输入搜索内容！");
     return;
   }
-  console.log("query",searchQuery.value);
   // 将 selectedIndex 和搜索内容一起传递
   eventBus1.emit({ index: selectedIndex.value, query: searchQuery.value });
-  console.log("搜索内容：", searchQuery.value, "页面索引：", selectedIndex.value);
 };
 
 const clear = () => {

@@ -27,10 +27,8 @@ onMounted(() => {
       fetchShareSubInfo(token, userInfo.account, item.value.owner_account.account, item.value.folder_name, item.value.ipfs_hash)
           .then(data => {
             Stack.push([data.subfolders,data.file]);
-            console.log(Stack);
             folders.value = Stack[Stack.length - 1][0];
             files.value = Stack[Stack.length - 1][1];
-            console.log(files.value);
           })
           .catch(error => {
             console.error('Failed to fetch share sub info:', error);
@@ -44,7 +42,6 @@ onMounted(() => {
       isLoading1.value = false; // 确保在解析失败时也设置加载状态为 false
     }
   } else {
-    console.log('No item in query');
     isLoading1.value = false; // 没有 item 时也设置加载状态为 false
   }
 });
@@ -81,26 +78,19 @@ const selectAll = () => {
 const enterFolder = async (folder) => {
   isLoading2.value = true; // 开始加载时设置为 true
   currentFolderName = folder.folder_name;
-  console.log(folder)
-  console.log("curPathName:" + currentFolderName);
   const { subfolders, file } = await fetchShareSubInfo(userData.data.token, userInfo.account, userInfo.account, currentFolderName, folder.ipfs_hash);
-  console.log('f', subfolders,file);
   // 更新 folders 和 files 的值
   folders.value = subfolders;
   files.value = file;
   Stack.push([toRaw(folders.value), toRaw(files.value)]);
   isLoading2.value = false; // 无论成功或失败，都将加载状态设置为 false
-  console.log(isLoading2.value)
 }
 
 const goBackToParentShareFolder = () => {
   if (Stack.length > 1) {
-    console.log("Stack", Stack);
     Stack.pop();
-    console.log("Stack", Stack);
     folders.value = Stack[Stack.length - 1][0];
     files.value = Stack[Stack.length - 1][1];
-    console.log("goback", folders.value);
   } else {
     showLabelAlert('当前目录为系统默认目录');
   }
@@ -117,9 +107,7 @@ const downloadSharedFiles=()=>{
   }
   files.forEach(file => {
     const filename=file.file_name;
-    // console.log("filename",filename);
-    // console.log("file.ipfs_hash",file.cid);
-    downloadSharedFile(item.value.owner_account.account,filename,file.cid, token);
+    downloadSharedFile(userInfo.account,filename,file.cid, token);
   });
 }
 </script>

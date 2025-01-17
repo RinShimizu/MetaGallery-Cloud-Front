@@ -50,14 +50,11 @@ const searchQuery = ref(""); // 当前搜索关键字
 
 const performSearch = (query) => {
   const id=getCurrentFolderID();
-  console.log(query);
   searchInFile(token, userInfo.account, id, query)
       .then(({ folder, file }) => {
         Stack.push([folder,file]);
         folders.value=folder;
         files.value=file;
-        console.log("Folders:", folder);
-        console.log("Files:", file);
       })
       .catch((error) => {
         console.error("Search failed:", error);
@@ -70,7 +67,6 @@ onMounted(() => {
   eventBus1.on(({ index, query }) => {
     if (index === 0) {
       searchQuery.value = query;
-      console.log(`页面索引 ${index} 接收到搜索内容：`, query);
       if(query===''){
         goBackToParentFolder();
       }
@@ -122,7 +118,6 @@ const selectAll = () => {
 
 const getFolderFile = async (ID) => {
   changeCurrentFolderID(ID);
-  console.log("curPathID:" + ID);
   await fetchSubInfo(Stack, userData.data.token, userInfo.account, ID);
   folders.value = Stack[Stack.length - 1][0];
   files.value = Stack[Stack.length - 1][1];
@@ -138,7 +133,6 @@ onMounted(() => {
 
 // 新建文件夹函数
 const addNewFolder = async () => {
-  console.log('adding');
   if (isEd) return;
   isEd = true;
   let newFolder;
@@ -174,7 +168,6 @@ const handleCancel = (index) => {
     }
   }
   else{
-    console.log("这是文件重命名",oldName);
     const item = files.value[index];
     if (item) {
       item.isEditing = false; // 设置为非编辑状态
@@ -182,9 +175,7 @@ const handleCancel = (index) => {
     }
     if (inputEl) {
       inputEl.blur(); // 关闭输入框
-      console.log(123);
       item.FileName = oldName;
-      console.log(123);
     }
   }
   isCancel=false;
@@ -205,10 +196,8 @@ const finishEditing = async (item, index, isRename, isFolder) => {
     });
     return;
   }
-  console.log(isRename);
   const account = userInfo.account; // 从 userData 获取 account
   const folderID = getCurrentFolderID();
-  console.log('1', folderID);
   var result = '';
   // var folder=[];
   //
@@ -220,19 +209,15 @@ const finishEditing = async (item, index, isRename, isFolder) => {
   } else {
     if (isFolder) {
       result =await renameFolder(folders.value, item, oldName, account, token, item.isEditing, result);
-      console.log('result', result);
       if (result !== '文件夹重命名成功！') {
         item.name = oldName;
       }
       isRe = false;
     } else {
       result =await renameFile(files.value, item, oldName, account, token, item.isEditing);
-      console.log('result', result);
       if (result !== '文件重命名成功！') {
         item.FileName = oldName;
       }
-      console.log("old", oldName);
-      console.log("item", item);
       isRe = false;
     }
   }
@@ -257,7 +242,6 @@ const reName = (selectedIds) => {
   isRe = true;
   const folderIds = selectedIds.folders; // 选中的文件夹数组
   const fileIds = selectedIds.files; // 选中的文件数组
-  console.log('Selected IDs:', folderIds);
   let item = null; // 将用于保存目标文件/文件夹
 
   let index;
@@ -271,7 +255,6 @@ const reName = (selectedIds) => {
 
     // 设置为编辑模式
     item.isEditing = true;
-    console.log("item:", item);
     nextTick(() => {
       const inputEl = document.getElementById(`folder-input-${index}`);
       if (inputEl) {
@@ -287,7 +270,6 @@ const reName = (selectedIds) => {
 
     // 设置为编辑模式
     item.isEditing = true;
-    console.log("item:", item);
     nextTick(() => {
       const inputEl = document.getElementById(`file-input-${index}`);
       if (inputEl) {
@@ -309,7 +291,6 @@ const clickDel = (selectedIds) => {
 
 // 确认删除
 const confirmDelete = () => {
-  console.log(selectedIds);
   deleteItems(selectedIds, token, userInfo.account)
       .then(result => {
         showLabelAlert(result);// 输出 "删除成功" 或 "删除失败: 错误信息"
@@ -381,7 +362,6 @@ const confirmShare = async () => {
   await shareItems(selectedIds, token, userInfo.account, input1, input2, coverFile)
       .then((result) => {
         showLabelAlert("共享成功！");
-        console.log(result);
       })
       .catch((error) => {
         console.error("共享失败:", error);
@@ -406,15 +386,6 @@ watch(isShare, (newValue) => {
   }
 });
 
-// 生命周期管理
-onMounted(() => {
-  console.log("组件挂载完成");
-});
-
-onBeforeUnmount(() => {
-  console.log("组件即将卸载");
-});
-
 
 // 取消删除
 const cancelShare = () => {
@@ -432,7 +403,6 @@ var account = userInfo.account;
 
 // 变更收藏按钮的图标，根据选中的文件是否已收藏来判断
 const handleMarkAsFavorite = () => {
-  console.log("se",selectedIds);
   markAsFavorite(selectedIds, account, token, isAllFavorited.value);
 };
 
